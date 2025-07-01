@@ -65,10 +65,17 @@ router.get('/availability/:slug', async (req, res) => {
         for (const rule of rulesForDay) {
             const [startH, startM] = rule.start_time.split(':').map(Number);
             const [endH, endM] = rule.end_time.split(':').map(Number);
+            
             let slotStart = new Date(dayStart);
             slotStart.setUTCHours(startH, startM, 0, 0);
-            const ruleEnd = new Date(dayStart);
+            
+            let ruleEnd = new Date(dayStart);
             ruleEnd.setUTCHours(endH, endM, 0, 0);
+
+            // **THE FIX**: Handle overnight schedules where the end time is on the next UTC day.
+            if (ruleEnd <= slotStart) {
+                ruleEnd.setUTCDate(ruleEnd.getUTCDate() + 1);
+            }
 
             while (slotStart < ruleEnd) {
                 for (const duration of durationsToCalc) {
@@ -79,7 +86,8 @@ router.get('/availability/:slug', async (req, res) => {
                         availableSlots.push(slotStart.toISOString());
                     }
                 }
-                slotStart.setMinutes(slotStart.getMinutes() + 15);
+                // **THE FIX**: Use setUTCMinutes to avoid issues with the server's local timezone.
+                slotStart.setUTCMinutes(slotStart.getUTCMinutes() + 15);
             }
         }
         
@@ -87,7 +95,6 @@ router.get('/availability/:slug', async (req, res) => {
         
         res.json({
             eventType: {
-                // **THE FIX: Pass the username to the frontend**
                 ownerUsername: eventType.ownerUsername,
                 title: eventType.title,
                 description: eventType.description,
@@ -182,7 +189,6 @@ router.post('/bookings', async (req, res) => {
             return res.status(404).json({ error: 'The requested event type does not exist.' });
         }
         
-        // **Get the event owner's details for the notification email**
         const owner = await db('users').where({ id: eventType.user_id }).first('id', 'username', 'email', 'email_notifications');
         if (!owner) {
              return res.status(500).json({ error: 'Could not find the event owner.' });
@@ -202,10 +208,6 @@ router.post('/bookings', async (req, res) => {
 
         const [booking] = await db('bookings').insert(newBooking).returning('*');
         
-        // --- Send Emails ---
-        // We do this after the booking is confirmed in the database.
-        // We don't want the API to fail if the email sending fails, so we don't `await` it.
-        // This is a "fire-and-forget" operation.
         const emailDetails = {
             owner: { username: owner.username, email: owner.email },
             eventType: { title: eventType.title, location: eventType.location },
@@ -224,7 +226,6 @@ router.post('/bookings', async (req, res) => {
             });
         }
         
-        // Send to the booker, if they provided an email
         if (email) {
             emailService.sendBookingConfirmation(emailDetails);
         }

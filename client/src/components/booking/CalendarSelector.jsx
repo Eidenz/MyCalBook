@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, isSameMonth, isToday, isSameDay } from 'date-fns';
+import { format, isSameMonth, isToday, isSameDay, isBefore, startOfToday } from 'date-fns';
 
 const CalendarSelector = ({ hook, onDateSelect, selectedDate, availableDays }) => {
     const { days, currentMonth, nextMonth, prevMonth } = hook;
@@ -29,31 +29,33 @@ const CalendarSelector = ({ hook, onDateSelect, selectedDate, availableDays }) =
                     const isCurrent = isSameMonth(day, currentMonth);
                     const isSelected = isSameDay(day, selectedDate);
                     const today = isToday(day);
-                    const isAvailable = isCurrent && availableDays.includes(day.getDate());
+                    const isPastDay = isBefore(day, startOfToday());
+
+                    // A day is bookable if it's in the current month, available, and not in the past.
+                    const isBookable = isCurrent && availableDays.includes(day.getDate()) && !isPastDay;
 
                     const dayClasses = `
-                        w-12 h-12 flex items-center justify-center rounded-full cursor-pointer transition-all text-base relative
+                        w-12 h-12 flex items-center justify-center rounded-full transition-all text-base relative
                         ${!isCurrent ? 'text-slate-600 cursor-not-allowed' : ''}
                         
                         ${isSelected 
-                            ? 'bg-indigo-600 text-white font-bold' 
-                            : isAvailable 
-                                ? 'bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/40' 
+                            ? 'bg-indigo-600 text-white font-bold cursor-pointer' 
+                            : isBookable 
+                                ? 'bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/40 cursor-pointer' 
                                 : isCurrent ? 'text-slate-400' : 'text-slate-600'
                         }
 
-                        ${!isAvailable && isCurrent ? 'cursor-not-allowed opacity-50' : ''}
+                        ${(!isBookable || isPastDay) && isCurrent ? 'cursor-not-allowed opacity-50' : ''}
                     `;
                     
                     return (
                         <div key={index} className="flex justify-center">
                             <button 
                                 className={dayClasses}
-                                onClick={() => isAvailable && onDateSelect(day)}
-                                disabled={!isAvailable}
+                                onClick={() => isBookable && onDateSelect(day)}
+                                disabled={!isBookable}
                             >
-                                {/* **THE FIX:** Add a separate element for the "today" indicator */}
-                                {today && (
+                                {today && !isSelected && (
                                     <span className="absolute -inset-0.5 rounded-full border-2 border-slate-500"></span>
                                 )}
                                 <span className="relative">{format(day, 'd')}</span>

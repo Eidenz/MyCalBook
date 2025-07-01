@@ -412,7 +412,74 @@ const createBookingNotificationTemplate = (details) => {
     return createBaseTemplate(content);
 };
 
+/**
+ * Creates the booking cancellation email template
+ */
+const createBookingCancellationTemplate = (details, recipientType = 'booker') => {
+    const introText = recipientType === 'owner' 
+        ? `You have successfully cancelled the following booking with <strong style="color: #1e293b;">${details.booker_name}</strong>.`
+        : `Your booking for ${details.eventType.title} with <strong style="color: #1e293b;">${details.owner.username}</strong> has been cancelled.`;
+    
+    const content = `
+        <div style="text-align: center; margin-bottom: 32px;">
+             <div style="
+                width: 80px;
+                height: 80px;
+                background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%);
+                border-radius: 50%;
+                margin: 0 auto 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.3);
+            ">
+                <span style="color: white; font-size: 36px;">✕</span>
+            </div>
+            <h2 style="
+                color: #1e293b;
+                font-size: 32px;
+                font-weight: 700;
+                margin: 0 0 8px;
+            ">Booking Cancelled</h2>
+        </div>
+
+        <div style="
+            background-color: #f8fafc;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+            border-left: 4px solid #f43f5e;
+        ">
+            <p style="
+                font-size: 16px;
+                color: #334155;
+                margin: 0 0 8px;
+            ">Hello <strong style="color: #1e293b;">${recipientType === 'owner' ? details.owner.username : details.booker_name}</strong>,</p>
+            <p style="
+                font-size: 16px;
+                color: #64748b;
+                margin: 0;
+                line-height: 1.5;
+            ">${introText} Here are the details of the cancelled event:</p>
+        </div>
+        
+        ${createBookingDetailsCard(details)}
+        
+        <div style="text-align: center; margin-top: 32px;">
+            <p style="
+                color: #64748b;
+                font-size: 16px;
+                margin: 0;
+            ">If this was a mistake, you can schedule a new event at your convenience.</p>
+        </div>
+    `;
+
+    return createBaseTemplate(content);
+};
+
+
 module.exports = {
     createBookingConfirmationTemplate,
     createBookingNotificationTemplate,
+    createBookingCancellationTemplate,
 };

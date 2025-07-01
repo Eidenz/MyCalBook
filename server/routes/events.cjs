@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/knex.cjs');
 const authMiddleware = require('../middleware/auth.cjs');
+const emailService = require('../services/emailService.cjs');
 
 router.use(authMiddleware);
 
@@ -21,7 +22,6 @@ router.get('/manual', async (req, res) => {
         const endOfMonth = `${month}-${endDate.getDate()}T23:59:59`;
 
         // Promise to fetch manual events (personal, blocked)
-        // This implicitly fetches the 'guests' column as well
         const manualEventsPromise = db('manual_events')
             .where({ user_id: userId })
             .where('start_time', '>=', startDate)
@@ -35,6 +35,8 @@ router.get('/manual', async (req, res) => {
             .where('bookings.start_time', '<=', endOfMonth)
             .select(
                 'bookings.id',
+                'bookings.booker_name',
+                'bookings.booker_email',
                 db.raw("event_types.title || ' with ' || bookings.booker_name as title"),
                 'bookings.start_time',
                 'bookings.end_time',
@@ -162,5 +164,67 @@ router.delete('/manual/:id', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+// DELETE /api/events/bookings/:id
+router.delete('/bookings/:id', async (req, res) => {
+    const userId = req.user.id;
+    const bookingId = parseInt(req.params.id, 10);
+
+    if (isNaN(bookingId)) {
+        return res.status(400).json({ error: 'Invalid booking ID.' });
+    }
+
+    try {
+        // 1. Fetch booking and verify ownership
+        const booking = await db('bookings')
+            .join('event_types', 'bookings.event_type_id', 'event_types.id')
+            .where('bookings.id', bookingId)
+            .first(
+                'bookings.*', 
+                'event_types.user_id', 
+                'event_types.title as eventTypeTitle', 
+                'event_types.location as eventTypeLocation'
+            );
+
+        if (!booking) {
+            return res.status(404).json({ error: 'Booking not found.' });
+        }
+
+        if (booking.user_id !== userId) {
+            return res.status(403).json({ error: 'You do not have permission to delete this booking.' });
+        }
+        
+        // 2. Fetch owner details for email
+        const owner = await db('users').where({ id: userId }).first('username', 'email', 'email_notifications');
+
+        // 3. Delete the booking from the database *first*
+        await db('bookings').where({ id: bookingId }).del();
+
+        // 4. Send cancellation emails (fire-and-forget)
+        const duration = (new Date(booking.end_time) - new Date(booking.start_time)) / 60000;
+        const emailDetails = {
+            owner: { 
+                username: owner.username, 
+                email: owner.email, 
+                email_notifications: owner.email_notifications 
+            },
+            eventType: { title: booking.eventTypeTitle, location: booking.eventTypeLocation },
+            booker_name: booking.booker_name,
+            booker_email: booking.booker_email,
+            startTime: booking.start_time,
+            duration: duration,
+            guests: booking.guests ? JSON.parse(booking.guests) : [],
+        };
+        
+        emailService.sendBookingCancellation(emailDetails);
+        
+        res.json({ message: 'Booking cancelled successfully.' });
+
+    } catch (error) {
+        console.error('Error deleting booking:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 
 module.exports = router;

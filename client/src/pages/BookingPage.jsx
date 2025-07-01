@@ -21,7 +21,6 @@ const BookingPage = () => {
     const [selectedDuration, setSelectedDuration] = useState(null);
     const [selectedTime, setSelectedTime] = useState(null);
      const [bookingInterval, setBookingInterval] = useState(15);
-    // **THE FIX: Get the user's timezone**
     const [userTimezone, setUserTimezone] = useState('');
 
     // State for UI control
@@ -85,9 +84,7 @@ const BookingPage = () => {
         fetchDailySlots();
     }, [fetchDailySlots]);
 
-    // **THE FIX: Set the timezone on component mount**
     useEffect(() => {
-        // Intl.DateTimeFormat().resolvedOptions().timeZone provides the IANA time zone name (e.g., "America/New_York")
         setUserTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
     }, []);
 
@@ -230,7 +227,6 @@ const BookingPage = () => {
                                 selectedDate={selectedDate}
                                 availableDays={monthlyAvailability}
                              />
-                             {/* **THE FIX: Display the timezone** */}
                              <div className="mt-4 text-center">
                                 <div className="inline-flex items-center gap-2 text-xs text-slate-400 bg-slate-900/50 px-3 py-1.5 rounded-full">
                                     <Globe size={14}/>

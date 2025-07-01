@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { format, getMinutes } from 'date-fns';
+import { format, getMinutes, isToday, isPast } from 'date-fns';
 
 const TimeSlotPicker = ({ 
     durations, 
@@ -12,10 +12,21 @@ const TimeSlotPicker = ({
     bookingInterval
 }) => {
     const filteredSlots = useMemo(() => {
-        if (!bookingInterval) return slots;
         return slots.filter(slot => {
-            const minutes = getMinutes(new Date(slot));
-            return minutes % bookingInterval === 0;
+            const slotDate = new Date(slot);
+            
+            // Condition 1: If the slot's date is today, check if the time is in the past.
+            // This is more robust as it doesn't rely on a separate `selectedDate` prop.
+            if (isToday(slotDate) && isPast(slotDate)) {
+                return false;
+            }
+            
+            // Condition 2: Filter by the selected time slot interval.
+            if (bookingInterval && getMinutes(slotDate) % bookingInterval !== 0) {
+                return false;
+            }
+            
+            return true;
         });
     }, [slots, bookingInterval]);
 

@@ -11,6 +11,35 @@ const Availability = () => {
     
     const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+    /**
+     * Converts a 'HH:mm' time string from the user's local timezone to a UTC 'HH:mm' string.
+     * @param {string} localTime - The time string to convert, e.g., "09:00".
+     * @returns {string} The converted time string in UTC, e.g., "13:00".
+     */
+    const toUTCTime = (localTime) => {
+        if (!localTime) return '';
+        const today = new Date();
+        const localDate = new Date(`${today.toISOString().slice(0, 10)}T${localTime}`);
+        const h = localDate.getUTCHours().toString().padStart(2, '0');
+        const m = localDate.getUTCMinutes().toString().padStart(2, '0');
+        return `${h}:${m}`;
+    };
+
+    /**
+     * Converts a 'HH:mm' time string from UTC to the user's local timezone 'HH:mm' string.
+     * @param {string} utcTime - The UTC time string to convert, e.g., "13:00".
+     * @returns {string} The converted time string in the local timezone, e.g., "09:00".
+     */
+    const toLocalTime = (utcTime) => {
+        if (!utcTime) return '';
+        const today = new Date();
+        // Create a date object by explicitly stating the input time is UTC ('Z')
+        const utcDate = new Date(`${today.toISOString().slice(0, 10)}T${utcTime}Z`);
+        const h = utcDate.getHours().toString().padStart(2, '0');
+        const m = utcDate.getMinutes().toString().padStart(2, '0');
+        return `${h}:${m}`;
+    };
+
     useEffect(() => {
         const fetchRules = async () => {
             try {
@@ -19,7 +48,15 @@ const Availability = () => {
                 });
                 if (!response.ok) throw new Error('Failed to fetch availability.');
                 const data = await response.json();
-                setRules(data);
+                
+                // Convert fetched UTC times to local time for display
+                const localRules = data.map(rule => ({
+                    ...rule,
+                    start_time: toLocalTime(rule.start_time),
+                    end_time: toLocalTime(rule.end_time),
+                }));
+                setRules(localRules);
+
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -48,13 +85,20 @@ const Availability = () => {
         setIsSaving(true);
         setError('');
         try {
+            // Convert local times from the UI to UTC before sending to the server
+            const utcRules = rules.map(rule => ({
+                ...rule,
+                start_time: toUTCTime(rule.start_time),
+                end_time: toUTCTime(rule.end_time),
+            }));
+
             const response = await fetch('/api/availability/rules', {
                 method: 'PUT',
                 headers: { 
                     'Content-Type': 'application/json',
                     'x-auth-token': token 
                 },
-                body: JSON.stringify({ rules })
+                body: JSON.stringify({ rules: utcRules })
             });
              if (!response.ok) {
                 const errData = await response.json();
@@ -75,7 +119,7 @@ const Availability = () => {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-3xl font-bold text-white">Set your availability</h1>
-                    <p className="text-slate-400 mt-1">Define when you are available for bookings.</p>
+                    <p className="text-slate-400 mt-1">Define when you are available for bookings. Times are in your local timezone.</p>
                 </div>
                 <button 
                     onClick={handleSave}
