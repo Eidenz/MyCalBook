@@ -30,7 +30,7 @@ app.use('/api/event-types', eventTypesRouter);
 app.use('/api/public', publicRouter);
 app.use('/api/settings', settingsRouter);
 
-const frontendBuildPath = path.join(__dirname, '..', 'public');
+const frontendBuildPath = path.join(__dirname, '..', 'client', 'dist');
 
 // --- Serve Frontend Static Files (Production) ---
 app.use(express.static(frontendBuildPath));
