@@ -21,6 +21,7 @@ router.get('/manual', async (req, res) => {
         const endOfMonth = `${month}-${endDate.getDate()}T23:59:59`;
 
         // Promise to fetch manual events (personal, blocked)
+        // This implicitly fetches the 'guests' column as well
         const manualEventsPromise = db('manual_events')
             .where({ user_id: userId })
             .where('start_time', '>=', startDate)
@@ -38,12 +39,14 @@ router.get('/manual', async (req, res) => {
                 'bookings.start_time',
                 'bookings.end_time',
                 'bookings.notes as description',
-                'bookings.guests', // <-- Add this
+                'bookings.guests',
                 db.raw("'booked' as type")
             );
 
+        // Wait for both queries to finish
         const [manualEvents, bookings] = await Promise.all([manualEventsPromise, bookingsPromise]);
 
+        // Combine the two arrays and sort them by start time
         const allEvents = [...manualEvents, ...bookings].sort(
             (a, b) => new Date(a.start_time) - new Date(b.start_time)
         );
@@ -76,7 +79,7 @@ router.post('/manual', async (req, res) => {
             end_time,
             type,
             description,
-            guests: JSON.stringify(guests || []) // <-- Add this
+            guests: JSON.stringify(guests || [])
         };
 
         const [createdEvent] = await db('manual_events').insert(newEvent).returning('*');
@@ -117,7 +120,7 @@ router.put('/manual/:id', async (req, res) => {
             end_time,
             type,
             description,
-            guests: JSON.stringify(guests || []), // <-- Add this
+            guests: JSON.stringify(guests || []),
             updated_at: new Date()
         };
 

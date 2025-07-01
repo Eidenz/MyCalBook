@@ -9,6 +9,8 @@ import Register from './pages/Register';
 import Availability from './pages/Availability';
 import EventTypes from './pages/EventTypes';
 import BookingPage from './pages/BookingPage';
+import Settings from './pages/Settings';
+import UserProfilePage from './pages/UserProfilePage';
 
 // Common Components
 import PrivateRoute from './components/PrivateRoute';
@@ -24,6 +26,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/book/:slug" element={<BookingPage />} />
+            <Route path="/u/:username" element={<UserProfilePage />} />
             
             {/* Private Routes - wrapped in the AppLayout to get the header */}
             <Route element={<PrivateRoute />}>
@@ -31,6 +34,7 @@ function App() {
                 <Route path="/" element={<CalendarView />} />
                 <Route path="/availability" element={<Availability />} />
                 <Route path="/event-types" element={<EventTypes />} />
+                <Route path="/settings" element={<Settings />} />
               </Route>
             </Route>
           </Routes>

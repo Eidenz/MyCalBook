@@ -7,6 +7,7 @@ const eventsRouter = require('./routes/events.cjs');
 const availabilityRouter = require('./routes/availability.cjs');
 const eventTypesRouter = require('./routes/eventTypes.cjs');
 const publicRouter = require('./routes/public.cjs');
+const settingsRouter = require('./routes/settings.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -26,6 +27,7 @@ app.use('/api/events', eventsRouter);
 app.use('/api/availability', availabilityRouter);
 app.use('/api/event-types', eventTypesRouter);
 app.use('/api/public', publicRouter);
+app.use('/api/settings', settingsRouter);
 
 app.listen(PORT, () => {
     console.log(`🚀 Server is running on http://localhost:${PORT}`);

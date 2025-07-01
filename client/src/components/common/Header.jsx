@@ -23,6 +23,7 @@ const Header = () => {
                     <NavLink to="/" className={navLinkClasses} end>Calendar</NavLink>
                     <NavLink to="/availability" className={navLinkClasses}>Availability</NavLink>
                     <NavLink to="/event-types" className={navLinkClasses}>Event Types</NavLink>
+                    <NavLink to="/settings" className={navLinkClasses}>Settings</NavLink>
                 </nav>
             </div>
 

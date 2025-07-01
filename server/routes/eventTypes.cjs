@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
 
 // POST /api/event-types
 router.post('/', async (req, res) => {
-    const { title, location, schedule_id, description, durations, default_duration } = req.body;
+    const { title, location, schedule_id, description, durations, default_duration, is_public } = req.body;
     const userId = req.user.id;
 
     if (!title || !location || !schedule_id || !durations || !default_duration) {
@@ -51,6 +51,7 @@ router.post('/', async (req, res) => {
             description,
             durations: JSON.stringify(durations.map(d => parseInt(d, 10))),
             default_duration: parseInt(default_duration, 10),
+            is_public: typeof is_public === 'boolean' ? is_public : true,
             slug: generateSlug(title, userId)
         };
 
@@ -66,7 +67,7 @@ router.post('/', async (req, res) => {
 // PUT /api/event-types/:id
 router.put('/:id', async (req, res) => {
     const eventTypeId = parseInt(req.params.id, 10);
-    const { title, location, schedule_id, description, durations, default_duration } = req.body;
+    const { title, location, schedule_id, description, durations, default_duration, is_public } = req.body;
     const userId = req.user.id;
 
     if (!title || !location || !schedule_id || !durations || !default_duration) {
@@ -77,16 +78,20 @@ router.put('/:id', async (req, res) => {
     }
 
     try {
-        // Verify this event type belongs to the user before updating
         const existingEvent = await db('event_types').where({ id: eventTypeId, user_id: userId }).first();
         if (!existingEvent) {
             return res.status(404).json({ error: 'Event type not found.' });
         }
 
         const updatedEventTypeData = {
-            title, location, schedule_id, description,
+            title, 
+            location, 
+            schedule_id, 
+            description,
             durations: JSON.stringify(durations.map(d => parseInt(d, 10))),
             default_duration: parseInt(default_duration, 10),
+            // **THE FIX: The is_public field was missing here.**
+            is_public: typeof is_public === 'boolean' ? is_public : existingEvent.is_public,
             updated_at: new Date()
         };
         

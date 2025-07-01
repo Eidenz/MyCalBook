@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/knex.cjs');
+const emailService = require('../services/emailService.cjs');
 
 // --- Availability Calculation Logic ---
 
@@ -26,40 +27,37 @@ const getBlockedSlots = async (userId, startDate, endDate) => {
     }));
 };
 
-// Main public endpoint
-// GET /api/public/availability/:slug?date=YYYY-MM-DD&duration=60
+// GET /api/public/availability/:slug
 router.get('/availability/:slug', async (req, res) => {
     const { slug } = req.params;
-    // **THE FIX (Backend): Accept a duration query parameter**
-    const { date, duration: requestedDuration } = req.query; // The specific day the booker has selected
+    const { date, duration: requestedDuration } = req.query;
 
     if (!date) {
         return res.status(400).json({ error: 'A date query parameter is required.' });
     }
 
     try {
-        // 1. Find the event type and its owner (the user being booked)
-        const eventType = await db('event_types').where({ slug }).first();
+        const eventType = await db('event_types')
+            .join('users', 'event_types.user_id', 'users.id')
+            .where({ slug: req.params.slug })
+            .first(
+                'event_types.*', // Select all columns from event_types
+                'users.username as ownerUsername' // And get the owner's username
+            );
+
         if (!eventType) {
             return res.status(404).json({ error: 'This booking page does not exist.' });
         }
         
         const userId = eventType.user_id;
-
-        // 2. Get the user's availability rules for this event's schedule
         const availabilityRules = await db('availability_rules').where({ schedule_id: eventType.schedule_id });
-        
         const selectedDate = new Date(date);
         const dayOfWeek = selectedDate.getUTCDay();
         const rulesForDay = availabilityRules.filter(r => r.day_of_week === dayOfWeek);
-
         const dayStart = new Date(`${date}T00:00:00.000Z`);
         const dayEnd = new Date(`${date}T23:59:59.999Z`);
         const blockedSlots = await getBlockedSlots(userId, dayStart, dayEnd);
-
         const availableSlots = [];
-        // **THE FIX (Backend): Decide which durations to calculate for**
-        // If a specific duration is requested, use only that. Otherwise, use all from the event type.
         const durationsToCalc = requestedDuration 
             ? [parseInt(requestedDuration, 10)] 
             : JSON.parse(eventType.durations);
@@ -67,24 +65,16 @@ router.get('/availability/:slug', async (req, res) => {
         for (const rule of rulesForDay) {
             const [startH, startM] = rule.start_time.split(':').map(Number);
             const [endH, endM] = rule.end_time.split(':').map(Number);
-
             let slotStart = new Date(dayStart);
             slotStart.setUTCHours(startH, startM, 0, 0);
-
             const ruleEnd = new Date(dayStart);
             ruleEnd.setUTCHours(endH, endM, 0, 0);
 
             while (slotStart < ruleEnd) {
-                // **THE FIX (Backend): Use our new list of durations to check**
                 for (const duration of durationsToCalc) {
                     const slotEnd = new Date(slotStart.getTime() + duration * 60000);
-
                     if (slotEnd > ruleEnd) continue;
-
-                    const isBlocked = blockedSlots.some(blocked => 
-                        (slotStart < blocked.end && slotEnd > blocked.start)
-                    );
-
+                    const isBlocked = blockedSlots.some(blocked => (slotStart < blocked.end && slotEnd > blocked.start));
                     if (!isBlocked) {
                         availableSlots.push(slotStart.toISOString());
                     }
@@ -97,6 +87,8 @@ router.get('/availability/:slug', async (req, res) => {
         
         res.json({
             eventType: {
+                // **THE FIX: Pass the username to the frontend**
+                ownerUsername: eventType.ownerUsername,
                 title: eventType.title,
                 description: eventType.description,
                 location: eventType.location,
@@ -108,6 +100,33 @@ router.get('/availability/:slug', async (req, res) => {
 
     } catch (error) {
         console.error("Error calculating availability:", error);
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+
+// GET /api/public/user/:username
+router.get('/user/:username', async (req, res) => {
+    const { username } = req.params;
+    try {
+        const user = await db('users').where({ username }).first('id', 'username');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        const eventTypes = await db('event_types')
+            .where({ user_id: user.id, is_public: true })
+            .select('*') // Select all fields including description
+            .orderBy('title', 'asc');
+        
+        const publicEventTypes = eventTypes.map(et => ({
+            ...et,
+            durations: JSON.parse(et.durations)
+        }));
+
+        res.json({ user, eventTypes: publicEventTypes });
+
+    } catch (error) {
+        console.error("Error fetching user profile:", error);
         res.status(500).json({ error: "Internal server error." });
     }
 });
@@ -148,6 +167,7 @@ router.get('/availability/:slug/month', async (req, res) => {
     }
 });
 
+
 // POST /api/public/bookings
 router.post('/bookings', async (req, res) => {
     const { eventTypeSlug, startTime, duration, name, email, notes, guests } = req.body;
@@ -162,6 +182,12 @@ router.post('/bookings', async (req, res) => {
             return res.status(404).json({ error: 'The requested event type does not exist.' });
         }
         
+        // **Get the event owner's details for the notification email**
+        const owner = await db('users').where({ id: eventType.user_id }).first('id', 'username', 'email', 'email_notifications');
+        if (!owner) {
+             return res.status(500).json({ error: 'Could not find the event owner.' });
+        }
+
         const endTime = new Date(new Date(startTime).getTime() + duration * 60000);
 
         const newBooking = {
@@ -171,11 +197,38 @@ router.post('/bookings', async (req, res) => {
             booker_name: name,
             booker_email: email,
             notes: notes,
-            guests: JSON.stringify(guests || []) // Store the guests as a JSON string
+            guests: JSON.stringify(guests || [])
         };
 
         const [booking] = await db('bookings').insert(newBooking).returning('*');
         
+        // --- Send Emails ---
+        // We do this after the booking is confirmed in the database.
+        // We don't want the API to fail if the email sending fails, so we don't `await` it.
+        // This is a "fire-and-forget" operation.
+        const emailDetails = {
+            owner: { username: owner.username, email: owner.email },
+            eventType: { title: eventType.title, location: eventType.location },
+            booker_name: name,
+            booker_email: email,
+            startTime,
+            duration,
+            guests,
+        };
+
+        if (owner.email_notifications) {
+            emailService.sendBookingNotification({
+                owner: { username: owner.username, email: owner.email },
+                eventType: { title: eventType.title, location: eventType.location },
+                booker_name: name, booker_email: email, startTime, duration, guests,
+            });
+        }
+        
+        // Send to the booker, if they provided an email
+        if (email) {
+            emailService.sendBookingConfirmation(emailDetails);
+        }
+
         res.status(201).json({ message: 'Booking confirmed successfully!', booking });
 
     } catch (error) {

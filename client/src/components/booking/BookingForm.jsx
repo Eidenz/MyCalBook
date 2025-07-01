@@ -47,12 +47,12 @@ const BookingForm = ({ eventType, selectedTime, duration, onConfirmBooking, onCa
                 <input type="text" name="name" value={formData.name} onChange={handleChange} required className="w-full mt-1 bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
             </div>
             <div>
-                <label className="text-sm font-medium text-slate-300">Email (optional)</label>
+                <label className="text-sm font-medium text-slate-300">Email <em className="text-xs">(optional)</em></label>
                 <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full mt-1 bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
             </div>
             {/* --- NEW GUESTS FIELD --- */}
             <div>
-                <label className="text-sm font-medium text-slate-300">Guests</label>
+                <label className="text-sm font-medium text-slate-300">Guests <em className="text-xs">(optional)</em></label>
                 <div className="w-full mt-1 bg-slate-700 p-2 rounded-md border-2 border-slate-600 flex flex-wrap items-center gap-2">
                     {guests.map((guest) => (
                         <div key={guest} className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-600 text-sm">
@@ -74,7 +74,7 @@ const BookingForm = ({ eventType, selectedTime, duration, onConfirmBooking, onCa
                 <p className="text-xs text-slate-400 mt-1.5">Type a username and press Enter to add a guest.</p>
             </div>
              <div>
-                <label className="text-sm font-medium text-slate-300">Additional Notes</label>
+                <label className="text-sm font-medium text-slate-300">Additional Notes <em className="text-xs">(optional)</em></label>
                 <textarea name="notes" value={formData.notes} onChange={handleChange} rows="2" className="w-full mt-1 bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
             </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}

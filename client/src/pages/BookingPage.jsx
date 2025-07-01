@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { format, startOfToday } from 'date-fns';
 import { useCalendar } from '../hooks/useCalendar';
 import { Clock, MapPin, Calendar as CalendarIcon, ArrowLeft, Globe } from 'lucide-react';
@@ -29,6 +29,8 @@ const BookingPage = () => {
     const [isLoadingSlots, setIsLoadingSlots] = useState(false);
     const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
     const [error, setError] = useState('');
+
+    const [bookingDetails, setBookingDetails] = useState(null);
 
     const calendar = useCalendar(selectedDate);
 
@@ -103,6 +105,7 @@ const BookingPage = () => {
     };
     
     const handleConfirmBooking = async (bookingDetails) => {
+        setBookingDetails(details);
         try {
             const response = await fetch('/api/public/bookings', {
                 method: 'POST',
@@ -139,7 +142,14 @@ const BookingPage = () => {
             <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
                 <div className="text-center p-8 bg-slate-800 rounded-lg max-w-md">
                     <h1 className="text-2xl font-bold text-green-400">Booking Confirmed!</h1>
-                    <p className="text-slate-300 mt-2">A calendar invitation and confirmation has been sent to your email address.</p>
+                    <p className="text-slate-300 mt-2">
+                        {bookingDetails?.email
+                            ? 'A calendar invitation and confirmation has been sent to your email address.'
+                            : 'Your event is scheduled. Thank you!'}
+                    </p>
+                    <Link to={`/`} className="mt-6 inline-block w-full py-3 bg-indigo-600 rounded-lg font-semibold text-white hover:bg-indigo-700 transition">
+                        Done
+                    </Link>
                 </div>
             </div>
         );
@@ -157,7 +167,7 @@ const BookingPage = () => {
                             <ArrowLeft size={16} /> Back to time selection
                         </button>
                     )}
-                    <p className="text-slate-400">Eidenz</p>
+                    <p className="text-slate-400">{eventType?.ownerUsername}</p>
                     <h1 className="text-3xl font-bold text-white my-2">{eventType?.title}</h1>
                     <div className="space-y-2 text-slate-300 mt-4">
                         <div className="flex items-center gap-3"><Clock size={16}/><span>{selectedDuration || eventType?.default_duration} minutes</span></div>

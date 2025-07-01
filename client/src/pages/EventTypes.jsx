@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Clock, MapPin } from 'lucide-react';
+import { Plus, Clock, MapPin, Globe, Eye, EyeOff } from 'lucide-react';
 import EventTypeModal from '../components/eventtypes/EventTypeModal';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 
 const EventTypes = () => {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const [eventTypes, setEventTypes] = useState([]);
     const [schedules, setSchedules] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -13,20 +13,17 @@ const EventTypes = () => {
     const [editingEventType, setEditingEventType] = useState(null);
     const [deletingEventType, setDeletingEventType] = useState(null);
     
-    // Fetch both event types and available schedules
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                // In a real app, you might have a dedicated endpoint for schedules
                 // For now, we'll just re-use the availability one to get the default.
-                const schedRes = await fetch('/api/availability/rules', { headers: { 'x-auth-token': token } });
-                // This is a placeholder. We need a real schedule endpoint.
-                // Let's assume a default schedule exists for now.
                 // A proper implementation would fetch from a /api/schedules endpoint.
-                setSchedules([{ id: 1, name: 'Default' }]); // Placeholder until we build schedule management
+                // This is just a placeholder until we build schedule management.
+                setSchedules([{ id: 1, name: 'Default' }]);
 
                 const eventsRes = await fetch('/api/event-types', { headers: { 'x-auth-token': token } });
+                if (!eventsRes.ok) throw new Error("Failed to fetch event types.");
                 const eventsData = await eventsRes.json();
                 setEventTypes(eventsData);
 
@@ -50,9 +47,9 @@ const EventTypes = () => {
     };
 
     const handleSave = (savedEventType) => {
-        if (editingEventType) { // It was an update
+        if (editingEventType) {
             setEventTypes(prev => prev.map(et => et.id === savedEventType.id ? savedEventType : et));
-        } else { // It was a new creation
+        } else {
             setEventTypes(prev => [savedEventType, ...prev]);
         }
     };
@@ -89,14 +86,31 @@ const EventTypes = () => {
                     <Plus size={20}/> New Event Type
                 </button>
             </div>
+
+            {user && (
+                <div className="mb-6 bg-slate-800 border border-slate-700 rounded-lg p-4 flex items-center gap-4">
+                    <Globe className="text-indigo-400 flex-shrink-0" size={20}/>
+                    <div>
+                        <span className="text-slate-300">Your public booking page is live at:</span>
+                        <a href={`/u/${user.username}`} target="_blank" rel="noopener noreferrer" className="block font-mono text-indigo-400 hover:underline break-all">
+                            {window.location.origin}/u/{user.username}
+                        </a>
+                    </div>
+                </div>
+            )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {eventTypes.map(et => {
-                    // Durations are stored as a string, parse for display
                     const durations = typeof et.durations === 'string' ? JSON.parse(et.durations) : et.durations;
                     return (
                     <div key={et.id} className="bg-slate-800 rounded-lg shadow-lg p-5 flex flex-col border border-slate-700">
-                        <h2 className="text-xl font-bold text-white mb-3">{et.title}</h2>
+                        <div className="flex justify-between items-start gap-2">
+                           <h2 className="text-xl font-bold text-white mb-3 break-words">{et.title}</h2>
+                           <span className="flex-shrink-0 flex items-center gap-1.5 text-xs text-slate-400">
+                             {et.is_public ? <Eye size={14}/> : <EyeOff size={14}/>}
+                             {et.is_public ? 'Public' : 'Private'}
+                           </span>
+                        </div>
                         <div className="space-y-2 text-slate-400 flex-grow">
                             <div className="flex items-center gap-2"><Clock size={16}/><span>{durations.join(', ')} min</span></div>
                             <div className="flex items-center gap-2"><MapPin size={16}/><span>{et.location}</span></div>
