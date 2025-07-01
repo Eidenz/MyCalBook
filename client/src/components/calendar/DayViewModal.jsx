@@ -1,46 +1,45 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, Users } from 'lucide-react';
 import { format } from 'date-fns';
 
 const DayViewModal = ({ isOpen, onClose, day, events, onEventClick }) => {
     if (!isOpen) return null;
 
-    const EventRow = ({ event }) => (
-        <div 
-            className="flex items-center p-3 -mx-3 rounded-lg hover:bg-slate-700 cursor-pointer transition-colors"
-            onClick={() => {
-                onEventClick(event);
-                onClose(); // Close day view to open event editor
-            }}
-        >
-            <div className={`w-2 h-2 rounded-full mr-4 ${event.type === 'personal' ? 'bg-amber-500' : 'bg-red-500'}`}></div>
-            <div className="flex-grow">
-                <p className="font-semibold text-white">{event.title}</p>
-                <p className="text-sm text-slate-400">
-                    {format(new Date(event.start_time), 'HH:mm')} - {format(new Date(event.end_time), 'HH:mm')}
-                </p>
+    const EventRow = ({ event }) => {
+        const guests = event.guests ? JSON.parse(event.guests) : [];
+
+        return (
+            <div 
+                className="flex items-start p-3 -mx-3 rounded-lg hover:bg-slate-700 cursor-pointer transition-colors"
+                onClick={() => {
+                    onEventClick(event);
+                    onClose();
+                }}
+            >
+                <div className={`w-2 h-2 rounded-full mr-4 mt-2 ${event.type === 'personal' ? 'bg-amber-500' : event.type === 'booked' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <div className="flex-grow">
+                    <p className="font-semibold text-white">{event.title}</p>
+                    <p className="text-sm text-slate-400">
+                        {format(new Date(event.start_time), 'HH:mm')} - {format(new Date(event.end_time), 'HH:mm')}
+                    </p>
+                    {guests.length > 0 && (
+                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
+                            <Users size={14} />
+                            <span>{guests.join(', ')}</span>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     return (
-        <div 
-            className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50"
-            onClick={onClose}
-        >
-            <div 
-                className="bg-slate-800 text-white rounded-xl shadow-2xl w-full max-w-md p-6 mx-4"
-                onClick={e => e.stopPropagation()}
-            >
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
+            <div className="bg-slate-800 text-white rounded-xl shadow-2xl w-full max-w-md p-6 mx-4" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold">
-                        Events for {format(day, 'MMMM d, yyyy')}
-                    </h2>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-700">
-                        <X size={24} />
-                    </button>
+                    <h2 className="text-xl font-bold">Events for {format(day, 'MMMM d, yyyy')}</h2>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-700"><X size={24} /></button>
                 </div>
-                
                 <div className="space-y-1">
                     {events.length > 0 ? (
                         events.map(event => <EventRow key={event.id} event={event} />)

@@ -150,7 +150,7 @@ router.get('/availability/:slug/month', async (req, res) => {
 
 // POST /api/public/bookings
 router.post('/bookings', async (req, res) => {
-    const { eventTypeSlug, startTime, duration, name, email, notes } = req.body;
+    const { eventTypeSlug, startTime, duration, name, email, notes, guests } = req.body;
 
     if (!eventTypeSlug || !startTime || !duration || !name) {
         return res.status(400).json({ error: 'Missing required booking information.' });
@@ -170,7 +170,8 @@ router.post('/bookings', async (req, res) => {
             end_time: endTime.toISOString(),
             booker_name: name,
             booker_email: email,
-            notes: notes
+            notes: notes,
+            guests: JSON.stringify(guests || []) // Store the guests as a JSON string
         };
 
         const [booking] = await db('bookings').insert(newBooking).returning('*');

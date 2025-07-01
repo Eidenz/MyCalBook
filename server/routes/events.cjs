@@ -27,7 +27,6 @@ router.get('/manual', async (req, res) => {
             .where('start_time', '<=', endOfMonth);
 
         // Promise to fetch confirmed bookings
-        // We join to get the event type info and format the data to match the manual events structure
         const bookingsPromise = db('bookings')
             .join('event_types', 'bookings.event_type_id', 'event_types.id')
             .where('event_types.user_id', userId)
@@ -35,19 +34,16 @@ router.get('/manual', async (req, res) => {
             .where('bookings.start_time', '<=', endOfMonth)
             .select(
                 'bookings.id',
-                // Create a title like "30-min Cuddle with Eidenz"
                 db.raw("event_types.title || ' with ' || bookings.booker_name as title"),
                 'bookings.start_time',
                 'bookings.end_time',
                 'bookings.notes as description',
-                // Add a 'booked' type so the frontend can color it correctly
+                'bookings.guests', // <-- Add this
                 db.raw("'booked' as type")
             );
 
-        // Wait for both queries to finish
         const [manualEvents, bookings] = await Promise.all([manualEventsPromise, bookingsPromise]);
 
-        // Combine the two arrays and sort them by start time
         const allEvents = [...manualEvents, ...bookings].sort(
             (a, b) => new Date(a.start_time) - new Date(b.start_time)
         );
@@ -61,9 +57,8 @@ router.get('/manual', async (req, res) => {
 
 // POST /api/events/manual
 router.post('/manual', async (req, res) => {
-    // Get the user ID from the middleware
     const userId = req.user.id; 
-    const { title, start_time, end_time, type, description } = req.body;
+    const { title, start_time, end_time, type, description, guests } = req.body;
 
     if (!title || !start_time || !end_time || !type) {
         return res.status(400).json({ error: 'Missing required fields: title, start_time, end_time, type' });
@@ -80,7 +75,8 @@ router.post('/manual', async (req, res) => {
             start_time,
             end_time,
             type,
-            description
+            description,
+            guests: JSON.stringify(guests || []) // <-- Add this
         };
 
         const [createdEvent] = await db('manual_events').insert(newEvent).returning('*');
@@ -93,17 +89,15 @@ router.post('/manual', async (req, res) => {
 });
 
 // PUT /api/events/manual/:id
-// Updates a specific manual event.
 router.put('/manual/:id', async (req, res) => {
     const userId = req.user.id;
     const eventId = parseInt(req.params.id, 10);
-    const { title, start_time, end_time, type, description } = req.body;
+    const { title, start_time, end_time, type, description, guests } = req.body;
 
     if (isNaN(eventId)) {
         return res.status(400).json({ error: 'Invalid event ID.' });
     }
     
-    // Basic validation
     if (!title || !start_time || !end_time || !type) {
         return res.status(400).json({ error: 'Missing required fields: title, start_time, end_time, type' });
     }
@@ -112,7 +106,6 @@ router.put('/manual/:id', async (req, res) => {
     }
 
     try {
-        // First, verify the event exists and belongs to the user
         const event = await db('manual_events').where({ id: eventId, user_id: userId }).first();
         if (!event) {
             return res.status(404).json({ error: 'Event not found or you do not have permission to edit it.' });
@@ -124,10 +117,10 @@ router.put('/manual/:id', async (req, res) => {
             end_time,
             type,
             description,
+            guests: JSON.stringify(guests || []), // <-- Add this
             updated_at: new Date()
         };
 
-        // Update the event and return the updated record
         const [updatedEvent] = await db('manual_events')
             .where({ id: eventId })
             .update(updatedEventData)
@@ -142,7 +135,6 @@ router.put('/manual/:id', async (req, res) => {
 });
 
 // DELETE /api/events/manual/:id
-// Deletes a specific manual event.
 router.delete('/manual/:id', async (req, res) => {
     const userId = req.user.id;
     const eventId = parseInt(req.params.id, 10);
@@ -152,16 +144,12 @@ router.delete('/manual/:id', async (req, res) => {
     }
 
     try {
-        // Find the event first to ensure it belongs to the authenticated user.
         const event = await db('manual_events').where({ id: eventId, user_id: userId }).first();
 
         if (!event) {
-            // Use 404 Not Found if the event doesn't exist or doesn't belong to the user.
-            // This prevents leaking information about which event IDs exist.
             return res.status(404).json({ error: 'Event not found or you do not have permission to delete it.' });
         }
 
-        // If the event exists and belongs to the user, delete it.
         await db('manual_events').where({ id: eventId }).del();
 
         res.json({ message: 'Event deleted successfully.' });

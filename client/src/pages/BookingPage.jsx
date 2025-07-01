@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { format, startOfToday } from 'date-fns';
 import { useCalendar } from '../hooks/useCalendar';
-import { Clock, MapPin, Calendar as CalendarIcon, ArrowLeft } from 'lucide-react';
+import { Clock, MapPin, Calendar as CalendarIcon, ArrowLeft, Globe } from 'lucide-react';
 
 import CalendarSelector from '../components/booking/CalendarSelector';
 import TimeSlotPicker from '../components/booking/TimeSlotPicker';
@@ -21,6 +21,8 @@ const BookingPage = () => {
     const [selectedDuration, setSelectedDuration] = useState(null);
     const [selectedTime, setSelectedTime] = useState(null);
      const [bookingInterval, setBookingInterval] = useState(15);
+    // **THE FIX: Get the user's timezone**
+    const [userTimezone, setUserTimezone] = useState('');
 
     // State for UI control
     const [isLoading, setIsLoading] = useState(true);
@@ -80,6 +82,12 @@ const BookingPage = () => {
     useEffect(() => {
         fetchDailySlots();
     }, [fetchDailySlots]);
+
+    // **THE FIX: Set the timezone on component mount**
+    useEffect(() => {
+        // Intl.DateTimeFormat().resolvedOptions().timeZone provides the IANA time zone name (e.g., "America/New_York")
+        setUserTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    }, []);
 
 
     // --- Handlers ---
@@ -212,6 +220,13 @@ const BookingPage = () => {
                                 selectedDate={selectedDate}
                                 availableDays={monthlyAvailability}
                              />
+                             {/* **THE FIX: Display the timezone** */}
+                             <div className="mt-4 text-center">
+                                <div className="inline-flex items-center gap-2 text-xs text-slate-400 bg-slate-900/50 px-3 py-1.5 rounded-full">
+                                    <Globe size={14}/>
+                                    <span>Timezone: {userTimezone.replace(/_/g, ' ')}</span>
+                                </div>
+                             </div>
                         </div>
 
                         {/* Right Pane: Time Slots */}

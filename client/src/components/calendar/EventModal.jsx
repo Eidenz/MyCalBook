@@ -18,6 +18,8 @@ const EventModal = ({ isOpen, onClose, onEventCreated, onEventUpdated, onEventDe
                 startTime: startDate.toTimeString().substring(0, 5),
                 endDate: endDate.toISOString().split('T')[0],
                 endTime: endDate.toTimeString().substring(0, 5),
+                // Handle guests
+                guests: selectedEvent.guests ? JSON.parse(selectedEvent.guests) : [],
             };
         }
         const today = new Date().toISOString().split('T')[0];
@@ -25,17 +27,38 @@ const EventModal = ({ isOpen, onClose, onEventCreated, onEventUpdated, onEventDe
             title: '', type: 'personal', description: '',
             date: today, startTime: '10:00',
             endDate: today, endTime: '11:00',
+            guests: [], // Start with no guests
         };
     };
     
     const [formData, setFormData] = useState(getInitialState());
+    const [guestInput, setGuestInput] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         setFormData(getInitialState());
         setError('');
+        setGuestInput('');
     }, [isOpen, selectedEvent]);
+
+    const handleGuestKeyDown = (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            const newGuest = guestInput.trim();
+            if (newGuest && !formData.guests.includes(newGuest)) {
+                setFormData(prev => ({...prev, guests: [...prev.guests, newGuest]}));
+            }
+            setGuestInput('');
+        }
+    };
+
+    const removeGuest = (guestToRemove) => {
+        setFormData(prev => ({
+            ...prev,
+            guests: prev.guests.filter(g => g !== guestToRemove)
+        }));
+    };
 
     const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -50,6 +73,7 @@ const EventModal = ({ isOpen, onClose, onEventCreated, onEventUpdated, onEventDe
         const payload = {
             title: formData.title, type: formData.type, description: formData.description,
             start_time: startDateTimeUTC, end_time: endDateTimeUTC,
+            guests: formData.guests,
         };
 
         const url = isEditMode ? `/api/events/manual/${selectedEvent.id}` : '/api/events/manual';
@@ -68,14 +92,7 @@ const EventModal = ({ isOpen, onClose, onEventCreated, onEventUpdated, onEventDe
             }
 
             const resultEvent = await response.json();
-            
-            if (isEditMode) {
-                onEventUpdated(resultEvent);
-            } else {
-                onEventCreated(resultEvent);
-            }
-            
-            // **BUG FIX:** Close the modal on success for both create and edit.
+            if (isEditMode) { onEventUpdated(resultEvent); } else { onEventCreated(resultEvent); }
             onClose(); 
 
         } catch (err) {
@@ -85,31 +102,20 @@ const EventModal = ({ isOpen, onClose, onEventCreated, onEventUpdated, onEventDe
         }
     };
     
-    // handleDelete is unchanged from before
     const handleDelete = async () => {
         if (!isEditMode) return;
-        
         setIsSubmitting(true);
         setError('');
         try {
-            const response = await fetch(`/api/events/manual/${selectedEvent.id}`, {
-                method: 'DELETE',
-                headers: { 'x-auth-token': token }
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error || 'Failed to delete event.');
-            }
+            await fetch(`/api/events/manual/${selectedEvent.id}`, { method: 'DELETE', headers: { 'x-auth-token': token } });
             onEventDeleted(selectedEvent.id);
-            onClose(); // Close the main event modal after successful deletion
+            onClose();
         } catch (err) {
             setError(err.message);
         } finally {
             setIsSubmitting(false);
         }
     };
-
 
     if (!isOpen) return null;
 
@@ -120,105 +126,48 @@ const EventModal = ({ isOpen, onClose, onEventCreated, onEventUpdated, onEventDe
                     <h2 className="text-xl font-bold">{isEditMode ? 'Edit Event' : 'Add New Event'}</h2>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-700"><X size={24} /></button>
                 </div>
-                
-                <form onSubmit={handleSubmit}>
-                    <div className="space-y-4">
-                        {/* The form fields are identical, they just get pre-filled in edit mode */}
-                        <div className="form-group">
-                            <label className="block text-sm font-semibold mb-2 text-slate-300">Event Title *</label>
-                            <input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full bg-slate-700 border-2 border-slate-600 rounded-lg p-2.5 focus:border-indigo-500 focus:outline-none transition" />
-                        </div>
-                        <div className="form-group">
-                            <label className="block text-sm font-semibold mb-2 text-slate-300">Event Type *</label>
-                            <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-slate-700 border-2 border-slate-600 rounded-lg p-2.5 focus:border-indigo-500 focus:outline-none transition">
-                                <option value="personal">Personal Event</option>
-                                <option value="blocked">Blocked Time</option>
-                            </select>
-                        </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full bg-slate-700 border-2 border-slate-600 rounded-lg p-2.5 focus:border-indigo-500 focus:outline-none transition" placeholder="Event Title *"/>
+                    <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-slate-700 border-2 border-slate-600 rounded-lg p-2.5 focus:border-indigo-500 focus:outline-none transition">
+                        <option value="personal">Personal Event</option>
+                        <option value="blocked">Blocked Time</option>
+                    </select>
 
-                        {/* --- Date/Time Section --- */}
-                        <div className="grid grid-cols-1 gap-4">
-                            <div className="form-group">
-                                <label className="block text-sm font-semibold mb-1 text-slate-300">Start</label>
-                                <div className="flex items-center gap-2">
-                                    <input 
-                                        type="date" 
-                                        name="date" 
-                                        value={formData.date} 
-                                        onChange={handleChange} required 
-                                        className="w-full bg-slate-700 border-2 border-slate-600 rounded-lg p-2.5 focus:border-indigo-500 focus:outline-none transition" />
-                                    <input 
-                                        type="time" 
-                                        name="startTime" 
-                                        value={formData.startTime} 
-                                        onChange={handleChange} required 
-                                        className="w-full bg-slate-700 border-2 border-slate-600 rounded-lg p-2.5 focus:border-indigo-500 focus:outline-none transition" />
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label className="block text-sm font-semibold mb-1 text-slate-300">End</label>
-                                <div className="flex items-center gap-2">
-                                    <input 
-                                        type="date" 
-                                        name="endDate" 
-                                        value={formData.endDate} 
-                                        onChange={handleChange} required 
-                                        className="w-full bg-slate-700 border-2 border-slate-600 rounded-lg p-2.5 focus:border-indigo-500 focus:outline-none transition" />
-                                    <input 
-                                        type="time" 
-                                        name="endTime" 
-                                        value={formData.endTime} 
-                                        onChange={handleChange} required 
-                                        className="w-full bg-slate-700 border-2 border-slate-600 rounded-lg p-2.5 focus:border-indigo-500 focus:outline-none transition" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* --- Description Field --- */}
-                        <div className="form-group">
-                            <label className="block text-sm font-semibold mb-2 text-slate-300">Description</label>
-                            <textarea name="description" value={formData.description} onChange={handleChange} rows="3"
-                                className="w-full bg-slate-700 border-2 border-slate-600 rounded-lg p-2.5 focus:border-indigo-500 focus:outline-none transition"
-                                placeholder="Add notes or details..."/>
-                        </div>
-
-                        {error && <div className="text-red-400 text-sm bg-red-900/50 p-3 rounded-lg">{error}</div>}
+                    <div className="grid grid-cols-2 gap-4">
+                        <input type="date" name="date" value={formData.date} onChange={handleChange} required className="bg-slate-700 border-2 border-slate-600 rounded-lg p-2.5 focus:border-indigo-500 focus:outline-none transition" />
+                        <input type="time" name="startTime" value={formData.startTime} onChange={handleChange} required className="bg-slate-700 border-2 border-slate-600 rounded-lg p-2.5 focus:border-indigo-500 focus:outline-none transition" />
+                        <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required className="bg-slate-700 border-2 border-slate-600 rounded-lg p-2.5 focus:border-indigo-500 focus:outline-none transition" />
+                        <input type="time" name="endTime" value={formData.endTime} onChange={handleChange} required className="bg-slate-700 border-2 border-slate-600 rounded-lg p-2.5 focus:border-indigo-500 focus:outline-none transition" />
                     </div>
 
-                    <div className="mt-6 flex justify-between items-center">
-                        <div>
-                            {isEditMode && (
-                                <button
-                                    type="button"
-                                    onClick={() => setIsConfirmModalOpen(true)} 
-                                    disabled={isSubmitting} 
-                                    className="px-6 py-2.5 bg-red-800 text-white rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50"
-                                >
-                                    Delete
-                                </button>
-                            )}
+                    {/* --- GUESTS FIELD --- */}
+                    <div>
+                        <div className="w-full bg-slate-700 p-2 rounded-lg border-2 border-slate-600 flex flex-wrap items-center gap-2">
+                            {formData.guests.map((guest) => (
+                                <div key={guest} className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-600 text-sm">
+                                    <span>{guest}</span>
+                                    <button type="button" onClick={() => removeGuest(guest)} className="rounded-full hover:bg-black/20"><X size={14} /></button>
+                                </div>
+                            ))}
+                            <input type="text" value={guestInput} onChange={(e) => setGuestInput(e.target.value)} onKeyDown={handleGuestKeyDown} placeholder="Add guests..." className="bg-transparent outline-none p-1 text-sm flex-grow min-w-[100px]" />
                         </div>
-                        <div className="flex gap-3">
-                            <button type="button" onClick={onClose} className="px-6 py-2.5 bg-slate-600 rounded-lg font-semibold hover:bg-slate-500 transition">
-                                Close
-                            </button>
-                            <button type="submit" disabled={isSubmitting} className="px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                                {isSubmitting ? '...' : (isEditMode ? 'Save Changes' : 'Create Event')}
+                    </div>
+
+                    <textarea name="description" value={formData.description} onChange={handleChange} rows="3" className="w-full bg-slate-700 border-2 border-slate-600 rounded-lg p-2.5 focus:border-indigo-500 focus:outline-none transition" placeholder="Add notes or details..."/>
+                    {error && <div className="text-red-400 text-sm bg-red-900/50 p-3 rounded-lg">{error}</div>}
+
+                    <div className="mt-6 flex justify-between items-center">
+                        {isEditMode && <button type="button" onClick={() => setIsConfirmModalOpen(true)} disabled={isSubmitting} className="px-6 py-2.5 bg-red-800 text-white rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50">Delete</button>}
+                        <div className="flex-grow flex justify-end gap-3">
+                            <button type="button" onClick={onClose} className="px-6 py-2.5 bg-slate-600 rounded-lg font-semibold hover:bg-slate-500 transition">Close</button>
+                            <button type="submit" disabled={isSubmitting} className="px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-50">
+                                {isSubmitting ? '...' : (isEditMode ? 'Save' : 'Create')}
                             </button>
                         </div>
                     </div>
                 </form>
             </div>
-
-            <ConfirmationModal
-                isOpen={isConfirmModalOpen}
-                onClose={() => setIsConfirmModalOpen(false)}
-                onConfirm={handleDelete}
-                title="Delete Event"
-                message={`Are you sure you want to permanently delete "${selectedEvent?.title}"? This action cannot be undone.`}
-                confirmText="Delete"
-                isDestructive={true}
-            />
+            <ConfirmationModal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)} onConfirm={handleDelete} title="Delete Event" message={`Are you sure you want to permanently delete "${selectedEvent?.title}"?`} />
         </div>
     );
 };
