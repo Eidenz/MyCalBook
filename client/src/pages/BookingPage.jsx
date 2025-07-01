@@ -105,7 +105,7 @@ const BookingPage = () => {
     };
     
     const handleConfirmBooking = async (bookingDetails) => {
-        setBookingDetails(details);
+        setBookingDetails(bookingDetails);
         try {
             const response = await fetch('/api/public/bookings', {
                 method: 'POST',
