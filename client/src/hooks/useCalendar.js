@@ -33,6 +33,7 @@ export const useCalendar = (initialDate = new Date()) => {
         nextMonth,
         prevMonth,
         goToToday,
+        setCurrentMonth: (date) => setCurrentMonth(startOfMonth(date)),
         monthName: format(currentMonth, 'MMMM yyyy'),
     };
 };

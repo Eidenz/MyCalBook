@@ -83,28 +83,19 @@ const CalendarView = () => {
     const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     return (
-        <div className="flex flex-col h-screen p-6">
-            {/* Header */}
+        <div className="flex flex-col h-[calc(100vh-65px)] p-6">
+            {/* Page-specific header (Add Event button, etc.) */}
             <header className="flex justify-between items-center pb-4">
-                 <div className="flex items-center gap-4">
-                    <h1 className="text-xl font-bold">📅 MyCalendar</h1>
-                    <div className="flex items-center gap-2">
-                        <button onClick={prevMonth} className="p-2 rounded-md hover:bg-slate-700 transition-colors">
-                            <ChevronLeft size={20} />
-                        </button>
-                        <span className="text-lg font-semibold w-36 text-center">{monthName}</span>
-                        <button onClick={nextMonth} className="p-2 rounded-md hover:bg-slate-700 transition-colors">
-                            <ChevronRight size={20} />
-                        </button>
-                    </div>
-                </div>
-                <div className="flex items-center gap-4">
-                    <span className="text-slate-300">Welcome, {user?.username}</span>
-                    <button 
-                        onClick={logout}
-                        className="flex items-center gap-2 bg-slate-700 text-slate-300 font-semibold px-3 py-2 rounded-lg hover:bg-red-500 hover:text-white transition-colors">
-                        <LogOut size={18} />
+                <div className="flex items-center gap-2">
+                    <button onClick={prevMonth} className="p-2 rounded-md hover:bg-slate-700 transition-colors">
+                        <ChevronLeft size={20} />
                     </button>
+                    <span className="text-lg font-semibold w-36 text-center">{monthName}</span>
+                    <button onClick={nextMonth} className="p-2 rounded-md hover:bg-slate-700 transition-colors">
+                        <ChevronRight size={20} />
+                    </button>
+                </div>
+                <div className="flex items-center gap-3">
                     <button 
                         onClick={() => handleOpenModal(null)}
                         className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
