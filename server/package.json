@@ -1,0 +1,25 @@
+{
+  "name": "mycalbook-server",
+  "version": "1.0.0",
+  "main": "index.cjs",
+  "scripts": {
+    "dev": "nodemon index.cjs",
+    "start": "node index.cjs",
+    "db:migrate": "knex migrate:latest --knexfile knexfile.cjs",
+    "db:seed": "knex seed:run --knexfile knexfile.cjs"
+  },
+  "keywords": [],
+  "author": "Eidenz",
+  "license": "MIT",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0",
+    "knex": "^3.1.0",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
