@@ -1,14 +1,13 @@
 #!/bin/sh
 set -e
 
-echo "Running database migrations..."
+echo "Running database migrations for production environment..."
 
-# Explicitly use the 'docker' environment we created in the knexfile.
-# This configuration has hardcoded paths and no dependencies on shell environment variables.
-knex migrate:latest --knexfile /app/server/knexfile.cjs --env docker
+# Explicitly use the 'production' environment.
+npm --prefix server run knex migrate:latest -- --env production
 
 echo "Migrations complete. Starting server..."
 
 # This remains the same. The running Node.js app will correctly pick up the
-# environment variables from docker-compose for its own database connection.
+# 'production' environment because of NODE_ENV in docker-compose.
 exec "$@"

@@ -4,10 +4,11 @@
  * @type { Object.<string, import("knex").Knex.Config> }
  */
 module.exports = {
+  // This is used for local development (`npm run dev`)
   development: {
     client: 'sqlite3',
     connection: {
-      filename: './mycalbook.sqlite3'
+      filename: './mycalbook.sqlite3' // Relative path for local dev
     },
     useNullAsDefault: true,
     migrations: {
@@ -18,32 +19,13 @@ module.exports = {
     }
   },
 
-  // This configuration is ONLY for the docker-entrypoint.sh script.
-  // It uses absolute paths and removes all ambiguity.
-  docker: {
-    client: 'sqlite3',
-    connection: {
-      // Hardcode the path exactly as it is inside the container.
-      filename: '/app/server/database/mycalbook.sqlite3'
-    },
-    useNullAsDefault: true,
-    pool: {
-      afterCreate: (conn, done) => {
-        conn.run('PRAGMA foreign_keys = ON', done);
-      }
-    },
-    migrations: {
-      // Use an absolute path here as well.
-      directory: '/app/server/db/migrations'
-    }
-  },
-
-  // This is what the running application will use.
-  // It correctly reads from the environment variables set by docker-compose.
+  // This is the single configuration for the Docker environment
   production: {
     client: 'sqlite3',
     connection: {
-      filename: process.env.DATABASE_URL
+      // The absolute path to the database file INSIDE the container.
+      // This path is mapped to a host directory by the volume in docker-compose.
+      filename: '/app/server/database/mycalbook.sqlite3'
     },
     useNullAsDefault: true,
     pool: {
