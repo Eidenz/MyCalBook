@@ -26,6 +26,9 @@ FROM node:22-alpine AS production
 
 WORKDIR /app
 
+# Install Knex globally within the image so the entrypoint script can use it.
+RUN npm install -g knex
+
 # Copy server package files
 COPY server/package*.json ./server/
 
