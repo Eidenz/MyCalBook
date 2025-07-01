@@ -7,8 +7,7 @@ router.use(authMiddleware);
 
 // GET /api/events/manual?month=YYYY-MM
 router.get('/manual', async (req, res) => {
-    // Get the user ID from the decoded JWT payload (attached by the middleware)
-    const userId = req.user.id; 
+    const userId = req.user.id;
     const { month } = req.query;
 
     if (!month || !/^\d{4}-\d{2}$/.test(month)) {
@@ -21,15 +20,41 @@ router.get('/manual', async (req, res) => {
         const endDate = new Date(year, monthNum, 0);
         const endOfMonth = `${month}-${endDate.getDate()}T23:59:59`;
 
-        const events = await db('manual_events')
+        // Promise to fetch manual events (personal, blocked)
+        const manualEventsPromise = db('manual_events')
             .where({ user_id: userId })
             .where('start_time', '>=', startDate)
-            .where('start_time', '<=', endOfMonth)
-            .orderBy('start_time', 'asc');
+            .where('start_time', '<=', endOfMonth);
+
+        // Promise to fetch confirmed bookings
+        // We join to get the event type info and format the data to match the manual events structure
+        const bookingsPromise = db('bookings')
+            .join('event_types', 'bookings.event_type_id', 'event_types.id')
+            .where('event_types.user_id', userId)
+            .where('bookings.start_time', '>=', startDate)
+            .where('bookings.start_time', '<=', endOfMonth)
+            .select(
+                'bookings.id',
+                // Create a title like "30-min Cuddle with Eidenz"
+                db.raw("event_types.title || ' with ' || bookings.booker_name as title"),
+                'bookings.start_time',
+                'bookings.end_time',
+                'bookings.notes as description',
+                // Add a 'booked' type so the frontend can color it correctly
+                db.raw("'booked' as type")
+            );
+
+        // Wait for both queries to finish
+        const [manualEvents, bookings] = await Promise.all([manualEventsPromise, bookingsPromise]);
+
+        // Combine the two arrays and sort them by start time
+        const allEvents = [...manualEvents, ...bookings].sort(
+            (a, b) => new Date(a.start_time) - new Date(b.start_time)
+        );
             
-        res.json(events);
+        res.json(allEvents);
     } catch (error) {
-        console.error('Error fetching manual events:', error);
+        console.error('Error fetching all events:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

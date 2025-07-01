@@ -3,7 +3,6 @@ const router = express.Router();
 const db = require('../db/knex.cjs');
 
 // --- Availability Calculation Logic ---
-// This is complex, so we'll break it down.
 
 // Function to get all blocked-off times for a user in a given period.
 // This includes their manual 'blocked' events and already confirmed bookings.
@@ -28,10 +27,11 @@ const getBlockedSlots = async (userId, startDate, endDate) => {
 };
 
 // Main public endpoint
-// GET /api/public/availability/:slug?date=YYYY-MM-DD
+// GET /api/public/availability/:slug?date=YYYY-MM-DD&duration=60
 router.get('/availability/:slug', async (req, res) => {
     const { slug } = req.params;
-    const { date } = req.query; // The specific day the booker has selected
+    // **THE FIX (Backend): Accept a duration query parameter**
+    const { date, duration: requestedDuration } = req.query; // The specific day the booker has selected
 
     if (!date) {
         return res.status(400).json({ error: 'A date query parameter is required.' });
@@ -44,25 +44,25 @@ router.get('/availability/:slug', async (req, res) => {
             return res.status(404).json({ error: 'This booking page does not exist.' });
         }
         
-        // The event owner's ID
         const userId = eventType.user_id;
 
         // 2. Get the user's availability rules for this event's schedule
         const availabilityRules = await db('availability_rules').where({ schedule_id: eventType.schedule_id });
         
-        // 3. Find the rules for the selected day of the week
         const selectedDate = new Date(date);
-        const dayOfWeek = selectedDate.getUTCDay(); // 0 for Sunday, 1 for Monday...
+        const dayOfWeek = selectedDate.getUTCDay();
         const rulesForDay = availabilityRules.filter(r => r.day_of_week === dayOfWeek);
 
-        // 4. Get all appointments/blocks for that user for the selected day
         const dayStart = new Date(`${date}T00:00:00.000Z`);
         const dayEnd = new Date(`${date}T23:59:59.999Z`);
         const blockedSlots = await getBlockedSlots(userId, dayStart, dayEnd);
 
-        // 5. Generate potential time slots
         const availableSlots = [];
-        const meetingDurations = JSON.parse(eventType.durations); // e.g., [30, 60]
+        // **THE FIX (Backend): Decide which durations to calculate for**
+        // If a specific duration is requested, use only that. Otherwise, use all from the event type.
+        const durationsToCalc = requestedDuration 
+            ? [parseInt(requestedDuration, 10)] 
+            : JSON.parse(eventType.durations);
 
         for (const rule of rulesForDay) {
             const [startH, startM] = rule.start_time.split(':').map(Number);
@@ -74,34 +74,27 @@ router.get('/availability/:slug', async (req, res) => {
             const ruleEnd = new Date(dayStart);
             ruleEnd.setUTCHours(endH, endM, 0, 0);
 
-            // Iterate in 15-minute increments (or your desired precision)
             while (slotStart < ruleEnd) {
-                // For each potential start time, check against all desired durations
-                for (const duration of meetingDurations) {
+                // **THE FIX (Backend): Use our new list of durations to check**
+                for (const duration of durationsToCalc) {
                     const slotEnd = new Date(slotStart.getTime() + duration * 60000);
 
-                    if (slotEnd > ruleEnd) continue; // Slot extends beyond the availability rule
+                    if (slotEnd > ruleEnd) continue;
 
-                    // Check for conflicts with blocked slots
                     const isBlocked = blockedSlots.some(blocked => 
                         (slotStart < blocked.end && slotEnd > blocked.start)
                     );
 
                     if (!isBlocked) {
-                        // This slot is available for this duration
-                        // We push the start time; the frontend will know the duration
                         availableSlots.push(slotStart.toISOString());
                     }
                 }
-                 // Move to the next potential start time
                 slotStart.setMinutes(slotStart.getMinutes() + 15);
             }
         }
         
-        // Remove duplicates and sort
         const uniqueSlots = [...new Set(availableSlots)].sort();
         
-        // 6. Return all data needed by the booking page
         res.json({
             eventType: {
                 title: eventType.title,
@@ -129,9 +122,6 @@ router.get('/availability/:slug/month', async (req, res) => {
     try {
         const eventType = await db('event_types').where({ slug }).first();
         if (!eventType) return res.status(404).json({ error: 'Event type not found.' });
-
-        // This is a simplified calculation. A production system might cache this.
-        // It checks every day of the month for potential availability.
         
         const [year, monthNum] = month.split('-').map(Number);
         const daysInMonth = new Date(year, monthNum, 0).getDate();
@@ -145,15 +135,14 @@ router.get('/availability/:slug/month', async (req, res) => {
             const rulesForDay = availabilityRules.filter(r => r.day_of_week === dayOfWeek);
 
             if (rulesForDay.length > 0) {
-                // For simplicity, if a rule exists for that day of the week, we mark it as potentially available.
-                // A more advanced check would also look at blocked slots for that day.
                 availableDays.add(day);
             }
         }
         
         res.json({ availableDays: Array.from(availableDays) });
 
-    } catch (error) {
+    } catch (error)
+    {
         console.error("Error fetching monthly availability:", error);
         res.status(500).json({ error: "Internal server error." });
     }
@@ -173,10 +162,6 @@ router.post('/bookings', async (req, res) => {
             return res.status(404).json({ error: 'The requested event type does not exist.' });
         }
         
-        // **Critical**: Re-verify that the chosen slot is still available before booking.
-        // This prevents double-bookings if two people are on the page at once.
-        // (We can build this advanced check later. For now, we'll trust the frontend.)
-
         const endTime = new Date(new Date(startTime).getTime() + duration * 60000);
 
         const newBooking = {
@@ -190,8 +175,6 @@ router.post('/bookings', async (req, res) => {
 
         const [booking] = await db('bookings').insert(newBooking).returning('*');
         
-        // TODO: Send confirmation email to booker and owner.
-
         res.status(201).json({ message: 'Booking confirmed successfully!', booking });
 
     } catch (error) {

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { format, startOfToday } from 'date-fns';
 import { useCalendar } from '../hooks/useCalendar';
-import { Clock, MapPin } from 'lucide-react';
+import { Clock, MapPin, Calendar as CalendarIcon, ArrowLeft } from 'lucide-react';
 
 import CalendarSelector from '../components/booking/CalendarSelector';
 import TimeSlotPicker from '../components/booking/TimeSlotPicker';
@@ -32,22 +32,18 @@ const BookingPage = () => {
 
     // --- Data Fetching ---
 
-    // 1. Fetches event type details and monthly availability. Runs when the month changes.
     const fetchMonthData = useCallback(async () => {
         setIsLoading(true); // Main page loader
         setError('');
         const monthQuery = format(calendar.currentMonth, 'yyyy-MM');
         try {
-            // We can combine these into one API call later for optimization, but this is clearer for now.
-            // First get the event details and initial duration
-            if (!eventType) { // Only fetch eventType once
+            if (!eventType) { 
                 const eventTypeResponse = await fetch(`/api/public/availability/${slug}?date=${format(selectedDate, 'yyyy-MM-dd')}`);
                 if (!eventTypeResponse.ok) throw new Error('Booking page not found.');
                 const data = await eventTypeResponse.json();
                 setEventType(data.eventType);
                 setSelectedDuration(data.eventType.default_duration);
             }
-            // Then get the available days for the current month view
             const monthlyResponse = await fetch(`/api/public/availability/${slug}/month?month=${monthQuery}`);
             if (!monthlyResponse.ok) throw new Error('Could not load monthly availability.');
             const monthlyData = await monthlyResponse.json();
@@ -57,16 +53,16 @@ const BookingPage = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [slug, calendar.currentMonth, eventType]); // Dependency on eventType to prevent re-fetching
+    }, [slug, calendar.currentMonth, eventType]); 
 
-    // 2. Fetches available time slots for a specific day. Runs when selectedDate changes.
     const fetchDailySlots = useCallback(async () => {
-        if (!selectedDate) return;
+        if (!selectedDate || !selectedDuration) return;
         setIsLoadingSlots(true);
-        setDailySlots([]); // Clear old slots
+        setDailySlots([]); 
+        setSelectedTime(null); 
         try {
             const dateQuery = format(selectedDate, 'yyyy-MM-dd');
-            const response = await fetch(`/api/public/availability/${slug}?date=${dateQuery}`);
+            const response = await fetch(`/api/public/availability/${slug}?date=${dateQuery}&duration=${selectedDuration}`);
             if (!response.ok) throw new Error('Could not load slots for this day.');
             const data = await response.json();
             setDailySlots(data.availableSlots || []);
@@ -75,7 +71,7 @@ const BookingPage = () => {
         } finally {
             setIsLoadingSlots(false);
         }
-    }, [slug, selectedDate]);
+    }, [slug, selectedDate, selectedDuration]);
 
     useEffect(() => {
         fetchMonthData();
@@ -143,10 +139,16 @@ const BookingPage = () => {
 
     return (
         <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 sm:p-6 md:p-8">
-            <div className="w-full max-w-7xl mx-auto bg-slate-800/50 border border-slate-700 rounded-2xl shadow-2xl flex flex-col lg:flex-row h-full max-h-[70vh] lg:h-[750px]">
+            <div className="w-full max-w-7xl mx-auto bg-slate-800/50 border border-slate-700 rounded-2xl shadow-2xl flex flex-col lg:flex-row h-full max-h-[90vh] lg:h-[750px]">
                 
-                {/* Left Pane: Event Info */}
+                {/* Left Pane: Event Info (always visible) */}
                 <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-700 flex flex-col lg:w-[30%]">
+                    {/* A back button for the mobile view when form is open */}
+                    {selectedTime && (
+                         <button onClick={handleClearTimeSelection} className="flex lg:hidden items-center gap-2 text-indigo-400 mb-4 -ml-1">
+                            <ArrowLeft size={16} /> Back to time selection
+                        </button>
+                    )}
                     <p className="text-slate-400">Eidenz</p>
                     <h1 className="text-3xl font-bold text-white my-2">{eventType?.title}</h1>
                     <div className="space-y-2 text-slate-300 mt-4">
@@ -161,8 +163,9 @@ const BookingPage = () => {
                             id="interval"
                             name="interval"
                             value={bookingInterval}
+                            disabled={!!selectedTime} // Disable when a time is selected
                             onChange={(e) => setBookingInterval(parseInt(e.target.value, 10))}
-                            className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition"
+                            className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition disabled:opacity-50"
                         >
                             <option value="15">15 minutes</option>
                             <option value="30">30 minutes</option>
@@ -171,45 +174,64 @@ const BookingPage = () => {
                     </div>
                 </div>
 
-                {/* Middle Pane: Calendar */}
-                <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-700 lg:w-[35%] flex flex-col justify-center">
-                     <CalendarSelector 
-                        hook={calendar} 
-                        onDateSelect={handleDateSelect} 
-                        selectedDate={selectedDate}
-                        availableDays={monthlyAvailability}
-                     />
-                </div>
+                {/* --- CONDITIONAL RIGHT PANE --- */}
+                {selectedTime ? (
+                    // --- VIEW 2: CONFIRMATION & FORM ---
+                    <div className="p-8 flex flex-col lg:w-[70%]">
+                        <div className="flex-grow flex flex-col items-center justify-center">
+                            <div className="w-full max-w-sm text-center">
+                                <h2 className="text-xl font-bold text-white">Confirm your booking</h2>
+                                <div className="my-6 p-4 rounded-lg border-2 border-slate-600 bg-slate-900/50 flex items-center justify-center gap-3">
+                                    <CalendarIcon className="text-indigo-400" size={20} />
+                                    <span className="text-lg font-semibold text-slate-200">
+                                        {format(new Date(selectedTime), 'HH:mm')}
+                                    </span>
+                                    <span className="text-lg text-slate-400">on</span>
+                                    <span className="text-lg font-semibold text-slate-200">
+                                        {format(new Date(selectedTime), 'EEEE, MMMM d')}
+                                    </span>
+                                </div>
+                                <BookingForm 
+                                    eventType={eventType}
+                                    selectedTime={selectedTime}
+                                    duration={selectedDuration}
+                                    onConfirmBooking={handleConfirmBooking}
+                                    onCancel={handleClearTimeSelection}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    // --- VIEW 1: CALENDAR & SLOTS ---
+                    <>
+                        {/* Middle Pane: Calendar */}
+                        <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-700 lg:w-[35%] flex flex-col justify-center">
+                             <CalendarSelector 
+                                hook={calendar} 
+                                onDateSelect={handleDateSelect} 
+                                selectedDate={selectedDate}
+                                availableDays={monthlyAvailability}
+                             />
+                        </div>
 
-                {/* Right Pane: Time Slots & Form */}
-                <div className="p-8 flex flex-col lg:w-[35%] overflow-hidden">
-                    <h2 className="font-semibold text-white mb-4 text-lg flex-shrink-0">
-                        {format(selectedDate, 'EEEE, MMMM d')}
-                    </h2>
-                    {/* The TimeSlotPicker will now be a flex child that can grow and shrink */}
-                    <TimeSlotPicker 
-                        durations={eventType?.durations || []}
-                        selectedDuration={selectedDuration}
-                        onSelectDuration={setSelectedDuration}
-                        slots={dailySlots}
-                        selectedTime={selectedTime}
-                        onSelectTime={setSelectedTime}
-                        isLoading={isLoadingSlots}
-                        bookingInterval={bookingInterval}
-                    />
-                    {selectedTime && (
-                        <div className="pt-4 flex-shrink-0">
-                             <BookingForm 
-                                eventType={eventType}
+                        {/* Right Pane: Time Slots */}
+                        <div className="p-8 flex flex-col lg:w-[35%] overflow-hidden">
+                            <h2 className="font-semibold text-white mb-4 text-lg flex-shrink-0">
+                                {format(selectedDate, 'EEEE, MMMM d')}
+                            </h2>
+                            <TimeSlotPicker 
+                                durations={eventType?.durations || []}
+                                selectedDuration={selectedDuration}
+                                onSelectDuration={setSelectedDuration}
+                                slots={dailySlots}
                                 selectedTime={selectedTime}
-                                duration={selectedDuration}
-                                onConfirmBooking={handleConfirmBooking}
-                                onCancel={handleClearTimeSelection}
+                                onSelectTime={setSelectedTime}
+                                isLoading={isLoadingSlots}
+                                bookingInterval={bookingInterval}
                             />
                         </div>
-                    )}
-                </div>
-
+                    </>
+                )}
             </div>
         </div>
     );
