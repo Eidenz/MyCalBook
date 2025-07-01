@@ -6,6 +6,7 @@
     "dev": "nodemon index.cjs",
     "start": "node index.cjs",
     "db:migrate": "knex migrate:latest --knexfile knexfile.cjs",
+    "db:migrate:prod": "knex migrate:latest --knexfile knexfile.cjs --env production",
     "db:seed": "knex seed:run --knexfile knexfile.cjs"
   },
   "keywords": [],
