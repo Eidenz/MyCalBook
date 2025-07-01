@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+
+# Node modules
+node_modules
+server/node_modules
+client/node_modules
+
+# Local environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Database file (managed by volume)
+mycalbook.sqlite3
+server/mycalbook.sqlite3
+
+# Build artifacts
+client/dist
+
+# IDE and OS files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.DS_Store
