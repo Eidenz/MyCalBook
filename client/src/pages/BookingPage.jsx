@@ -249,6 +249,7 @@ const BookingPage = () => {
                                 onSelectTime={setSelectedTime}
                                 isLoading={isLoadingSlots}
                                 bookingInterval={bookingInterval}
+                                selectedDate={selectedDate}
                             />
                         </div>
                     </>

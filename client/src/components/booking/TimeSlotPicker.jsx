@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { format, getMinutes, isToday, isPast } from 'date-fns';
+import { format, getMinutes, isToday } from 'date-fns';
 
 const TimeSlotPicker = ({ 
     durations, 
@@ -9,26 +9,37 @@ const TimeSlotPicker = ({
     selectedTime,
     onSelectTime,
     isLoading,
-    bookingInterval
+    bookingInterval,
+    selectedDate
 }) => {
     const filteredSlots = useMemo(() => {
+        const now = new Date();
+        const isSelectedDateToday = selectedDate && isToday(selectedDate);
+
         return slots.filter(slot => {
             const slotDate = new Date(slot);
-            
-            // Condition 1: If the slot's date is today, check if the time is in the past.
-            // This is more robust as it doesn't rely on a separate `selectedDate` prop.
-            if (isToday(slotDate) && isPast(slotDate)) {
-                return false;
+
+            // If the selected date is today, we must check if the time has passed.
+            if (isSelectedDateToday) {
+                const currentHour = now.getHours();
+                const currentMinute = now.getMinutes();
+                const slotHour = slotDate.getHours();
+                const slotMinute = slotDate.getMinutes();
+
+                // If the slot's hour is before now, or if it's the same hour but an earlier minute, filter it out.
+                if (slotHour < currentHour || (slotHour === currentHour && slotMinute < currentMinute)) {
+                    return false; // This slot is in the past.
+                }
             }
             
-            // Condition 2: Filter by the selected time slot interval.
+            // Filter by the selected time slot interval (e.g., show only every 30 mins).
             if (bookingInterval && getMinutes(slotDate) % bookingInterval !== 0) {
                 return false;
             }
             
             return true;
         });
-    }, [slots, bookingInterval]);
+    }, [slots, bookingInterval, selectedDate]);
 
     return (
         // This component is now a flex column that will take up the remaining space
