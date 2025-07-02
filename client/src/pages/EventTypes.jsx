@@ -79,11 +79,11 @@ const EventTypes = () => {
         <div className="p-8 max-w-5xl mx-auto">
             <div className="flex justify-between items-center mb-6">
                  <div>
-                    <h1 className="text-3xl font-bold text-white">Event Types</h1>
-                    <p className="text-slate-400 mt-1">Create and manage your bookable event types.</p>
+                    <h1 className="text-3xl font-bold text-white">Booking Setup</h1>
+                    <p className="text-slate-400 mt-1">Create and manage your bookable events.</p>
                 </div>
                 <button onClick={openModalForNew} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition">
-                    <Plus size={20}/> New Event Type
+                    <Plus size={20}/> New Booking Type
                 </button>
             </div>
 

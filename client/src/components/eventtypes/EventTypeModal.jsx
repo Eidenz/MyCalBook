@@ -136,14 +136,14 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
             <div className="bg-slate-800 text-white rounded-xl shadow-2xl w-full max-w-lg p-6 mx-4 transform transition-all" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">{isEditMode ? 'Edit Event Type' : 'New Event Type'}</h2>
+                    <h2 className="text-xl font-bold">{isEditMode ? 'Edit Booking Type' : 'New Booking Type'}</h2>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-700"><X size={24} /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Public Toggle */}
                     <div className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg">
                         <div>
-                            <h3 className="font-semibold text-white">Public Event</h3>
+                            <h3 className="font-semibold text-white">Public Booking</h3>
                             <p className="text-sm text-slate-400">Visible on your public booking page.</p>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
