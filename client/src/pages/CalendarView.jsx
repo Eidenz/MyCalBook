@@ -136,7 +136,7 @@ const CalendarView = () => {
                 <button
                     key={v}
                     onClick={() => setView(v)}
-                    className={`px-2 md:px-3 py-1 text-xs md:text-sm font-semibold rounded-md transition-colors capitalize ${
+                    className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors capitalize ${
                         view === v ? 'bg-slate-600 text-white' : 'text-slate-300 hover:text-white'
                     }`}
                 >
@@ -148,23 +148,96 @@ const CalendarView = () => {
 
     return (
         <div className="flex flex-col h-[calc(100vh-65px)] p-2 md:p-6">
-            <header className="flex justify-between items-center pb-2 md:pb-3 flex-wrap gap-2">
-                <div className="flex items-center gap-1 md:gap-2">
-                    <button onClick={goToToday} className="px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-semibold border border-slate-600 rounded-lg hover:bg-slate-700 transition">Today</button>
-                    <button onClick={handlePrev} className="p-1 md:p-2 rounded-md hover:bg-slate-700 transition"><ChevronLeft size={isMobile ? 16 : 20} /></button>
-                    <button onClick={handleNext} className="p-1 md:p-2 rounded-md hover:bg-slate-700 transition"><ChevronRight size={isMobile ? 16 : 20} /></button>
-                    <span className="text-sm md:text-lg font-semibold w-32 md:w-48 text-left ml-1 md:ml-2">{getTitle()}</span>
+            {/* Mobile-optimized header */}
+            <header className="pb-3 md:pb-4">
+                {/* Desktop layout - single row */}
+                <div className="hidden md:flex md:justify-between md:items-center md:gap-4">
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={goToToday} 
+                            className="px-4 py-2 text-sm font-semibold border border-slate-600 rounded-lg hover:bg-slate-700 transition-colors"
+                        >
+                            Today
+                        </button>
+                        <div className="flex items-center bg-slate-700/50 rounded-lg p-1">
+                            <button 
+                                onClick={handlePrev} 
+                                className="p-2 rounded-md hover:bg-slate-600 transition-colors"
+                                aria-label="Previous"
+                            >
+                                <ChevronLeft size={20} />
+                            </button>
+                            <button 
+                                onClick={handleNext} 
+                                className="p-2 rounded-md hover:bg-slate-600 transition-colors"
+                                aria-label="Next"
+                            >
+                                <ChevronRight size={20} />
+                            </button>
+                        </div>
+                        <h1 className="text-2xl font-bold text-white ml-2">
+                            {getTitle()}
+                        </h1>
+                    </div>
+                    <CalendarLegend />
+                    <div className="flex items-center gap-4">
+                        <ViewSwitcher />
+                        <button 
+                            onClick={() => handleOpenModal(null)} 
+                            className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-all"
+                        >
+                            <Plus size={18} /> 
+                            <span className="text-sm">Add Event</span>
+                        </button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2 md:gap-4">
-                    <ViewSwitcher />
-                    <button onClick={() => handleOpenModal(null)} className="flex items-center gap-1 md:gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-2 md:px-4 py-1 md:py-2 rounded-lg hover:opacity-90 transition">
-                        <Plus size={isMobile ? 16 : 18} /> 
-                        <span className="hidden sm:inline text-xs md:text-sm">Add Event</span>
-                    </button>
+
+                {/* Mobile layout - stacked rows */}
+                <div className="md:hidden space-y-4">
+                    {/* Top row - Navigation controls */}
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={goToToday} 
+                            className="px-3 py-2 text-sm font-semibold border border-slate-600 rounded-lg hover:bg-slate-700 transition-colors"
+                        >
+                            Today
+                        </button>
+                        <div className="flex items-center bg-slate-700/50 rounded-lg p-1">
+                            <button 
+                                onClick={handlePrev} 
+                                className="p-2 rounded-md hover:bg-slate-600 transition-colors"
+                                aria-label="Previous"
+                            >
+                                <ChevronLeft size={20} />
+                            </button>
+                            <button 
+                                onClick={handleNext} 
+                                className="p-2 rounded-md hover:bg-slate-600 transition-colors"
+                                aria-label="Next"
+                            >
+                                <ChevronRight size={20} />
+                            </button>
+                        </div>
+                        <h1 className="text-xl font-bold text-white">
+                            {getTitle()}
+                        </h1>
+                    </div>
+
+                    <CalendarLegend />
+
+                    {/* Bottom row - View switcher and add button */}
+                    <div className="flex items-center justify-between gap-3">
+                        <ViewSwitcher />
+                        <button 
+                            onClick={() => handleOpenModal(null)} 
+                            className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-4 py-2.5 rounded-lg hover:opacity-90 transition-all flex-shrink-0"
+                        >
+                            <Plus size={18} /> 
+                            <span className="text-sm">Add Event</span>
+                        </button>
+                    </div>
                 </div>
             </header>
-            
-            <CalendarLegend />
 
             <main className="flex-1 bg-slate-800 rounded-lg shadow-lg overflow-hidden flex flex-col">
                 {isLoading ? (
