@@ -1,43 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
-const EventTypeModal = ({ isOpen, onClose, onSave, token, schedules, eventType }) => {
+const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
     const isEditMode = Boolean(eventType);
+
+    const getInitialState = () => ({
+        title: '',
+        location: 'VRChat',
+        schedule_id: '',
+        description: '',
+        durations: [30, 60],
+        default_duration: 60,
+        is_public: true,
+    });
     
-    const [durationInput, setDurationInput] = useState('');
-
-    const getInitialState = () => {
-        if (isEditMode) {
-            const durations = (typeof eventType.durations === 'string') 
-                ? JSON.parse(eventType.durations) 
-                : (eventType.durations || [30]);
-            return {
-                title: eventType.title || '',
-                location: eventType.location || 'VRChat',
-                schedule_id: eventType.schedule_id || (schedules[0]?.id || ''),
-                description: eventType.description || '',
-                durations: durations,
-                default_duration: eventType.default_duration || durations[0] || 30,
-                is_public: eventType.is_public !== undefined ? eventType.is_public : true,
-            };
-        }
-        return {
-            title: '', location: 'VRChat', schedule_id: schedules[0]?.id || '',
-            description: '', durations: [30, 60], default_duration: 60, is_public: true
-        };
-    };
-
     const [formData, setFormData] = useState(getInitialState());
+    const [schedules, setSchedules] = useState([]);
+    const [durationInput, setDurationInput] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(getInitialState());
-            setError('');
-            setDurationInput('');
+            const loadData = async () => {
+                setIsSubmitting(false);
+                setError('');
+                setDurationInput('');
+                try {
+                    // Fetch schedules
+                    const res = await fetch('/api/availability/schedules', { headers: { 'x-auth-token': token } });
+                    if (!res.ok) throw new Error('Could not load schedules.');
+                    const fetchedSchedules = await res.json();
+                    setSchedules(fetchedSchedules);
+
+                    // Set form data based on mode
+                    if (isEditMode) {
+                        const durations = (typeof eventType.durations === 'string') 
+                            ? JSON.parse(eventType.durations) 
+                            : (eventType.durations || []);
+                        setFormData({
+                            title: eventType.title || '',
+                            location: eventType.location || '',
+                            schedule_id: eventType.schedule_id || (fetchedSchedules[0]?.id || ''),
+                            description: eventType.description || '',
+                            durations: durations,
+                            default_duration: eventType.default_duration || durations[0] || '',
+                            is_public: eventType.is_public !== undefined ? eventType.is_public : true,
+                        });
+                    } else {
+                        const initialState = getInitialState();
+                        if (fetchedSchedules.length > 0) {
+                            initialState.schedule_id = fetchedSchedules[0].id;
+                        }
+                        setFormData(initialState);
+                    }
+                } catch (err) {
+                    setError(err.message);
+                }
+            };
+            loadData();
         }
-    }, [isOpen, eventType, schedules]);
+    }, [isOpen, eventType, token]);
+
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -52,7 +76,8 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, schedules, eventType }
             e.preventDefault();
             const newDuration = parseInt(durationInput.trim(), 10);
             if (!isNaN(newDuration) && newDuration > 0 && !formData.durations.includes(newDuration)) {
-                setFormData(prev => ({ ...prev, durations: [...prev.durations, newDuration] }));
+                const newDurations = [...formData.durations, newDuration].sort((a,b) => a-b);
+                setFormData(prev => ({ ...prev, durations: newDurations }));
             }
             setDurationInput('');
         }
@@ -73,6 +98,10 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, schedules, eventType }
 
     const handleSubmit = async (e) => {
         e.preventDefault(); 
+        if (schedules.length === 0) {
+            setError("You must create an availability schedule first.");
+            return;
+        }
         setError('');
         setIsSubmitting(true);
         
@@ -140,12 +169,18 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, schedules, eventType }
                             ))}
                             <input type="text" value={durationInput} onChange={(e) => setDurationInput(e.target.value.replace(/\D/g, ''))} onKeyDown={handleDurationKeyDown} placeholder="Add" className="bg-transparent outline-none p-1 text-sm w-16"/>
                         </div>
-                        <p className="text-xs text-slate-400 mt-1.5">Click a tag to set as default.</p>
+                        <p className="text-xs text-slate-400 mt-1.5">Click a tag to set as default. Press Enter to add.</p>
+                    </div>
+                    
+                    {/* Schedule Selector */}
+                    <div>
+                        <label htmlFor="schedule_id" className="block text-sm font-semibold mb-2 text-slate-300">Availability Schedule</label>
+                        <select name="schedule_id" id="schedule_id" value={formData.schedule_id} onChange={handleChange} required className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600">
+                           {schedules.length === 0 && <option value="" disabled>No schedules available</option>}
+                           {schedules.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
                     </div>
 
-                    <select name="schedule_id" value={formData.schedule_id} onChange={handleChange} required className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600">
-                        {schedules.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
 
                     {error && <div className="text-red-400 text-sm bg-red-900/50 p-3 rounded-lg">{error}</div>}
 
