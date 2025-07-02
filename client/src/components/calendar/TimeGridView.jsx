@@ -132,7 +132,7 @@ const TimeGridView = ({ days, events, onEventClick }) => {
     const gridTemplateColumns = `repeat(${days.length}, minmax(0, 1fr))`;
 
     return (
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-y-scroll">
             {/* Header - Fixed alignment by using same grid template */}
             <div className="flex sticky top-0 bg-slate-800 z-10 border-b border-slate-700">
                 {/* Time column - exact same width and styling as grid */}
@@ -153,8 +153,8 @@ const TimeGridView = ({ days, events, onEventClick }) => {
             </div>
 
             {/* Grid container with mobile horizontal scroll */}
-            <div className="flex-1 flex overflow-hidden">
-                <div className="flex-1 flex overflow-y-auto">
+            <div className="flex-1 flex">
+                <div className="flex-1 flex">
                     {/* Time Scale - exact same width as header */}
                     <div className="w-14 shrink-0 text-right pr-2 border-r border-slate-700 bg-slate-900/20">
                         {hours.map(hour => (
