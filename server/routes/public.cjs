@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/knex.cjs');
 const emailService = require('../services/emailService.cjs');
+const { format, startOfDay } = require('date-fns');
 
 // --- Helper Functions ---
 
@@ -26,11 +27,9 @@ const getBlockedSlots = async (userId, startDate, endDate) => {
 
 // Checks if a given day has at least one bookable slot.
 const hasAvailableSlots = (date, rules, blockedSlots, duration) => {
-    const dayOfWeek = date.getUTCDay();
-    const rulesForDay = rules.filter(r => r.day_of_week === dayOfWeek);
-    if (rulesForDay.length === 0) return false;
+    if (rules.length === 0) return false;
 
-    for (const rule of rulesForDay) {
+    for (const rule of rules) {
         const [startH, startM] = rule.start_time.split(':').map(Number);
         const [endH, endM] = rule.end_time.split(':').map(Number);
 
@@ -69,11 +68,25 @@ router.get('/availability/:slug', async (req, res) => {
         const eventType = await db('event_types').join('users', 'event_types.user_id', 'users.id').where({ slug }).first('event_types.*', 'users.username as ownerUsername');
         if (!eventType) return res.status(404).json({ error: 'This booking page does not exist.' });
         
-        const availabilityRules = await db('availability_rules').where({ schedule_id: eventType.schedule_id });
         const selectedDate = new Date(date);
-        const dayOfWeek = selectedDate.getUTCDay();
-        const rulesForDay = availabilityRules.filter(r => r.day_of_week === dayOfWeek);
+        const dbDate = format(startOfDay(selectedDate), 'yyyy-MM-dd');
         
+        const override = await db('availability_overrides')
+            .where({ schedule_id: eventType.schedule_id, date: dbDate }).first();
+
+        let rulesForDay = [];
+        if (override) {
+            if (override.is_unavailable) {
+                rulesForDay = []; // Day is explicitly blocked
+            } else if (override.start_time && override.end_time) {
+                rulesForDay = [{ start_time: override.start_time, end_time: override.end_time }];
+            }
+        } else {
+            const availabilityRules = await db('availability_rules').where({ schedule_id: eventType.schedule_id });
+            const dayOfWeek = selectedDate.getUTCDay();
+            rulesForDay = availabilityRules.filter(r => r.day_of_week === dayOfWeek);
+        }
+
         const dayStart = new Date(`${date}T00:00:00.000Z`);
         const dayEnd = new Date(`${date}T23:59:59.999Z`);
         const blockedSlots = await getBlockedSlots(eventType.user_id, dayStart, dayEnd);
@@ -130,15 +143,37 @@ router.get('/availability/:slug/month', async (req, res) => {
         const monthEnd = new Date(Date.UTC(year, monthNum, 1));
         const allBlockedSlots = await getBlockedSlots(eventType.user_id, monthStart, monthEnd);
 
+        // Fetch all overrides for the month in one go
+        const monthOverrides = await db('availability_overrides')
+            .where({ schedule_id: eventType.schedule_id })
+            .where('date', '>=', format(monthStart, 'yyyy-MM-dd'))
+            .where('date', '<=', format(new Date(Date.UTC(year, monthNum - 1, daysInMonth)), 'yyyy-MM-dd'));
+        const overridesMap = new Map(monthOverrides.map(o => [format(new Date(o.date), 'yyyy-MM-dd'), o]));
+
+
         for (let day = 1; day <= daysInMonth; day++) {
             const currentDate = new Date(Date.UTC(year, monthNum - 1, day));
+            const dateStr = format(currentDate, 'yyyy-MM-dd');
+            const override = overridesMap.get(dateStr);
+            
+            let rulesForDay;
+            if (override) {
+                if (override.is_unavailable || (!override.start_time || !override.end_time)) {
+                    rulesForDay = [];
+                } else {
+                    rulesForDay = [{ start_time: override.start_time, end_time: override.end_time }];
+                }
+            } else {
+                const dayOfWeek = currentDate.getUTCDay();
+                rulesForDay = availabilityRules.filter(r => r.day_of_week === dayOfWeek);
+            }
+
             const dayStart = new Date(currentDate);
             const dayEnd = new Date(currentDate);
             dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
-
             const blockedForDay = allBlockedSlots.filter(s => s.start < dayEnd && s.end > dayStart);
 
-            if (hasAvailableSlots(currentDate, availabilityRules, blockedForDay, eventType.default_duration)) {
+            if (hasAvailableSlots(currentDate, rulesForDay, blockedForDay, eventType.default_duration)) {
                 availableDays.add(day);
             }
         }

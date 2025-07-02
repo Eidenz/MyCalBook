@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Trash2, Edit, Clock } from 'lucide-react';
+import { useCalendar } from '../hooks/useCalendar';
+import { format, isSameMonth, isToday, isSameDay, parseISO } from 'date-fns';
+import { Plus, Trash2, Edit, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import InputModal from '../components/common/InputModal';
+import OverrideModal from '../components/availability/OverrideModal';
 
 const Availability = () => {
     const { token } = useAuth();
@@ -10,22 +13,23 @@ const Availability = () => {
     const [schedules, setSchedules] = useState([]);
     const [selectedScheduleId, setSelectedScheduleId] = useState(null);
     const [rules, setRules] = useState([]);
+    const [overrides, setOverrides] = useState([]);
     
     // UI/Loading State
-    const [isLoadingSchedules, setIsLoadingSchedules] = useState(true);
-    const [isLoadingRules, setIsLoadingRules] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
 
     // Modal State
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
     const [editingSchedule, setEditingSchedule] = useState(null);
+    const [isOverrideModalOpen, setIsOverrideModalOpen] = useState(false);
+    const [selectedOverrideDate, setSelectedOverrideDate] = useState(null);
 
     const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const daysOfWeekShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    const calendar = useCalendar();
 
-    // --- Timezone Conversion Helpers ---
-    // THE FIX: Both functions now use the current date to ensure DST consistency.
     const toUTCTime = (localTime) => {
         if (!localTime) return '';
         const today = new Date();
@@ -40,45 +44,61 @@ const Availability = () => {
     };
 
     // Data Fetching
-    useEffect(() => {
-        const fetchSchedules = async () => {
-            setIsLoadingSchedules(true);
-            try {
-                const response = await fetch('/api/availability/schedules', { headers: { 'x-auth-token': token } });
-                if (!response.ok) throw new Error('Failed to fetch schedules.');
-                const data = await response.json();
-                setSchedules(data);
-                if (data.length > 0 && !schedules.some(s => s.id === selectedScheduleId)) {
-                    setSelectedScheduleId(data[0].id);
-                }
-            } catch (err) { setError(err.message); } 
-            finally { setIsLoadingSchedules(false); }
-        };
-        fetchSchedules();
-    }, [token]);
+    const fetchSchedules = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const response = await fetch('/api/availability/schedules', { headers: { 'x-auth-token': token } });
+            if (!response.ok) throw new Error('Failed to fetch schedules.');
+            const data = await response.json();
+            setSchedules(data);
+            if (data.length > 0 && !selectedScheduleId) {
+                setSelectedScheduleId(data[0].id);
+            }
+        } catch (err) { setError(err.message); } 
+        finally { setIsLoading(false); }
+    }, [token, selectedScheduleId]);
 
-    useEffect(() => {
-        const fetchRules = async () => {
-            if (!selectedScheduleId) { setRules([]); return; }
-            setIsLoadingRules(true);
-            try {
-                const response = await fetch(`/api/availability/rules/${selectedScheduleId}`, { headers: { 'x-auth-token': token } });
-                if (!response.ok) throw new Error('Failed to fetch rules.');
-                const data = await response.json();
-                setRules(data.map(rule => ({ ...rule, start_time: toLocalTime(rule.start_time), end_time: toLocalTime(rule.end_time) })));
-            } catch (err) { setError(err.message); } 
-            finally { setIsLoadingRules(false); }
-        };
-        fetchRules();
-    }, [selectedScheduleId, token]);
+    const fetchRulesAndOverrides = useCallback(async () => {
+        if (!selectedScheduleId) {
+            setRules([]);
+            setOverrides([]);
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const [rulesRes, overridesRes] = await Promise.all([
+                fetch(`/api/availability/rules/${selectedScheduleId}`, { headers: { 'x-auth-token': token } }),
+                fetch(`/api/availability/overrides/${selectedScheduleId}?month=${format(calendar.currentDate, 'yyyy-MM')}`, { headers: { 'x-auth-token': token } })
+            ]);
+            if (!rulesRes.ok) throw new Error('Failed to fetch rules.');
+            if (!overridesRes.ok) throw new Error('Failed to fetch overrides.');
+            
+            const rulesData = await rulesRes.json();
+            const overridesData = await overridesRes.json();
+            
+            setRules(rulesData.map(rule => ({ ...rule, start_time: toLocalTime(rule.start_time), end_time: toLocalTime(rule.end_time) })));
+            setOverrides(overridesData);
 
+        } catch (err) { setError(err.message); } 
+        finally { setIsLoading(false); }
+    }, [selectedScheduleId, token, calendar.currentDate]);
+
+    useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
+    useEffect(() => { fetchRulesAndOverrides(); }, [fetchRulesAndOverrides]);
+
+    const overridesMap = useMemo(() => {
+        const map = new Map();
+        overrides.forEach(o => map.set(format(parseISO(o.date), 'yyyy-MM-dd'), o));
+        return map;
+    }, [overrides]);
+    
     // Handlers
-    const handleOpenModal = (schedule = null) => {
+    const handleOpenScheduleModal = (schedule = null) => {
         setEditingSchedule(schedule);
-        setIsModalOpen(true);
+        setIsScheduleModalOpen(true);
     };
 
-    const handleModalSubmit = async (name) => {
+    const handleScheduleModalSubmit = async (name) => {
         const isEditing = !!editingSchedule;
         const url = isEditing ? `/api/availability/schedules/${editingSchedule.id}` : '/api/availability/schedules';
         const method = isEditing ? 'PUT' : 'POST';
@@ -119,8 +139,7 @@ const Availability = () => {
 
     const handleSaveRules = async () => {
         if (!selectedScheduleId) return;
-        setIsSaving(true);
-        setError('');
+        setIsSaving(true); setError('');
         try {
             const utcRules = rules.map(rule => ({...rule, start_time: toUTCTime(rule.start_time), end_time: toUTCTime(rule.end_time) }));
             const response = await fetch(`/api/availability/rules/${selectedScheduleId}`, {
@@ -133,231 +152,311 @@ const Availability = () => {
         finally { setIsSaving(false); }
     };
 
+    const handleDayClick = (day) => {
+        setSelectedOverrideDate(day);
+        setIsOverrideModalOpen(true);
+    };
+
+    const handleSaveOverride = async (overrideData) => {
+        // THE FIX: Convert local times from the modal to UTC before sending to the backend.
+        const payload = {
+            ...overrideData,
+            start_time: overrideData.is_unavailable ? null : toUTCTime(overrideData.start_time),
+            end_time: overrideData.is_unavailable ? null : toUTCTime(overrideData.end_time),
+        };
+
+        const res = await fetch('/api/availability/overrides', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Failed to save override');
+        fetchRulesAndOverrides(); // Refetch
+    };
+
+    const handleDeleteOverride = async (date) => {
+        const res = await fetch(`/api/availability/overrides/${selectedScheduleId}/${date}`, {
+            method: 'DELETE',
+            headers: { 'x-auth-token': token }
+        });
+        if (!res.ok) {
+            const result = await res.json();
+            throw new Error(result.error || 'Failed to delete override');
+        }
+        fetchRulesAndOverrides(); // Refetch
+    };
+
     const selectedSchedule = schedules.find(s => s.id === selectedScheduleId);
 
     return (
-        <div className="p-4 md:p-8 max-w-6xl mx-auto">
-            {/* Header Section */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
-                <div className="flex-1">
-                    <h1 className="text-2xl md:text-3xl font-bold text-white">Set your availability</h1>
-                    <p className="text-slate-400 mt-1 text-sm md:text-base">Manage schedules and define when you are available for bookings.</p>
-                </div>
-                {selectedSchedule && (
-                    <button 
-                        onClick={handleSaveRules} 
-                        disabled={isSaving || isLoadingRules} 
-                        className="w-full sm:w-auto px-4 md:px-6 py-3 md:py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 active:scale-95"
-                    >
-                        {isSaving ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                Saving...
-                            </span>
-                        ) : (
-                            <span className="flex items-center justify-center gap-2">
-                                <Clock size={16} className="hidden sm:inline" />
-                                <span className="hidden sm:inline">Save</span>
-                                <span className="sm:hidden">Save </span>
-                                <span>{selectedSchedule.name}</span>
-                            </span>
-                        )}
-                    </button>
-                )}
+        <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
+            <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Set your availability</h1>
+                <p className="text-slate-400 mt-1 text-sm md:text-base">Manage schedules, define recurring weekly hours, and set overrides for specific dates.</p>
             </div>
             
             {error && (
-                <div 
-                    className="bg-red-900/50 text-red-300 p-3 rounded-md mb-4 cursor-pointer hover:bg-red-900/70 transition-colors animate-in slide-in-from-top-2 duration-200" 
-                    onClick={() => setError('')}
-                >
+                <div className="bg-red-900/50 text-red-300 p-3 rounded-md animate-fadeIn cursor-pointer" onClick={() => setError('')}>
                     {error}
                 </div>
             )}
 
-            <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
-                {/* Left: Schedules List */}
-                <div className="lg:w-1/3">
-                    <div className="flex justify-between items-center mb-3">
-                        <h2 className="text-lg md:text-xl font-bold text-white">Schedules</h2>
-                        <button 
-                            onClick={() => handleOpenModal(null)} 
-                            className="flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-300 transition-colors active:scale-95 px-2 py-1 rounded-md hover:bg-indigo-500/10"
-                        >
-                            <Plus size={16}/> New
-                        </button>
+            {/* Schedules Section */}
+            <div className="bg-slate-800 rounded-lg p-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                    <h2 className="text-xl font-bold text-white">Schedules</h2>
+                    <button 
+                        onClick={() => handleOpenScheduleModal(null)} 
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors"
+                    >
+                        <Plus size={18}/> New Schedule
+                    </button>
+                </div>
+                
+                {isLoading && schedules.length === 0 ? (
+                    <p className="text-slate-400">Loading...</p>
+                ) : schedules.length === 0 ? (
+                    <div className="text-slate-500 text-center py-12">
+                        <Calendar size={48} className="mx-auto mb-4 opacity-50" />
+                        <p className="text-lg">No schedules yet.</p>
+                        <p className="text-sm">Create your first schedule to get started.</p>
                     </div>
-                    
-                    {isLoadingSchedules ? (
-                        <div className="bg-slate-800 rounded-lg p-6 text-center">
-                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500 mx-auto mb-2"></div>
-                            <p className="text-slate-400">Loading...</p>
-                        </div>
-                    ) : (
-                        <div className="bg-slate-800 rounded-lg p-3 space-y-2">
-                            {schedules.map(schedule => (
-                                <div 
-                                    key={schedule.id} 
-                                    onClick={() => setSelectedScheduleId(schedule.id)} 
-                                    className={`flex justify-between items-center p-3 md:p-3 rounded-md cursor-pointer transition-all active:scale-[0.98] ${
-                                        selectedScheduleId === schedule.id 
-                                            ? 'bg-indigo-600/30 text-white shadow-md' 
-                                            : 'hover:bg-slate-700/50 text-slate-300'
-                                    }`}
-                                >
-                                    <span className="font-semibold truncate flex-1 mr-2">{schedule.name}</span>
-                                    <div className="flex items-center gap-1 flex-shrink-0">
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {schedules.map(schedule => (
+                            <div 
+                                key={schedule.id} 
+                                onClick={() => setSelectedScheduleId(schedule.id)} 
+                                className={`p-4 rounded-lg cursor-pointer transition-all border-2 ${
+                                    selectedScheduleId === schedule.id 
+                                        ? 'bg-indigo-600/20 border-indigo-500' 
+                                        : 'bg-slate-700/50 border-transparent hover:bg-slate-700 hover:border-slate-600'
+                                }`}
+                            >
+                                <div className="flex justify-between items-start mb-2">
+                                    <h3 className="font-semibold text-white truncate">{schedule.name}</h3>
+                                    <div className="flex items-center gap-1 ml-2">
                                         <button 
-                                            onClick={(e) => {e.stopPropagation(); handleOpenModal(schedule)}} 
-                                            className="p-1.5 md:p-1 text-slate-400 hover:text-white transition-colors rounded active:scale-95"
+                                            onClick={(e) => {e.stopPropagation(); handleOpenScheduleModal(schedule)}} 
+                                            className="p-1.5 text-slate-400 hover:text-white rounded transition-colors"
+                                            title="Edit schedule"
                                         >
                                             <Edit size={16}/>
                                         </button>
                                         <button 
                                             onClick={(e) => {e.stopPropagation(); handleDeleteSchedule(schedule)}} 
-                                            className="p-1.5 md:p-1 text-slate-400 hover:text-red-400 transition-colors rounded active:scale-95"
+                                            className="p-1.5 text-slate-400 hover:text-red-400 rounded transition-colors"
+                                            title="Delete schedule"
                                         >
                                             <Trash2 size={16}/>
                                         </button>
                                     </div>
                                 </div>
-                            ))}
-                            {schedules.length === 0 && (
-                                <div className="text-slate-500 text-center p-6">
-                                    <Clock className="mx-auto mb-2 text-slate-600" size={32} />
-                                    <p className="text-sm">No schedules yet.</p>
-                                    <p className="text-xs mt-1">Click 'New' to create one.</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* Right: Rules Editor */}
-                <div className="lg:w-2/3">
-                    {isLoadingRules && (
-                        <div className="p-8 text-center bg-slate-800 rounded-lg">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto mb-3"></div>
-                            <p className="text-slate-400">Loading rules...</p>
-                        </div>
-                    )}
-                    
-                    {!isLoadingRules && selectedSchedule && (
-                        <div className="bg-slate-800 rounded-lg shadow-lg p-4 md:p-6 space-y-4 md:space-y-6">
-                            <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
-                                <Clock size={20} className="text-indigo-400" />
-                                <h3 className="text-lg font-semibold text-white">Weekly Schedule</h3>
+                                {selectedScheduleId === schedule.id && (
+                                    <div className="text-sm text-indigo-300">Currently selected</div>
+                                )}
                             </div>
-                            
-                            {daysOfWeek.map((dayName, dayIndex) => {
-                                const dayRules = rules.map((r, i) => ({...r, originalIndex: i})).filter(r => r.day_of_week === dayIndex);
-                                return (
-                                    <div key={dayIndex} className="py-3 md:py-4 border-b border-slate-700 last:border-b-0">
-                                        {/* Mobile Layout */}
-                                        <div className="md:hidden">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <label className="font-semibold text-white text-sm">
-                                                    {daysOfWeekShort[dayIndex]}
-                                                </label>
-                                                {dayRules.length === 0 && (
-                                                    <span className="text-slate-500 text-xs">Unavailable</span>
-                                                )}
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Weekly Hours Section */}
+            {selectedSchedule && !isLoading && (
+                <div className="bg-slate-800 rounded-lg p-6">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                        <div>
+                            <h2 className="text-xl font-bold text-white">Weekly Hours</h2>
+                            <p className="text-slate-400 text-sm mt-1">Set your regular availability for "{selectedSchedule.name}"</p>
+                        </div>
+                        <button 
+                            onClick={handleSaveRules} 
+                            disabled={isSaving || isLoading} 
+                            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold text-white transition-colors"
+                        >
+                            {isSaving ? 'Saving...' : 'Save Rules'}
+                        </button>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {daysOfWeek.map((dayName, dayIndex) => {
+                            const dayRules = rules.map((r, i) => ({...r, originalIndex: i})).filter(r => r.day_of_week === dayIndex);
+                            return (
+                                <div key={dayIndex} className="bg-slate-700/50 rounded-lg p-4">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="font-semibold text-white">{dayName}</h3>
+                                        <button 
+                                            onClick={() => handleAddTimeSlot(dayIndex)} 
+                                            className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors"
+                                        >
+                                            <Plus size={16}/> Add Time
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="space-y-3">
+                                        {dayRules.length === 0 ? (
+                                            <div className="text-slate-500 text-center py-6">
+                                                <Clock size={24} className="mx-auto mb-2 opacity-50" />
+                                                <p className="text-sm">Unavailable</p>
                                             </div>
-                                            <div className="space-y-3">
-                                                {dayRules.map(rule => (
-                                                    <div key={rule.originalIndex} className="bg-slate-700/30 p-3 rounded-lg">
-                                                        <div className="flex items-center gap-2 mb-2">
+                                        ) : (
+                                            dayRules.map(rule => (
+                                                <div key={rule.originalIndex} className="bg-slate-800 rounded-lg p-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex-1 flex items-center gap-2">
                                                             <input 
                                                                 type="time" 
                                                                 value={rule.start_time} 
                                                                 onChange={e => handleRuleChange(rule.originalIndex, 'start_time', e.target.value)} 
-                                                                className="flex-1 bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none text-white"
+                                                                className="flex-1 bg-slate-600 text-white p-2 rounded-md border border-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
                                                             />
-                                                            <span className="text-slate-400 font-mono">→</span>
+                                                            <span className="text-slate-400 font-medium">to</span>
                                                             <input 
                                                                 type="time" 
                                                                 value={rule.end_time} 
                                                                 onChange={e => handleRuleChange(rule.originalIndex, 'end_time', e.target.value)} 
-                                                                className="flex-1 bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none text-white"
+                                                                className="flex-1 bg-slate-600 text-white p-2 rounded-md border border-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
                                                             />
                                                         </div>
                                                         <button 
                                                             onClick={() => handleRemoveTimeSlot(rule.originalIndex)} 
-                                                            className="w-full flex items-center justify-center gap-2 p-2 text-slate-400 hover:text-red-400 transition-colors rounded active:scale-95"
+                                                            className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors"
+                                                            title="Remove time slot"
                                                         >
-                                                            <Trash2 size={16}/> Remove
+                                                            <Trash2 size={18}/>
                                                         </button>
                                                     </div>
-                                                ))}
-                                                <button 
-                                                    onClick={() => handleAddTimeSlot(dayIndex)} 
-                                                    className="w-full flex items-center justify-center gap-2 text-indigo-400 hover:text-indigo-300 transition-colors text-sm font-semibold p-3 border-2 border-dashed border-slate-600 rounded-lg hover:border-indigo-500 active:scale-95"
-                                                >
-                                                    <Plus size={16}/> Add time slot
-                                                </button>
-                                            </div>
-                                        </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
-                                        {/* Desktop Layout */}
-                                        <div className="hidden md:grid md:grid-cols-[120px_1fr] items-start gap-4">
-                                            <label className="font-semibold text-white mt-2">{dayName}</label>
-                                            <div className="space-y-3">
-                                                {dayRules.length === 0 && <p className="text-slate-500 mt-2">Unavailable</p>}
-                                                {dayRules.map(rule => (
-                                                    <div key={rule.originalIndex} className="flex items-center gap-2">
-                                                        <input 
-                                                            type="time" 
-                                                            value={rule.start_time} 
-                                                            onChange={e => handleRuleChange(rule.originalIndex, 'start_time', e.target.value)} 
-                                                            className="w-full bg-slate-700 p-2 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors text-white"
-                                                        />
-                                                        <span className="text-slate-400">-</span>
-                                                        <input 
-                                                            type="time" 
-                                                            value={rule.end_time} 
-                                                            onChange={e => handleRuleChange(rule.originalIndex, 'end_time', e.target.value)} 
-                                                            className="w-full bg-slate-700 p-2 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors text-white"
-                                                        />
-                                                        <button 
-                                                            onClick={() => handleRemoveTimeSlot(rule.originalIndex)} 
-                                                            className="p-2 text-slate-400 hover:text-red-400 transition-colors rounded active:scale-95"
-                                                        >
-                                                            <Trash2 size={20}/>
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                                <button 
-                                                    onClick={() => handleAddTimeSlot(dayIndex)} 
-                                                    className="flex items-center gap-2 text-indigo-400 hover:text-indigo-300 transition-colors text-sm font-semibold active:scale-95"
-                                                >
-                                                    <Plus size={16}/> Add interval
-                                                </button>
+            {!selectedSchedule && !isLoading && (
+                <div className="bg-slate-800 rounded-lg p-12 text-center">
+                    <Clock size={48} className="mx-auto mb-4 text-slate-500" />
+                    <h3 className="text-lg font-semibold text-white mb-2">Select a Schedule</h3>
+                    <p className="text-slate-400">Choose a schedule above to set weekly hours and date overrides.</p>
+                </div>
+            )}
+
+            {/* Date Overrides Calendar */}
+            {selectedSchedule && !isLoading && (
+                <div className="bg-slate-800 rounded-lg p-6">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                        <div>
+                            <h2 className="text-xl font-bold text-white">Date Overrides</h2>
+                            <p className="text-slate-400 text-sm mt-1">Override specific dates for "{selectedSchedule.name}"</p>
+                        </div>
+                        <div className="flex items-center gap-2 bg-slate-700 rounded-lg p-1">
+                            <button 
+                                onClick={calendar.prevMonth} 
+                                className="p-2 rounded-md hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
+                            >
+                                <ChevronLeft size={20} />
+                            </button>
+                            <span className="font-semibold text-white px-4 py-2 min-w-[140px] text-center">
+                                {calendar.monthName}
+                            </span>
+                            <button 
+                                onClick={calendar.nextMonth} 
+                                className="p-2 rounded-md hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
+                            >
+                                <ChevronRight size={20} />
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-slate-700/50 rounded-lg p-4">
+                        <div className="grid grid-cols-7 text-center text-sm font-semibold text-slate-400 mb-3">
+                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                                <div key={d} className="py-2">{d}</div>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1">
+                            {calendar.daysForMonthView.map((day) => {
+                                const dayStr = format(day, 'yyyy-MM-dd');
+                                const override = overridesMap.get(dayStr);
+                                const isCurrent = isSameMonth(day, calendar.currentDate);
+                                const isCurrentDay = isToday(day);
+                                
+                                return (
+                                    <div 
+                                        key={day.toString()} 
+                                        className={`
+                                            relative h-20 sm:h-24 flex flex-col p-2 rounded-md cursor-pointer transition-all
+                                            ${isCurrent 
+                                                ? 'hover:bg-slate-600 text-white' 
+                                                : 'text-slate-500 bg-slate-800/50 hover:bg-slate-700/50'
+                                            }
+                                            ${isCurrentDay && isCurrent ? 'ring-1 ring-indigo-500' : ''}
+                                        `}
+                                        onClick={() => handleDayClick(day)}
+                                    >
+                                        <span className={`text-sm font-medium ${
+                                            isCurrentDay && isCurrent
+                                                ? 'bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center' 
+                                                : ''
+                                        }`}>
+                                            {format(day, 'd')}
+                                        </span>
+                                        
+                                        {override && isCurrent && (
+                                            <div className="mt-auto text-center text-[10px] sm:text-xs leading-tight">
+                                                {override.is_unavailable ? (
+                                                    <span className="px-1.5 py-0.5 bg-red-500/20 text-red-300 rounded">
+                                                        Unavailable
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded font-mono">
+                                                        {toLocalTime(override.start_time)} - {toLocalTime(override.end_time)}
+                                                    </span>
+                                                )}
                                             </div>
-                                        </div>
+                                        )}
                                     </div>
                                 );
                             })}
                         </div>
-                    )}
-                    
-                    {!selectedSchedule && !isLoadingSchedules && (
-                        <div className="p-8 text-center text-slate-500 bg-slate-800 rounded-lg">
-                            <Clock className="mx-auto mb-3 text-slate-600" size={48} />
-                            <h3 className="text-lg font-semibold mb-2">No Schedule Selected</h3>
-                            <p className="text-sm">Select or create a schedule to begin setting your availability.</p>
+                        
+                        <div className="flex justify-center gap-6 mt-4 pt-4 border-t border-slate-600">
+                            <div className="flex items-center gap-2 text-sm text-slate-400">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                Custom Available
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-slate-400">
+                                <div className="w-2 h-2 rounded-full bg-red-500" />
+                                Unavailable
+                            </div>
                         </div>
-                    )}
+                    </div>
                 </div>
-            </div>
+            )}
             
-            <InputModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSubmit={handleModalSubmit}
-                title={editingSchedule ? 'Rename Schedule' : 'Create New Schedule'}
-                label="Schedule Name"
-                initialValue={editingSchedule ? editingSchedule.name : ''}
-                placeholder={editingSchedule ? '' : "e.g., Weekends"}
+            <InputModal 
+                isOpen={isScheduleModalOpen} 
+                onClose={() => setIsScheduleModalOpen(false)} 
+                onSubmit={handleScheduleModalSubmit} 
+                title={editingSchedule ? 'Rename Schedule' : 'Create Schedule'} 
+                label="Schedule Name" 
+                initialValue={editingSchedule?.name || ''} 
+            />
+            
+            <OverrideModal 
+                isOpen={isOverrideModalOpen} 
+                onClose={() => setIsOverrideModalOpen(false)} 
+                onSave={handleSaveOverride} 
+                onDelete={handleDeleteOverride} 
+                date={selectedOverrideDate} 
+                scheduleId={selectedScheduleId} 
+                existingOverride={overridesMap.get(format(selectedOverrideDate || new Date(), 'yyyy-MM-dd'))} 
+                toLocalTime={toLocalTime}
             />
         </div>
     );

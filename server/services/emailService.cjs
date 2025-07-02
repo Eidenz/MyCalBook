@@ -11,7 +11,6 @@ let transporter;
 const isEmailConfigured = process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS;
 
 if (isEmailConfigured) {
-    // **THE FIX: The method is createTransport, not createTransporter**
     transporter = nodemailer.createTransport({
         host: process.env.EMAIL_HOST,
         port: parseInt(process.env.EMAIL_PORT || '587', 10),

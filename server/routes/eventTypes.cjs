@@ -90,7 +90,6 @@ router.put('/:id', async (req, res) => {
             description,
             durations: JSON.stringify(durations.map(d => parseInt(d, 10))),
             default_duration: parseInt(default_duration, 10),
-            // **THE FIX: The is_public field was missing here.**
             is_public: typeof is_public === 'boolean' ? is_public : existingEvent.is_public,
             updated_at: new Date()
         };
