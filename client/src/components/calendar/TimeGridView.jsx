@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { format, startOfDay, endOfDay, getHours, getMinutes, isToday, isSameDay, addDays, isBefore, isWithinInterval } from 'date-fns';
 import { Users } from 'lucide-react';
 
-const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, isSingleDay, isMobile }) => {
+const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, isSingleDay, isMobile, now }) => {
     const start = new Date(event.start_time);
     const end = new Date(event.end_time);
 
@@ -21,8 +21,7 @@ const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, is
     const durationMinutes = Math.max(30, displayEnd - displayStart);
     const top = (displayStart / (24 * 60)) * 100;
     const height = (durationMinutes / (24 * 60)) * 100;
-
-    const now = new Date();
+    
     const isPast = isBefore(new Date(event.end_time), now);
     const isCurrent = !isPast && isWithinInterval(now, { start: new Date(event.start_time), end: new Date(event.end_time) });
     
@@ -94,6 +93,15 @@ const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, is
 const TimeGridView = ({ days, events, onEventClick }) => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const [isMobile, setIsMobile] = useState(false);
+    const [now, setNow] = useState(new Date());
+
+    // Set up interval to update time every minute
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setNow(new Date());
+        }, 60 * 1000); 
+        return () => clearInterval(timer);
+    }, []);
 
     // Detect mobile screen size
     useEffect(() => {
@@ -140,6 +148,9 @@ const TimeGridView = ({ days, events, onEventClick }) => {
 
     // Fixed grid template columns to match between header and content
     const gridTemplateColumns = `repeat(${days.length}, minmax(0, 1fr))`;
+    
+    // Calculate position for the current time indicator line
+    const currentTimePosition = ((now.getHours() * 60 + now.getMinutes()) / (24 * 60)) * 100;
 
     return (
         <div className="flex-1 flex flex-col overflow-y-scroll">
@@ -185,6 +196,18 @@ const TimeGridView = ({ days, events, onEventClick }) => {
                                     {hours.map(hour => (
                                         <div key={hour} className="h-12 md:h-16 border-b border-slate-700/50"></div>
                                     ))}
+
+                                    {/* Current Time Indicator */}
+                                    {isToday(day) && (
+                                        <div
+                                            className="absolute left-0 right-0 z-20 pointer-events-none"
+                                            style={{ top: `${currentTimePosition}%` }}
+                                        >
+                                            <div className="relative h-px bg-red-400">
+                                                <div className="absolute -left-1.5 -top-[5px] w-3 h-3 bg-red-400 rounded-full ring-2 ring-slate-800"></div>
+                                            </div>
+                                        </div>
+                                    )}
                                     
                                     {/* Events for this day */}
                                     {(eventsByDay.get(format(day, 'yyyy-MM-dd')) || []).map(event => (
@@ -198,6 +221,7 @@ const TimeGridView = ({ days, events, onEventClick }) => {
                                             isEnd={event.isEnd}
                                             isSingleDay={event.isSingleDay}
                                             isMobile={isMobile}
+                                            now={now}
                                         />
                                     ))}
                                 </div>
