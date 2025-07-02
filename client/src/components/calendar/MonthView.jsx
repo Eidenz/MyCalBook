@@ -46,7 +46,7 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
                 <>
                     {event.recurrence_id && <Repeat size={12} className="flex-shrink-0"/>}
                     <span className="font-semibold flex-shrink-0">
-                        {format(new Date(event.start_time), 'HH:mm')}
+                        {format(new Date(event.start_time), 'HH:mm')}-{format(new Date(event.end_time), 'HH:mm')}
                     </span>
                     <span className="truncate ml-1">{event.title}</span>
                     {guests.length > 0 && (
