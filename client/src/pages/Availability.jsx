@@ -303,28 +303,29 @@ const Availability = () => {
                                         ) : (
                                             dayRules.map(rule => (
                                                 <div key={rule.originalIndex} className="bg-slate-800 rounded-lg p-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex-1 flex items-center gap-2">
+                                                    {/* Mobile-optimized layout */}
+                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                                                        <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 min-w-0">
                                                             <input 
                                                                 type="time" 
                                                                 value={rule.start_time} 
                                                                 onChange={e => handleRuleChange(rule.originalIndex, 'start_time', e.target.value)} 
-                                                                className="flex-1 bg-slate-600 text-white p-2 rounded-md border border-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                                                                className="flex-1 min-w-0 bg-slate-600 text-white p-2 text-sm rounded-md border border-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
                                                             />
-                                                            <span className="text-slate-400 font-medium">to</span>
+                                                            <span className="text-slate-400 font-medium text-sm text-center sm:text-left px-2">to</span>
                                                             <input 
                                                                 type="time" 
                                                                 value={rule.end_time} 
                                                                 onChange={e => handleRuleChange(rule.originalIndex, 'end_time', e.target.value)} 
-                                                                className="flex-1 bg-slate-600 text-white p-2 rounded-md border border-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                                                                className="flex-1 min-w-0 bg-slate-600 text-white p-2 text-sm rounded-md border border-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
                                                             />
                                                         </div>
                                                         <button 
                                                             onClick={() => handleRemoveTimeSlot(rule.originalIndex)} 
-                                                            className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors"
+                                                            className="self-center p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors flex-shrink-0"
                                                             title="Remove time slot"
                                                         >
-                                                            <Trash2 size={18}/>
+                                                            <Trash2 size={16}/>
                                                         </button>
                                                     </div>
                                                 </div>
