@@ -1,11 +1,15 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { format, isSameMonth, isToday, isSameDay, startOfDay, endOfDay } from 'date-fns';
+import { format, isSameMonth, isToday, isSameDay, startOfDay, endOfDay, isBefore, isWithinInterval } from 'date-fns';
 import { Users } from 'lucide-react'; // Import the Users icon
 
 const MAX_EVENTS_VISIBLE = 3;
 const MAX_EVENTS_VISIBLE_MOBILE = 4; // Show more events on mobile since they're smaller
 
 const EventPill = ({ event, isStart, onClick, isMobile }) => {
+    const now = new Date();
+    const isPast = isBefore(new Date(event.end_time), now);
+    const isCurrent = !isPast && isWithinInterval(now, { start: new Date(event.start_time), end: new Date(event.end_time) });
+
     const typeStyles = {
         personal: 'bg-amber-500 hover:bg-amber-400',
         booked: 'bg-green-500 hover:bg-green-400',
@@ -16,7 +20,10 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
         text-white text-xs cursor-pointer 
         flex items-center gap-1.5
         truncate transition-colors duration-200
-        ${typeStyles[event.type] || 'bg-blue-500 hover:bg-blue-400'}
+        ${isPast 
+            ? 'bg-slate-600 hover:bg-slate-500 opacity-70' 
+            : typeStyles[event.type] || 'bg-blue-500 hover:bg-blue-400'}
+        ${isCurrent ? 'ring-2 ring-sky-400' : ''}
         ${isMobile ? 'p-0.5 mb-0.5 rounded' : 'p-1 mb-1 rounded-md'}
     `;
 

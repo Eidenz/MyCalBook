@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { format, startOfDay, endOfDay, getHours, getMinutes, isToday, isSameDay, addDays, differenceInDays } from 'date-fns';
+import { format, startOfDay, endOfDay, getHours, getMinutes, isToday, isSameDay, addDays, isBefore, isWithinInterval } from 'date-fns';
 import { Users } from 'lucide-react';
 
 const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, isSingleDay, isMobile }) => {
@@ -21,6 +21,10 @@ const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, is
     const durationMinutes = Math.max(30, displayEnd - displayStart);
     const top = (displayStart / (24 * 60)) * 100;
     const height = (durationMinutes / (24 * 60)) * 100;
+
+    const now = new Date();
+    const isPast = isBefore(new Date(event.end_time), now);
+    const isCurrent = !isPast && isWithinInterval(now, { start: new Date(event.start_time), end: new Date(event.end_time) });
     
     const typeStyles = {
         personal: 'bg-amber-500/80 border-amber-400',
@@ -42,7 +46,13 @@ const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, is
         <div
             onClick={() => onClick(event)}
             style={{ top: `${top}%`, height: `${height}%` }}
-            className={`absolute left-0 right-0 mx-0.5 md:mx-1 p-1 md:p-2 text-white border-l-4 cursor-pointer overflow-hidden backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${typeStyles[event.type]} ${roundingClasses}`}
+            className={`absolute left-0 right-0 mx-0.5 md:mx-1 p-1 md:p-2 text-white border-l-4 cursor-pointer overflow-hidden backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
+                isPast 
+                    ? 'bg-slate-600/80 border-slate-500 opacity-70' 
+                    : typeStyles[event.type]
+            } ${
+                isCurrent ? 'ring-2 ring-sky-400 z-10' : ''
+            } ${roundingClasses}`}
         >
             {isMobile ? (
                 // Mobile: Show only start time

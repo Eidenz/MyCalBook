@@ -1,22 +1,38 @@
 import React from 'react';
 import { X, Users } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isBefore, isWithinInterval } from 'date-fns';
 
 const DayViewModal = ({ isOpen, onClose, day, events, onEventClick }) => {
     if (!isOpen) return null;
 
     const EventRow = ({ event }) => {
         const guests = event.guests ? JSON.parse(event.guests) : [];
+        const now = new Date();
+        const isPast = isBefore(new Date(event.end_time), now);
+        const isCurrent = !isPast && isWithinInterval(now, { start: new Date(event.start_time), end: new Date(event.end_time) });
+
+        const typeStyles = {
+            personal: 'bg-amber-500',
+            booked: 'bg-green-500',
+            blocked: 'bg-red-500',
+        };
+
+        const dotClass = `
+            w-2 h-2 rounded-full mr-4 mt-2 flex-shrink-0
+            ${isPast ? 'bg-slate-500' : typeStyles[event.type]}
+            ${isCurrent ? 'ring-2 ring-offset-2 ring-offset-slate-800 ring-sky-400' : ''}
+        `;
+
 
         return (
             <div 
-                className="flex items-start p-3 -mx-3 rounded-lg hover:bg-slate-700 cursor-pointer transition-colors"
+                className={`flex items-start p-3 -mx-3 rounded-lg hover:bg-slate-700 cursor-pointer transition-colors ${isPast ? 'opacity-70' : ''}`}
                 onClick={() => {
                     onEventClick(event);
                     onClose();
                 }}
             >
-                <div className={`w-2 h-2 rounded-full mr-4 mt-2 ${event.type === 'personal' ? 'bg-amber-500' : event.type === 'booked' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <div className={dotClass}></div>
                 <div className="flex-grow">
                     <p className="font-semibold text-white">{event.title}</p>
                     <p className="text-sm text-slate-400">

@@ -8,6 +8,32 @@ import TimeGridView from '../components/calendar/TimeGridView';
 import EventModal from '../components/calendar/EventModal';
 import DayViewModal from '../components/calendar/DayViewModal';
 
+const CalendarLegend = () => (
+    <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1 mb-2 md:mb-3 text-xs text-slate-400">
+        <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+            <span>Booked</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+            <span>Personal</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+            <span>Blocked</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
+            <span>Past Event</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full ring-2 ring-offset-2 ring-offset-slate-800 ring-sky-400"></div>
+            <span>Current Event</span>
+        </div>
+    </div>
+);
+
+
 const CalendarView = () => {
     const { token, logout } = useAuth();
     const [view, setView] = useState('month'); // 'month', 'week', 'day'
@@ -138,6 +164,8 @@ const CalendarView = () => {
                 </div>
             </header>
             
+            <CalendarLegend />
+
             <main className="flex-1 bg-slate-800 rounded-lg shadow-lg overflow-hidden flex flex-col">
                 {isLoading ? (
                     <div className="flex-1 flex items-center justify-center text-slate-400">

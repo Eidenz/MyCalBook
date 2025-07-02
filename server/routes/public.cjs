@@ -188,7 +188,9 @@ router.get('/availability/:slug/month', async (req, res) => {
 // GET /api/public/user/:username
 router.get('/user/:username', async (req, res) => {
     try {
-        const user = await db('users').where({ username: req.params.username }).first('id', 'username');
+        const user = await db('users')
+            .where(db.raw('LOWER(username) = ?', req.params.username.toLowerCase()))
+            .first('id', 'username');
         if (!user) return res.status(404).json({ error: 'User not found.' });
         const eventTypes = await db('event_types').where({ user_id: user.id, is_public: true }).select('*').orderBy('title', 'asc');
         res.json({ user, eventTypes: eventTypes.map(et => ({ ...et, durations: JSON.parse(et.durations) })) });
