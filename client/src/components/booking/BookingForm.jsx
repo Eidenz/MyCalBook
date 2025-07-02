@@ -1,12 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
-const BookingForm = ({ eventType, selectedTime, duration, onConfirmBooking, onCancel }) => {
-    const [formData, setFormData] = useState({ name: '', email: '', notes: '' });
+const BookingForm = ({ eventType, selectedTime, duration, onConfirmBooking, onCancel, loggedInUsername }) => {
+    const [formData, setFormData] = useState({ 
+        name: loggedInUsername || '', 
+        email: '', 
+        notes: '' 
+    });
     const [guests, setGuests] = useState([]);
     const [guestInput, setGuestInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (loggedInUsername) {
+            setFormData(prev => ({ ...prev, name: loggedInUsername }));
+        }
+    }, [loggedInUsername]);
+
 
     const handleChange = (e) => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -44,13 +55,20 @@ const BookingForm = ({ eventType, selectedTime, duration, onConfirmBooking, onCa
         <form onSubmit={handleSubmit} className="space-y-4 mt-4 text-left p-4 bg-slate-900/50 rounded-lg border border-slate-700 animate-fadeIn">
             <div>
                 <label className="text-sm font-medium text-slate-300">Username *</label>
-                <input type="text" name="name" value={formData.name} onChange={handleChange} required className="w-full mt-1 bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
+                <input 
+                    type="text" 
+                    name="name" 
+                    value={formData.name} 
+                    onChange={handleChange} 
+                    required
+                    readOnly={!!loggedInUsername}
+                    className="w-full mt-1 bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors read-only:bg-slate-800 read-only:cursor-not-allowed"
+                />
             </div>
             <div>
                 <label className="text-sm font-medium text-slate-300">Email <em className="text-xs">(optional)</em></label>
                 <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full mt-1 bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
             </div>
-            {/* --- NEW GUESTS FIELD --- */}
             <div>
                 <label className="text-sm font-medium text-slate-300">Guests <em className="text-xs">(optional)</em></label>
                 <div className="w-full mt-1 bg-slate-700 p-2 rounded-md border-2 border-slate-600 flex flex-wrap items-center gap-2">

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { format, startOfToday, isSameMonth, startOfMonth } from 'date-fns';
+import { useAuth } from '../context/AuthContext';
 import { useCalendar } from '../hooks/useCalendar';
-import { Clock, MapPin, Calendar as CalendarIcon, ArrowLeft, Globe, CheckCircle } from 'lucide-react';
+import { Clock, MapPin, Calendar as CalendarIcon, ArrowLeft, Globe, CheckCircle, PlusCircle, UserCheck } from 'lucide-react';
 
 import CalendarSelector from '../components/booking/CalendarSelector';
 import TimeSlotPicker from '../components/booking/TimeSlotPicker';
@@ -11,7 +12,8 @@ import AddToCalendar from '../components/booking/AddToCalendar';
 
 const BookingPage = () => {
     const { slug } = useParams();
-    
+    const { user, isAuthenticated, token } = useAuth();
+
     // State for the core data
     const [eventType, setEventType] = useState(null);
     const [monthlyAvailability, setMonthlyAvailability] = useState([]);
@@ -30,6 +32,8 @@ const BookingPage = () => {
     const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
     const [confirmedBooking, setConfirmedBooking] = useState(null);
     const [error, setError] = useState('');
+    const [isAddingToInternal, setIsAddingToInternal] = useState(false);
+    const [isAddedToInternal, setIsAddedToInternal] = useState(false);
 
     // Track which months we've loaded to avoid duplicate requests
     const [loadedMonths, setLoadedMonths] = useState(new Set());
@@ -38,7 +42,6 @@ const BookingPage = () => {
     const calendar = useCalendar(selectedDate);
 
     // --- Data Fetching ---
-
     const fetchEventType = useCallback(async () => {
         try {
             const eventTypeResponse = await fetch(`/api/public/availability/${slug}?date=${format(selectedDate, 'yyyy-MM-dd')}`);
@@ -47,15 +50,12 @@ const BookingPage = () => {
             setEventType(data.eventType);
             setSelectedDuration(data.eventType.default_duration);
             return data.eventType;
-        } catch (err) {
-            throw new Error(err.message);
-        }
+        } catch (err) { throw new Error(err.message); }
     }, [slug, selectedDate]);
 
     const fetchMonthAvailability = useCallback(async (monthDate) => {
         const monthKey = format(startOfMonth(monthDate), 'yyyy-MM');
         if (loadedMonths.has(monthKey)) return;
-
         try {
             const monthlyResponse = await fetch(`/api/public/availability/${slug}/month?month=${monthKey}`);
             if (!monthlyResponse.ok) throw new Error('Could not load monthly availability.');
@@ -67,10 +67,7 @@ const BookingPage = () => {
 
     const fetchDailySlots = useCallback(async () => {
         if (!selectedDate || !selectedDuration) return;
-        setIsLoadingSlots(true);
-        setDailySlots([]); 
-        setSelectedTime(null); 
-        
+        setIsLoadingSlots(true); setDailySlots([]); setSelectedTime(null);
         try {
             const dateQuery = format(selectedDate, 'yyyy-MM-dd');
             const response = await fetch(`/api/public/availability/${slug}?date=${dateQuery}&duration=${selectedDuration}`);
@@ -84,32 +81,22 @@ const BookingPage = () => {
     useEffect(() => {
         const initializeBookingPage = async () => {
             setIsInitialLoading(true); setError('');
-            try {
-                await fetchEventType();
-                await fetchMonthAvailability(selectedDate);
-            } catch (err) { setError(err.message); } 
+            try { await fetchEventType(); await fetchMonthAvailability(selectedDate); } 
+            catch (err) { setError(err.message); } 
             finally { setIsInitialLoading(false); }
         };
         initializeBookingPage();
     }, [slug]);
 
-    useEffect(() => {
-        if (!isInitialLoading && eventType) { fetchDailySlots(); }
-    }, [fetchDailySlots, isInitialLoading, eventType]);
-
-    useEffect(() => {
-        setUserTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
-    }, []);
+    useEffect(() => { if (!isInitialLoading && eventType) { fetchDailySlots(); } }, [fetchDailySlots, isInitialLoading, eventType]);
+    useEffect(() => { setUserTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone); }, []);
 
     // --- Handlers ---
-
     const handleDateSelect = async (day) => {
         const currentMonthKey = format(startOfMonth(selectedDate), 'yyyy-MM');
         const newMonthKey = format(startOfMonth(day), 'yyyy-MM');
         if (currentMonthKey !== newMonthKey) { await fetchMonthAvailability(day); }
-        calendar.setCurrentDate(day);
-        setSelectedDate(day);
-        setSelectedTime(null);
+        calendar.setCurrentDate(day); setSelectedDate(day); setSelectedTime(null);
     };
 
     const handleClearTimeSelection = () => setSelectedTime(null);
@@ -119,42 +106,47 @@ const BookingPage = () => {
             const response = await fetch('/api/public/bookings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    eventTypeSlug: slug,
-                    startTime: selectedTime,
-                    duration: selectedDuration,
-                    ...bookingDetails,
-                }),
+                body: JSON.stringify({ eventTypeSlug: slug, startTime: selectedTime, duration: selectedDuration, ...bookingDetails }),
             });
             if (!response.ok) {
                 const errData = await response.json();
                 throw new Error(errData.error || 'Failed to confirm booking.');
             }
             const data = await response.json();
-            // Store the full booking object from the API response
-            setConfirmedBooking({ ...data.booking, title: eventType.title, location: eventType.location });
+            setConfirmedBooking({ ...data.booking, title: eventType.title, location: eventType.location, description: bookingDetails.notes });
             setIsBookingConfirmed(true);
-        } catch (err) {
-            throw err;
-        }
+        } catch (err) { throw err; }
+    };
+
+    const handleAddToInternalCalendar = async () => {
+        if (!isAuthenticated || !confirmedBooking) return;
+        setIsAddingToInternal(true);
+        try {
+            const payload = {
+                title: `${confirmedBooking.title} with ${eventType.ownerUsername}`,
+                start_time: confirmedBooking.start_time,
+                end_time: confirmedBooking.end_time,
+                type: 'personal',
+                description: `Booked via MyCalBook.\n\nEvent Notes:\n${confirmedBooking.description || 'N/A'}`,
+                guests: confirmedBooking.guests ? JSON.parse(confirmedBooking.guests) : [],
+            };
+            const response = await fetch('/api/events/manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                body: JSON.stringify(payload),
+            });
+            if (!response.ok) throw new Error('Failed to add event to your calendar.');
+            setIsAddedToInternal(true);
+        } catch (error) { alert(error.message); } 
+        finally { setIsAddingToInternal(false); }
     };
 
     // --- Render Logic ---
-
     if (isInitialLoading) {
-        return (
-            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-                <div className="text-center"><div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400 mb-4"></div><p className="text-slate-300">Loading booking page...</p></div>
-            </div>
-        );
+        return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4"><div className="text-center"><div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400 mb-4"></div><p className="text-slate-300">Loading booking page...</p></div></div>;
     }
-
     if (error) {
-        return (
-            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-                <div className="text-center text-red-400 p-8"><p className="text-xl mb-4">⚠️ {error}</p><Link to="/" className="text-indigo-400 hover:text-indigo-300 underline">Go back to home</Link></div>
-            </div>
-        );
+        return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4"><div className="text-center text-red-400 p-8"><p className="text-xl mb-4">⚠️ {error}</p><Link to="/" className="text-indigo-400 hover:text-indigo-300 underline">Go back to home</Link></div></div>;
     }
 
     if (isBookingConfirmed && confirmedBooking) {
@@ -164,9 +156,7 @@ const BookingPage = () => {
                     <div className="text-center">
                         <CheckCircle className="mx-auto text-green-400 h-16 w-16" />
                         <h1 className="text-2xl sm:text-3xl font-bold text-white mt-4">Booking Confirmed!</h1>
-                        <p className="text-slate-400 mt-2">
-                            {confirmedBooking.booker_email ? 'A calendar invitation and confirmation has been sent to your email.' : 'Your event is scheduled.'}
-                        </p>
+                        <p className="text-slate-400 mt-2">{confirmedBooking.booker_email ? 'A calendar invitation and confirmation has been sent to your email.' : 'Your event is scheduled.'}</p>
                     </div>
 
                     <div className="my-6 space-y-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
@@ -178,11 +168,12 @@ const BookingPage = () => {
                         </div>
                     </div>
 
-                    <AddToCalendar event={confirmedBooking} />
+                    {isAuthenticated && (
+                        <div className="mb-4"><button onClick={handleAddToInternalCalendar} disabled={isAddingToInternal || isAddedToInternal} className="w-full flex items-center justify-center gap-3 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed">{isAddingToInternal ? <><div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>Adding...</> : isAddedToInternal ? <><CheckCircle size={20} />Added to your calendar!</> : <><PlusCircle size={20} />Add to MyCalBook Calendar</>}</button></div>
+                    )}
 
-                    <div className="mt-8 text-center">
-                         <Link to={`/`} className="text-sm text-slate-400 hover:text-white transition">Close</Link>
-                    </div>
+                    <AddToCalendar event={confirmedBooking} />
+                    <div className="mt-8 text-center"><Link to={`/u/${eventType.ownerUsername}`} className="text-sm text-slate-400 hover:text-white transition">Book another event with {eventType.ownerUsername}</Link></div>
                 </div>
             </div>
         );
@@ -190,9 +181,15 @@ const BookingPage = () => {
 
     return (
         <div className="min-h-screen bg-slate-900 flex flex-col lg:items-center lg:justify-center p-4 sm:p-6 md:p-8">
+            {isAuthenticated && user && (
+                <div className="w-full max-w-7xl mx-auto mb-4">
+                    <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-2 px-4 text-sm text-center text-slate-300 flex items-center justify-center gap-2">
+                        <UserCheck size={16} className="text-green-400" />
+                        Logged in as <strong className="text-white">{user.username}</strong>
+                    </div>
+                </div>
+            )}
             <div className="w-full max-w-7xl mx-auto bg-slate-800/50 border border-slate-700 rounded-2xl shadow-2xl flex flex-col lg:flex-row lg:h-[750px] transform transition-all duration-300">
-                
-                {/* Left Pane: Event Info (always visible) */}
                 <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-700 flex flex-col lg:w-[30%] lg:flex-shrink-0">
                     {selectedTime && (<button onClick={handleClearTimeSelection} className="flex lg:hidden items-center gap-2 text-indigo-400 mb-4 -ml-1 hover:text-indigo-300 transition-colors duration-200"><ArrowLeft size={16} /> Back</button>)}
                     <p className="text-slate-400">{eventType?.ownerUsername}</p>
@@ -204,10 +201,8 @@ const BookingPage = () => {
                     <p className="text-slate-400 mt-6 text-sm flex-grow">{eventType?.description}</p>
                     <div className="mt-6 pt-4 border-t border-slate-700"><label htmlFor="interval" className="block text-sm font-semibold mb-2 text-slate-300">Time slot interval</label><select id="interval" name="interval" value={bookingInterval} disabled={!!selectedTime} onChange={(e) => setBookingInterval(parseInt(e.target.value, 10))} className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors duration-200 disabled:opacity-50"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">60 minutes</option></select></div>
                 </div>
-
-                {/* Conditional Right Pane */}
                 {selectedTime ? (
-                    <div className="p-8 flex flex-col lg:w-[70%] lg:flex-1"><div className="flex-grow flex flex-col items-center justify-center"><div className="w-full max-w-sm text-center"><h2 className="text-xl font-bold text-white mb-2">Confirm your booking</h2><div className="my-6 p-4 rounded-lg border-2 border-slate-600 bg-slate-900/50 flex items-center justify-center gap-3 transform transition-all duration-200 hover:border-indigo-500"><CalendarIcon className="text-indigo-400" size={20} /><span className="text-lg font-semibold text-slate-200">{format(new Date(selectedTime), 'HH:mm')}</span><span className="text-lg text-slate-400">on</span><span className="text-lg font-semibold text-slate-200">{format(new Date(selectedTime), 'EEEE, MMMM d')}</span></div><BookingForm eventType={eventType} selectedTime={selectedTime} duration={selectedDuration} onConfirmBooking={handleConfirmBooking} onCancel={handleClearTimeSelection} /></div></div></div>
+                    <div className="p-8 flex flex-col lg:w-[70%] lg:flex-1"><div className="flex-grow flex flex-col items-center justify-center"><div className="w-full max-w-sm text-center"><h2 className="text-xl font-bold text-white mb-2">Confirm your booking</h2><div className="my-6 p-4 rounded-lg border-2 border-slate-600 bg-slate-900/50 flex items-center justify-center gap-3 transform transition-all duration-200 hover:border-indigo-500"><CalendarIcon className="text-indigo-400" size={20} /><span className="text-lg font-semibold text-slate-200">{format(new Date(selectedTime), 'HH:mm')}</span><span className="text-lg text-slate-400">on</span><span className="text-lg font-semibold text-slate-200">{format(new Date(selectedTime), 'EEEE, MMMM d')}</span></div><BookingForm eventType={eventType} selectedTime={selectedTime} duration={selectedDuration} onConfirmBooking={handleConfirmBooking} onCancel={handleClearTimeSelection} loggedInUsername={isAuthenticated ? user.username : null} /></div></div></div>
                 ) : (
                     <div className="flex flex-col lg:flex-row lg:flex-1 min-h-0">
                         <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-700 lg:w-1/2 flex flex-col justify-center"><CalendarSelector hook={calendar} onDateSelect={handleDateSelect} selectedDate={selectedDate} availableDays={monthlyAvailability} /><div className="mt-4 text-center"><div className="inline-flex items-center gap-2 text-xs text-slate-400 bg-slate-900/50 px-3 py-1.5 rounded-full"><Globe size={14}/><span>Timezone: {userTimezone.replace(/_/g, ' ')}</span></div></div></div>
