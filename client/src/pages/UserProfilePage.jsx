@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Clock, MapPin, ChevronRight } from 'lucide-react';
+import { Clock, MapPin, ChevronRight, UserX } from 'lucide-react';
 
 const UserProfilePage = () => {
     const { username } = useParams();
@@ -29,8 +29,33 @@ const UserProfilePage = () => {
         fetchProfile();
     }, [username]);
 
-    if (isLoading) return <div className="p-8 text-center">Loading...</div>;
-    if (error) return <div className="p-8 text-center text-red-400">{error}</div>;
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400 mb-4"></div>
+                    <p className="text-slate-300">Loading profile...</p>
+                </div>
+            </div>
+        );
+    }
+    
+    if (error) {
+        return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+                <div className="w-full max-w-md mx-auto text-center bg-slate-800/50 border border-slate-700 rounded-2xl shadow-2xl p-8 animate-fade-in-up">
+                    <UserX className="mx-auto text-red-400 h-16 w-16 mb-4" />
+                    <h1 className="text-3xl font-bold text-white">User Not Found</h1>
+                    <p className="text-slate-400 mt-2">
+                        Sorry, we couldn't find a user with the username "{username}".
+                    </p>
+                    <p className="text-slate-500 mt-1 text-sm">
+                        Please check the URL and try again.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
