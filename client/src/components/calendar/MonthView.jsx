@@ -1,9 +1,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { format, isSameMonth, isToday, isSameDay, startOfDay, endOfDay, isBefore, isWithinInterval } from 'date-fns';
-import { Users } from 'lucide-react'; // Import the Users icon
+import { Users, Repeat } from 'lucide-react';
 
 const MAX_EVENTS_VISIBLE = 3;
-const MAX_EVENTS_VISIBLE_MOBILE = 4; // Show more events on mobile since they're smaller
+const MAX_EVENTS_VISIBLE_MOBILE = 2;
 
 const EventPill = ({ event, isStart, onClick, isMobile }) => {
     const now = new Date();
@@ -24,30 +24,29 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
             ? 'bg-slate-600 hover:bg-slate-500 opacity-70' 
             : typeStyles[event.type] || 'bg-blue-500 hover:bg-blue-400'}
         ${isCurrent ? 'ring-2 ring-sky-400' : ''}
-        ${isMobile ? 'p-0.5 mb-0.5 rounded' : 'p-1 mb-1 rounded-md'}
+        ${isMobile ? 'px-1 py-0.5 mb-0.5 rounded' : 'p-1 mb-1 rounded-md'}
     `;
 
-    // Safely parse guests
     const guests = event.guests ? JSON.parse(event.guests) : [];
 
     if (isMobile) {
-        // Mobile: Show only time for all events
         return (
             <div className={pillClass} onClick={() => onClick(event)}>
-                <span className="font-semibold text-xs">
-                    {format(new Date(event.start_time), 'HH:mm')}
+                {event.recurrence_id && <Repeat size={10} className="flex-shrink-0"/>}
+                <span className="font-semibold text-xs truncate">
+                    {format(new Date(event.start_time), 'HH:mm')} {event.title}
                 </span>
             </div>
         );
     }
 
-    // Desktop: Show full event details
     return (
         <div className={pillClass} onClick={() => onClick(event)}>
             {isStart && (
                 <>
+                    {event.recurrence_id && <Repeat size={12} className="flex-shrink-0"/>}
                     <span className="font-semibold flex-shrink-0">
-                        {format(new Date(event.start_time), 'HH:mm')}-{format(new Date(event.end_time), 'HH:mm')}
+                        {format(new Date(event.start_time), 'HH:mm')}
                     </span>
                     <span className="truncate ml-1">{event.title}</span>
                     {guests.length > 0 && (
@@ -68,18 +67,13 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
 const MonthView = ({ days, month, events = [], onEventClick, onShowMoreClick }) => {
     const [isMobile, setIsMobile] = useState(false);
 
-    // Detect mobile screen size
     useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768); // md breakpoint
-        };
-        
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
         checkMobile();
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // This logic remains unchanged, as it just passes the event object down.
     const eventsByDay = useMemo(() => {
         const dayMap = new Map();
         for (const day of days) { dayMap.set(day.toDateString(), []); }
@@ -109,7 +103,6 @@ const MonthView = ({ days, month, events = [], onEventClick, onShowMoreClick }) 
                 const isCurrentMonth = isSameMonth(day, month);
                 const today = isToday(day);
                 
-                // Mobile responsive cell height and styling
                 const cellClasses = `
                     border-r border-b border-slate-700 p-1 md:p-2 flex flex-col transition-colors duration-300
                     ${isMobile ? 'min-h-[80px]' : 'min-h-[120px]'}
