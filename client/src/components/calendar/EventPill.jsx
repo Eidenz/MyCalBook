@@ -1,7 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 
-const EventPill = ({ event, onClick }) => { 
+const EventPill = ({ event, onClick }) => {
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Detect mobile screen size
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768); // md breakpoint
+        };
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     // Define styles based on the event type from the database
     const typeStyles = {
         personal: 'bg-amber-500 hover:bg-amber-400',
@@ -10,10 +23,11 @@ const EventPill = ({ event, onClick }) => {
     };
 
     const pillClass = `
-        text-white text-xs p-1 rounded-md mb-1 cursor-pointer 
+        text-white text-xs cursor-pointer 
         flex items-center gap-1.5
         truncate transition-colors duration-200
         ${typeStyles[event.type] || 'bg-blue-500 hover:bg-blue-400'}
+        ${isMobile ? 'p-0.5 mb-0.5 rounded' : 'p-1 mb-1 rounded-md'}
     `;
 
     try {
@@ -28,8 +42,16 @@ const EventPill = ({ event, onClick }) => {
 
         return (
             <div className={pillClass} onClick={() => onClick(event)}>
-                <span className="font-semibold flex-shrink-0">{startTime}-{endTime}</span>
-                <span className="truncate">{event.title}</span>
+                {isMobile ? (
+                    // Mobile: Show only start time
+                    <span className="font-semibold flex-shrink-0">{startTime}</span>
+                ) : (
+                    // Desktop: Show full time range and title
+                    <>
+                        <span className="font-semibold flex-shrink-0">{startTime}-{endTime}</span>
+                        <span className="truncate">{event.title}</span>
+                    </>
+                )}
             </div>
         );
     } catch (error) {

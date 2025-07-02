@@ -130,17 +130,14 @@ const BookingPage = () => {
     // --- Handlers ---
 
     const handleDateSelect = async (day) => {
-        // Check if we need to fetch new month data
-        const currentMonth = startOfMonth(selectedDate);
-        const newMonth = startOfMonth(day);
+        const currentMonthKey = format(startOfMonth(selectedDate), 'yyyy-MM');
+        const newMonthKey = format(startOfMonth(day), 'yyyy-MM');
         
-        if (!isSameMonth(currentMonth, newMonth)) {
-            // Fetch month data without showing loading screen
+        if (currentMonthKey !== newMonthKey) {
             await fetchMonthAvailability(day);
         }
         
-        // Update calendar and selected date
-        calendar.setCurrentMonth(day);
+        calendar.setCurrentDate(day);
         setSelectedDate(day);
         setSelectedTime(null);
     };

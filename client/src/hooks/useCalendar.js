@@ -7,33 +7,58 @@ import {
     eachDayOfInterval, 
     addMonths, 
     subMonths, 
-    format 
+    format,
+    addDays,
+    subDays,
+    addWeeks,
+    subWeeks
 } from 'date-fns';
 
 export const useCalendar = (initialDate = new Date()) => {
-    const [currentMonth, setCurrentMonth] = useState(startOfMonth(initialDate));
+    const [currentDate, setCurrentDate] = useState(initialDate);
 
-    const firstDayOfMonth = startOfMonth(currentMonth);
-    const lastDayOfMonth = endOfMonth(currentMonth);
+    // --- Data for Month View ---
+    const startOfMonthDate = startOfMonth(currentDate);
+    const monthViewStartDate = startOfWeek(startOfMonthDate, { weekStartsOn: 0 }); // Sunday start
+    const monthViewEndDate = endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 });
+    const daysForMonthView = eachDayOfInterval({ start: monthViewStartDate, end: monthViewEndDate });
 
-    // Get the first day of the week for the first week of the month (might be in the previous month)
-    const startDate = startOfWeek(firstDayOfMonth);
-    // Get the last day of the week for the last week of the month (might be in the next month)
-    const endDate = endOfWeek(lastDayOfMonth);
+    // --- Data for Week View ---
+    const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday start
+    const endOfWeekDate = endOfWeek(currentDate, { weekStartsOn: 0 });
+    const daysForWeekView = eachDayOfInterval({ start: startOfWeekDate, end: endOfWeekDate });
 
-    const days = eachDayOfInterval({ start: startDate, end: endDate });
+    // --- Data for Day View ---
+    const dayForDayView = currentDate;
 
-    const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-    const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
-    const goToToday = () => setCurrentMonth(startOfMonth(new Date()));
+    // --- Navigation Functions ---
+    const nextMonth = () => setCurrentDate(current => addMonths(current, 1));
+    const prevMonth = () => setCurrentDate(current => subMonths(current, 1));
+    const nextWeek = () => setCurrentDate(current => addWeeks(current, 1));
+    const prevWeek = () => setCurrentDate(current => subWeeks(current, 1));
+    const nextDay = () => setCurrentDate(current => addDays(current, 1));
+    const prevDay = () => setCurrentDate(current => subDays(current, 1));
+    const goToToday = () => setCurrentDate(new Date());
 
     return {
-        currentMonth,
-        days,
+        currentDate,
+        setCurrentDate,
+        // Month
+        daysForMonthView,
         nextMonth,
         prevMonth,
+        // Week
+        daysForWeekView,
+        nextWeek,
+        prevWeek,
+        // Day
+        dayForDayView,
+        nextDay,
+        prevDay,
+        // Common
         goToToday,
-        setCurrentMonth: (date) => setCurrentMonth(startOfMonth(date)),
-        monthName: format(currentMonth, 'MMMM yyyy'),
+        days: daysForMonthView,
+        currentMonth: startOfMonthDate,
+        monthName: format(currentDate, 'MMMM yyyy'),
     };
 };
