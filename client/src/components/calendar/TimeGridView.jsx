@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { format, startOfDay, endOfDay, getHours, getMinutes, isToday, isSameDay, addDays, differenceInDays } from 'date-fns';
 import { Users } from 'lucide-react';
 
-const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, isSingleDay }) => {
+const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, isSingleDay, isMobile }) => {
     const start = new Date(event.start_time);
     const end = new Date(event.end_time);
 
@@ -44,15 +44,33 @@ const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, is
             style={{ top: `${top}%`, height: `${height}%` }}
             className={`absolute left-0 right-0 mx-0.5 md:mx-1 p-1 md:p-2 text-white border-l-4 cursor-pointer overflow-hidden backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${typeStyles[event.type]} ${roundingClasses}`}
         >
-            <p className="font-semibold text-xs md:text-sm truncate">{event.title}</p>
-            <p className="text-xs opacity-80">
-                {isStart ? format(start, 'HH:mm') : '00:00'} - {isEnd ? format(end, 'HH:mm') : '24:00'}
-            </p>
-            {guests.length > 0 && isStart && (
-                <div className="flex items-center gap-1 text-xs opacity-90 mt-1">
-                    <Users size={10} className="md:w-3 md:h-3" />
-                    <span>{guests.length}</span>
+            {isMobile ? (
+                // Mobile: Show only start time
+                <div className="flex items-center justify-between h-full">
+                    <p className="font-semibold text-xs">
+                        {isStart ? format(start, 'HH:mm') : '00:00'}
+                    </p>
+                    {guests.length > 0 && isStart && (
+                        <div className="flex items-center gap-1">
+                            <Users size={10} />
+                            <span className="text-xs">{guests.length}</span>
+                        </div>
+                    )}
                 </div>
+            ) : (
+                // Desktop: Show full event details
+                <>
+                    <p className="font-semibold text-xs md:text-sm truncate">{event.title}</p>
+                    <p className="text-xs opacity-80">
+                        {isStart ? format(start, 'HH:mm') : '00:00'} - {isEnd ? format(end, 'HH:mm') : '24:00'}
+                    </p>
+                    {guests.length > 0 && isStart && (
+                        <div className="flex items-center gap-1 text-xs opacity-90 mt-1">
+                            <Users size={10} className="md:w-3 md:h-3" />
+                            <span>{guests.length}</span>
+                        </div>
+                    )}
+                </>
             )}
             {!isSingleDay && (
                 <div className="absolute top-1 right-1">
@@ -65,6 +83,18 @@ const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, is
 
 const TimeGridView = ({ days, events, onEventClick }) => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Detect mobile screen size
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768); // md breakpoint
+        };
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const eventsByDay = useMemo(() => {
         const dayMap = new Map();
@@ -157,6 +187,7 @@ const TimeGridView = ({ days, events, onEventClick }) => {
                                             isStart={event.isStart}
                                             isEnd={event.isEnd}
                                             isSingleDay={event.isSingleDay}
+                                            isMobile={isMobile}
                                         />
                                     ))}
                                 </div>
