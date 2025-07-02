@@ -37,12 +37,6 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
                 <span className="font-semibold text-xs">
                     {format(new Date(event.start_time), 'HH:mm')}
                 </span>
-                {guests.length > 0 && (
-                    <span className="flex items-center gap-0.5 ml-auto text-white/80">
-                        <Users size={10} />
-                        <span className="text-xs">{guests.length}</span>
-                    </span>
-                )}
             </div>
         );
     }
