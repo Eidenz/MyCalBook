@@ -153,11 +153,11 @@ const BookingPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 sm:p-6 md:p-8">
-            <div className="w-full max-w-7xl mx-auto bg-slate-800/50 border border-slate-700 rounded-2xl shadow-2xl flex flex-col lg:flex-row h-full max-h-[90vh] lg:h-[750px]">
+        <div className="min-h-screen bg-slate-900 flex flex-col lg:items-center lg:justify-center p-4 sm:p-6 md:p-8">
+            <div className="w-full max-w-7xl mx-auto bg-slate-800/50 border border-slate-700 rounded-2xl shadow-2xl flex flex-col lg:flex-row lg:h-[750px]">
                 
                 {/* Left Pane: Event Info (always visible) */}
-                <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-700 flex flex-col lg:w-[30%]">
+                <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-700 flex flex-col lg:w-[30%] lg:flex-shrink-0">
                     {/* A back button for the mobile view when form is open */}
                     {selectedTime && (
                          <button onClick={handleClearTimeSelection} className="flex lg:hidden items-center gap-2 text-indigo-400 mb-4 -ml-1">
@@ -173,7 +173,7 @@ const BookingPage = () => {
                     <p className="text-slate-400 mt-6 text-sm flex-grow">{eventType?.description}</p>
 
                     <div className="mt-6 pt-4 border-t border-slate-700">
-                        <label htmlFor="interval" className="block text-sm font-semibold mb-2 text-slate-300">Time slot interval</label>
+                        <label htmlFor="interval" className="block text-sm font-semibold mb-2 text-slate-300">Time slot interval to show</label>
                         <select 
                             id="interval"
                             name="interval"
@@ -192,7 +192,7 @@ const BookingPage = () => {
                 {/* --- CONDITIONAL RIGHT PANE --- */}
                 {selectedTime ? (
                     // --- VIEW 2: CONFIRMATION & FORM ---
-                    <div className="p-8 flex flex-col lg:w-[70%]">
+                    <div className="p-8 flex flex-col lg:w-[70%] lg:flex-1">
                         <div className="flex-grow flex flex-col items-center justify-center">
                             <div className="w-full max-w-sm text-center">
                                 <h2 className="text-xl font-bold text-white">Confirm your booking</h2>
@@ -218,9 +218,9 @@ const BookingPage = () => {
                     </div>
                 ) : (
                     // --- VIEW 1: CALENDAR & SLOTS ---
-                    <>
+                    <div className="flex flex-col lg:flex-row lg:flex-1 min-h-0">
                         {/* Middle Pane: Calendar */}
-                        <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-700 lg:w-[35%] flex flex-col justify-center">
+                        <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-700 lg:w-1/2 flex flex-col justify-center">
                              <CalendarSelector 
                                 hook={calendar} 
                                 onDateSelect={handleDateSelect} 
@@ -236,7 +236,7 @@ const BookingPage = () => {
                         </div>
 
                         {/* Right Pane: Time Slots */}
-                        <div className="p-8 flex flex-col lg:w-[35%] overflow-hidden">
+                        <div className="p-8 flex flex-col lg:w-1/2">
                             <h2 className="font-semibold text-white mb-4 text-lg flex-shrink-0">
                                 {format(selectedDate, 'EEEE, MMMM d')}
                             </h2>
@@ -252,7 +252,7 @@ const BookingPage = () => {
                                 selectedDate={selectedDate}
                             />
                         </div>
-                    </>
+                    </div>
                 )}
             </div>
         </div>

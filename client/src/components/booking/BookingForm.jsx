@@ -91,7 +91,7 @@ const BookingForm = ({ eventType, selectedTime, duration, onConfirmBooking, onCa
                     disabled={isSubmitting} 
                     className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition disabled:opacity-50"
                 >
-                    {isSubmitting ? 'Confirming...' : 'Confirm Booking'}
+                    {isSubmitting ? 'Confirming...' : 'Confirm'}
                 </button>
             </div>
         </form>
