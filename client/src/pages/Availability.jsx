@@ -23,7 +23,8 @@ const Availability = () => {
 
     const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-    // Timezone Helpers (unchanged)
+    // --- Timezone Conversion Helpers ---
+    // THE FIX: Both functions now use the current date to ensure DST consistency.
     const toUTCTime = (localTime) => {
         if (!localTime) return '';
         const today = new Date();
@@ -32,7 +33,8 @@ const Availability = () => {
     };
     const toLocalTime = (utcTime) => {
         if (!utcTime) return '';
-        const utcDate = new Date(`1970-01-01T${utcTime}Z`);
+        const today = new Date();
+        const utcDate = new Date(`${today.toISOString().slice(0, 10)}T${utcTime}Z`);
         return `${utcDate.getHours().toString().padStart(2, '0')}:${utcDate.getMinutes().toString().padStart(2, '0')}`;
     };
 
