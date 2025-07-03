@@ -103,10 +103,19 @@ const BookingPage = () => {
     
     const handleConfirmBooking = async (bookingDetails) => {
         try {
+            // Construct the correct UTC timestamp from selectedDate and selectedTime
+            const selectedTimeObj = new Date(selectedTime);
+            const hours = selectedTimeObj.getHours();
+            const minutes = selectedTimeObj.getMinutes();
+            
+            // Create a new date using the selectedDate and the time from selectedTime
+            const correctDateTime = new Date(selectedDate);
+            correctDateTime.setHours(hours, minutes, 0, 0);
+            
             const response = await fetch('/api/public/bookings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ eventTypeSlug: slug, startTime: selectedTime, duration: selectedDuration, ...bookingDetails }),
+                body: JSON.stringify({ eventTypeSlug: slug, startTime: correctDateTime.toISOString(), duration: selectedDuration, ...bookingDetails }),
             });
             if (!response.ok) {
                 const errData = await response.json();
@@ -216,7 +225,28 @@ const BookingPage = () => {
                     <div className="mt-6 pt-4 border-t border-slate-700"><label htmlFor="interval" className="block text-sm font-semibold mb-2 text-slate-300">Time slot interval</label><select id="interval" name="interval" value={bookingInterval} disabled={!!selectedTime} onChange={(e) => setBookingInterval(parseInt(e.target.value, 10))} className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors duration-200 disabled:opacity-50"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">60 minutes</option></select></div>
                 </div>
                 {selectedTime ? (
-                    <div className="p-8 flex flex-col lg:w-[70%] lg:flex-1"><div className="flex-grow flex flex-col items-center justify-center"><div className="w-full max-w-sm text-center"><h2 className="text-xl font-bold text-white mb-2">Confirm your booking</h2><div className="my-6 p-4 rounded-lg border-2 border-slate-600 bg-slate-900/50 flex items-center justify-center gap-3 transform transition-all duration-200 hover:border-indigo-500"><CalendarIcon className="text-indigo-400" size={20} /><span className="text-lg font-semibold text-slate-200">{format(new Date(selectedTime), 'HH:mm')}</span><span className="text-lg text-slate-400">on</span><span className="text-lg font-semibold text-slate-200">{format(new Date(selectedTime), 'EEEE, MMMM d')}</span></div><BookingForm eventType={eventType} selectedTime={selectedTime} duration={selectedDuration} onConfirmBooking={handleConfirmBooking} onCancel={handleClearTimeSelection} loggedInUsername={isAuthenticated ? user.username : null} /></div></div></div>
+                    <div className="p-8 flex flex-col lg:w-[70%] lg:flex-1">
+                        <div className="flex-grow flex flex-col items-center justify-center">
+                            <div className="w-full max-w-sm text-center">
+                                <h2 className="text-xl font-bold text-white mb-2">Confirm your booking</h2>
+                                <div className="my-6 p-4 rounded-lg border-2 border-slate-600 bg-slate-900/50 flex items-center justify-center gap-3 transform transition-all duration-200 hover:border-indigo-500">
+                                    <CalendarIcon className="text-indigo-400" size={20} />
+                                    <span className="text-lg font-semibold text-slate-200">{format(new Date(selectedTime), 'HH:mm')}</span>
+                                    <span className="text-lg text-slate-400">on</span>
+                                    <span className="text-lg font-semibold text-slate-200">{format(selectedDate, 'EEEE, MMMM d')}</span>
+                                </div>
+                                <BookingForm 
+                                    eventType={eventType} 
+                                    selectedTime={selectedTime} 
+                                    selectedDate={selectedDate}
+                                    duration={selectedDuration} 
+                                    onConfirmBooking={handleConfirmBooking} 
+                                    onCancel={handleClearTimeSelection} 
+                                    loggedInUsername={isAuthenticated ? user.username : null} 
+                                />
+                            </div>
+                        </div>
+                    </div>
                 ) : (
                     <div className="flex flex-col lg:flex-row lg:flex-1 min-h-0">
                         <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-700 lg:w-1/2 flex flex-col justify-center"><CalendarSelector hook={calendar} onDateSelect={handleDateSelect} selectedDate={selectedDate} availableDays={monthlyAvailability} /><div className="mt-4 text-center"><div className="inline-flex items-center gap-2 text-xs text-slate-400 bg-slate-900/50 px-3 py-1.5 rounded-full"><Globe size={14}/><span>Timezone: {userTimezone.replace(/_/g, ' ')}</span></div></div></div>

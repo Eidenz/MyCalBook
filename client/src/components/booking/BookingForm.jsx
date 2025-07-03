@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
-const BookingForm = ({ eventType, selectedTime, duration, onConfirmBooking, onCancel, loggedInUsername }) => {
+const BookingForm = ({ eventType, selectedTime, selectedDate, duration, onConfirmBooking, onCancel, loggedInUsername }) => {
     const [formData, setFormData] = useState({ 
         name: loggedInUsername || '', 
         email: '', 
