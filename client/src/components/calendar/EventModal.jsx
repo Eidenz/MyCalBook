@@ -11,7 +11,7 @@ const weekDays = [
     { name: 'Sat', value: 'SA' }
 ];
 
-const EventModal = ({ isOpen, onClose, selectedEvent, token }) => {
+const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
     const isEditMode = Boolean(selectedEvent && selectedEvent.id);
     const isBookedEvent = isEditMode && selectedEvent.type === 'booked';
     const isRecurring = Boolean(selectedEvent?.recurrence_id);
@@ -257,9 +257,23 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token }) => {
             });
             
             clearTimeout(timeoutId);
+            
+            // Trigger calendar refresh after successful deletion
+            if (onRefresh) {
+                setTimeout(() => {
+                    onRefresh();
+                }, 500);
+            }
+            
         } catch (err) {
             console.error('Background delete error:', err);
-            // Silently fail - the modal is already closed and user experience is preserved
+            // Even if deletion fails, still try to refresh the calendar
+            // in case it actually succeeded but just had a network issue
+            if (onRefresh) {
+                setTimeout(() => {
+                    onRefresh();
+                }, 500);
+            }
         }
     };
 

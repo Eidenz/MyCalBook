@@ -102,6 +102,10 @@ const CalendarView = () => {
         setIsModalOpen(false);
         fetchEvents(); // Refetch events after modal closes
     };
+
+    const handleRefreshCalendar = () => {
+        fetchEvents();
+    };
     
     const handleOpenDayView = (day, events) => {
         setDayViewData({ day, events });
@@ -202,7 +206,7 @@ const CalendarView = () => {
                 )}
             </main>
 
-            <EventModal isOpen={isModalOpen} onClose={handleCloseModal} selectedEvent={selectedEvent} token={token} />
+            <EventModal isOpen={isModalOpen} onClose={handleCloseModal} selectedEvent={selectedEvent} token={token} onRefresh={handleRefreshCalendar} />
             <DayViewModal isOpen={isDayViewModalOpen} onClose={() => setIsDayViewModalOpen(false)} day={dayViewData.day} events={dayViewData.events} onEventClick={handleOpenModal} />
         </div>
     );
