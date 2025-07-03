@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Mail, Users, FileText, Repeat } from 'lucide-react';
+import { X, User, Mail, Users, FileText, Repeat, Download } from 'lucide-react';
 import ConfirmationModal from '../common/ConfirmationModal';
 import { format, formatISO, parseISO } from 'date-fns';
 import RecurrenceEditModal from './RecurrenceEditModal';
@@ -277,6 +277,44 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
         }
     };
 
+    const formatUtcDateTime = (date) => {
+        return new Date(date).toISOString().replace(/-|:|\.\d+/g, '');
+    };
+
+    const handleDownloadIcs = () => {
+        if (!selectedEvent) return;
+        const { id, title, start_time, end_time, location } = selectedEvent;
+        const finalDescription = (isBookedEvent ? cleanDescription : formData.description || '').replace(/\n/g, '\\n');
+
+        const icsContent = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//MyCalBook//App v1.0//EN',
+            'BEGIN:VEVENT',
+            `UID:${id}@mycalbook.com`,
+            `DTSTAMP:${formatUtcDateTime(new Date())}`,
+            `DTSTART:${formatUtcDateTime(start_time)}`,
+            `DTEND:${formatUtcDateTime(end_time)}`,
+            `SUMMARY:${title}`,
+            `DESCRIPTION:${finalDescription}`,
+            `LOCATION:${location || ''}`,
+            'END:VEVENT',
+            'END:VCALENDAR'
+        ].join('\r\n');
+
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${title.replace(/ /g, '_')}.ics`);
+        document.body.appendChild(link);
+        link.click();
+        
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -307,21 +345,31 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                                 {error}
                             </div>
                         )}
-                        <div className="mt-6 flex justify-end gap-3">
-                            {bookingManagementLink ? (
-                                <a href={bookingManagementLink} target="_self" rel="noopener noreferrer" className="px-6 py-2.5 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 text-center transition-colors">
-                                    Manage Booking
-                                </a>
-                            ) : (
-                                <button 
-                                    type="button" 
-                                    onClick={handleDeleteClick} 
-                                    disabled={isSubmitting} 
-                                    className="px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {isSubmitting ? 'Cancelling...' : 'Cancel Booking'}
-                                </button>
-                            )}
+                        <div className="mt-6 flex justify-between items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={handleDownloadIcs}
+                                className="flex items-center gap-2 px-4 py-2.5 text-sm bg-slate-600 rounded-lg font-semibold hover:bg-slate-500 transition-colors"
+                            >
+                                <Download size={16} />
+                                <span>Download .ics</span>
+                            </button>
+                            <div className="flex justify-end gap-3">
+                                {bookingManagementLink ? (
+                                    <a href={bookingManagementLink} target="_self" rel="noopener noreferrer" className="px-6 py-2.5 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 text-center transition-colors">
+                                        Manage Booking
+                                    </a>
+                                ) : (
+                                    <button 
+                                        type="button" 
+                                        onClick={handleDeleteClick} 
+                                        disabled={isSubmitting} 
+                                        className="px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isSubmitting ? 'Cancelling...' : 'Cancel Booking'}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 ) : (
@@ -385,13 +433,20 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
 
                         {error && <div className="text-red-400 text-sm bg-red-900/50 p-3 rounded-lg border border-red-500/30">{error}</div>}
                         
-                        {/* Updated mobile-friendly button layout */}
                         <div className="mt-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                            {isEditMode && (
-                                <button type="button" onClick={handleDeleteClick} disabled={isSubmitting} className="w-full sm:w-auto px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed order-2 sm:order-1">
-                                    Delete
-                                </button>
-                            )}
+                            <div className="flex gap-3 w-full sm:w-auto order-2 sm:order-1">
+                                {isEditMode && (
+                                    <>
+                                        <button type="button" onClick={handleDeleteClick} disabled={isSubmitting} className="flex-1 px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50">
+                                            Delete
+                                        </button>
+                                        <button type="button" onClick={handleDownloadIcs} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm bg-slate-600 rounded-lg font-semibold hover:bg-slate-500 transition-colors">
+                                            <Download size={16} /> .ics
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                            
                             <div className="flex gap-3 order-1 sm:order-2">
                                 <button type="button" onClick={onClose} className="flex-1 sm:flex-none px-6 py-2.5 bg-slate-600 rounded-lg font-semibold hover:bg-slate-500 transition-colors">
                                     Cancel

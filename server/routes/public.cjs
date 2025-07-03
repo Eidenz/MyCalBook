@@ -36,6 +36,13 @@ const hasAvailableSlots = (date, rules, blockedSlots, duration) => {
         const [endH, endM] = rule.end_time.split(':').map(Number);
 
         let slotStart = new Date(date);
+        
+        // If the start time string is 'greater' than the end time string,
+        // it means the availability period crosses midnight UTC and starts on the previous day.
+        if (rule.start_time > rule.end_time) {
+            slotStart.setUTCDate(slotStart.getUTCDate() - 1);
+        }
+
         slotStart.setUTCHours(startH, startM, 0, 0);
 
         let ruleEnd = new Date(date);
@@ -89,18 +96,33 @@ router.get('/availability/:slug', async (req, res) => {
             rulesForDay = availabilityRules.filter(r => r.day_of_week === dayOfWeek);
         }
 
-        const dayStart = new Date(`${date}T00:00:00.000Z`);
-        const dayEnd = new Date(`${date}T23:59:59.999Z`);
-        const blockedSlots = await getBlockedSlots(eventType.user_id, dayStart, dayEnd);
+        // Widen the search window for blocked slots to account for all timezones.
+        const dayStartForBlocks = new Date(selectedDate);
+        dayStartForBlocks.setUTCDate(dayStartForBlocks.getUTCDate() - 1);
+        const dayEndForBlocks = new Date(selectedDate);
+        dayEndForBlocks.setUTCDate(dayEndForBlocks.getUTCDate() + 2);
+        const blockedSlots = await getBlockedSlots(eventType.user_id, dayStartForBlocks, dayEndForBlocks);
         
         const availableSlots = [];
         const durationsToCalc = requestedDuration ? [parseInt(requestedDuration, 10)] : JSON.parse(eventType.durations);
+        const dayStart = new Date(`${date}T00:00:00.000Z`);
 
         for (const rule of rulesForDay) {
             let slotStart = new Date(dayStart);
-            slotStart.setUTCHours(...rule.start_time.split(':').map(Number), 0, 0);
+            const [startH, startM] = rule.start_time.split(':').map(Number);
+            const [endH, endM] = rule.end_time.split(':').map(Number);
+
+            // If the start time string is 'greater' than the end time string,
+            // it means the availability period crosses midnight UTC and starts on the previous day.
+            if (rule.start_time > rule.end_time) {
+                slotStart.setUTCDate(slotStart.getUTCDate() - 1);
+            }
+
+            slotStart.setUTCHours(startH, startM, 0, 0);
+            
             let ruleEnd = new Date(dayStart);
-            ruleEnd.setUTCHours(...rule.end_time.split(':').map(Number), 0, 0);
+            ruleEnd.setUTCHours(endH, endM, 0, 0);
+
             if (ruleEnd <= slotStart) ruleEnd.setUTCDate(ruleEnd.getUTCDate() + 1);
 
             while (slotStart < ruleEnd) {
@@ -141,14 +163,16 @@ router.get('/availability/:slug/month', async (req, res) => {
         const availabilityRules = await db('availability_rules').where({ schedule_id: eventType.schedule_id });
         const availableDays = new Set();
         
-        const monthStart = new Date(Date.UTC(year, monthNum - 1, 1));
-        const monthEnd = new Date(Date.UTC(year, monthNum, 1));
-        const allBlockedSlots = await getBlockedSlots(eventType.user_id, monthStart, monthEnd);
+        const monthStartForBlocks = new Date(Date.UTC(year, monthNum - 1, 1));
+        monthStartForBlocks.setUTCDate(monthStartForBlocks.getUTCDate() - 1);
+        const monthEndForBlocks = new Date(Date.UTC(year, monthNum, 0));
+        monthEndForBlocks.setUTCDate(monthEndForBlocks.getUTCDate() + 2);
+        const allBlockedSlots = await getBlockedSlots(eventType.user_id, monthStartForBlocks, monthEndForBlocks);
 
         // Fetch all overrides for the month in one go
         const monthOverrides = await db('availability_overrides')
             .where({ schedule_id: eventType.schedule_id })
-            .where('date', '>=', format(monthStart, 'yyyy-MM-dd'))
+            .where('date', '>=', format(new Date(Date.UTC(year, monthNum - 1, 1)), 'yyyy-MM-dd'))
             .where('date', '<=', format(new Date(Date.UTC(year, monthNum - 1, daysInMonth)), 'yyyy-MM-dd'));
         const overridesMap = new Map(monthOverrides.map(o => [format(new Date(o.date), 'yyyy-MM-dd'), o]));
 
