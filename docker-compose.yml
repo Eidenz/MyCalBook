@@ -11,6 +11,7 @@ services:
     volumes:
       # This persists the SQLite database file outside the container
       - ./database:/app/server/database
+      - ./uploads:/app/server/public/uploads
     env_file:
       # Load environment variables from this file
       - .env
