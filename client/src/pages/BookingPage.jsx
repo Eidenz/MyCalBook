@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { format, startOfToday, isSameMonth, startOfMonth } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { useCalendar } from '../hooks/useCalendar';
-import { Clock, MapPin, Calendar as CalendarIcon, ArrowLeft, Globe, CheckCircle, PlusCircle, UserCheck } from 'lucide-react';
+import { Clock, MapPin, Calendar as CalendarIcon, ArrowLeft, Globe, CheckCircle, PlusCircle, UserCheck, ChevronLeft } from 'lucide-react';
 
 import CalendarSelector from '../components/booking/CalendarSelector';
 import TimeSlotPicker from '../components/booking/TimeSlotPicker';
@@ -213,7 +213,17 @@ const BookingPage = () => {
                 </div>
             )}
             <div className="w-full max-w-7xl mx-auto bg-slate-800/50 border border-slate-700 rounded-2xl shadow-2xl flex flex-col lg:flex-row lg:h-[750px] transform transition-all duration-300">
-                <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-700 flex flex-col lg:w-[30%] lg:flex-shrink-0">
+                <div className="p-6 border-b lg:border-r lg:border-b-0 border-slate-700 flex flex-col lg:w-[30%] lg:flex-shrink-0">
+                    <div className="flex-shrink-0 -ml-2 mb-4">
+                        <Link 
+                            to={`/u/${eventType?.ownerUsername}`} 
+                            className="inline-flex items-center gap-1 text-slate-400 hover:text-white transition-colors p-2 rounded-lg"
+                        >
+                            <ChevronLeft size={20} />
+                            <span className="font-semibold text-sm">All booking options</span>
+                        </Link>
+                    </div>
+
                     {selectedTime && (<button onClick={handleClearTimeSelection} className="flex lg:hidden items-center gap-2 text-indigo-400 mb-4 -ml-1 hover:text-indigo-300 transition-colors duration-200"><ArrowLeft size={16} /> Back</button>)}
                     
                     <div className="flex-grow min-h-0 overflow-y-auto pr-2 -mr-2">
