@@ -151,16 +151,48 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token }) => {
             const url = isBookedEvent
               ? `/api/events/bookings/${selectedEvent.id}`
               : `/api/events/manual/${selectedEvent.id}`;
+            
+            // Add timeout to prevent hanging requests
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+            
             const response = await fetch(url, { 
                 method: 'DELETE', 
                 headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
     
-            if (!response.ok) throw new Error((await response.json()).error);
+            if (!response.ok) {
+                // Try to get error message from response
+                let errorMessage = 'Failed to delete event';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorMessage;
+                } catch {
+                    // If response isn't JSON, use default message
+                }
+                throw new Error(errorMessage);
+            }
+            
+            // Successfully deleted, close modal
             onClose();
         } catch (err) {
-            setError(err.message);
+            console.error('Delete error:', err);
+            if (err.name === 'AbortError') {
+                setError('Request timed out. The booking may still have been cancelled.');
+            } else {
+                setError(err.message);
+            }
+            
+            // For booking cancellations, close the modal after showing error
+            if (isBookedEvent) {
+                setTimeout(() => {
+                    onClose();
+                }, 2000); // Close after 2 seconds to let user see the error
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -193,6 +225,44 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token }) => {
         }
     };
 
+    const handleDeleteConfirm = async () => {
+        setIsConfirmDeleteOpen(false); // Close confirmation modal first
+        
+        // For booked events, close the main modal immediately and perform delete in background
+        if (isBookedEvent) {
+            onClose(); // Close the main modal right away
+            performDeleteInBackground('all');
+        } else {
+            await performDelete('all');
+        }
+    };
+
+    const performDeleteInBackground = async (scope) => {
+        const payload = { updateScope: scope };
+        if (scope === 'single') {
+            payload.original_start_time = new Date(selectedEvent.start_time).toISOString();
+        }
+
+        try {
+            const url = `/api/events/bookings/${selectedEvent.id}`;
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
+            await fetch(url, { 
+                method: 'DELETE', 
+                headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                body: JSON.stringify(payload),
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+        } catch (err) {
+            console.error('Background delete error:', err);
+            // Silently fail - the modal is already closed and user experience is preserved
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -200,7 +270,9 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token }) => {
             <div className="bg-slate-800 text-white rounded-xl shadow-2xl w-full max-w-lg p-6 mx-4 transform transition-all overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold">{isBookedEvent ? 'Booking Details' : (isEditMode ? 'Edit Event' : 'Add New Event')}</h2>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-700"><X size={24} /></button>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-700 transition-colors">
+                        <X size={24} />
+                    </button>
                 </div>
                 {isBookedEvent ? (
                     <div className="space-y-4">
@@ -216,58 +288,102 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token }) => {
                              {selectedEvent.guests && JSON.parse(selectedEvent.guests).length > 0 && <div className="flex items-start gap-3"><Users size={18} className="mt-1"/><span>{JSON.parse(selectedEvent.guests).join(', ')}</span></div>}
                              {cleanDescription && <div className="flex items-start gap-3"><FileText size={18} className="mt-1 flex-shrink-0"/><p className="whitespace-pre-wrap">{cleanDescription}</p></div>}
                         </div>
-                        {error && <div className="text-red-400 text-sm bg-red-900/50 p-3 rounded-lg">{error}</div>}
+                        {error && (
+                            <div className="text-red-400 text-sm bg-red-900/50 p-3 rounded-lg border border-red-500/30">
+                                {error}
+                            </div>
+                        )}
                         <div className="mt-6 flex justify-end gap-3">
                             {bookingManagementLink ? (
-                                <a href={bookingManagementLink} target="_self" rel="noopener noreferrer" className="px-6 py-2.5 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 text-center">
+                                <a href={bookingManagementLink} target="_self" rel="noopener noreferrer" className="px-6 py-2.5 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 text-center transition-colors">
                                     Manage Booking
                                 </a>
                             ) : (
-                                <button type="button" onClick={handleDeleteClick} disabled={isSubmitting} className="px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700">Cancel Booking</button>
+                                <button 
+                                    type="button" 
+                                    onClick={handleDeleteClick} 
+                                    disabled={isSubmitting} 
+                                    className="px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isSubmitting ? 'Cancelling...' : 'Cancel Booking'}
+                                </button>
                             )}
                         </div>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full bg-slate-700 p-2.5 rounded-md" placeholder="Event Title *"/>
-                        <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-slate-700 p-2.5 rounded-md">
+                        <input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" placeholder="Event Title *"/>
+                        <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors">
                             <option value="personal">Personal Event</option>
                             <option value="blocked">Blocked Time</option>
                             <option value="birthday">Birthday</option>
                         </select>
-                        <div className="grid grid-cols-2 gap-4"><input type="date" name="date" value={formData.date} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md" /><input type="time" name="startTime" value={formData.startTime} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md" /><input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md" /><input type="time" name="endTime" value={formData.endTime} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md" /></div>
-                        <div className="w-full bg-slate-700 p-2 rounded-md flex flex-wrap items-center gap-2"><div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-600 text-sm">{formData.guests.map(g => <span key={g}>{g}<button type="button" onClick={()=>removeGuest(g)} className="ml-1">x</button></span>)}</div><input type="text" value={guestInput} onChange={(e) => setGuestInput(e.target.value)} onKeyDown={handleGuestKeyDown} placeholder="Add guests..." className="bg-transparent outline-none p-1 text-sm flex-grow min-w-[100px]" /></div>
-                        <textarea name="description" value={formData.description} onChange={handleChange} rows="2" className="w-full bg-slate-700 p-2.5 rounded-md" placeholder="Notes..."/>
+                        <div className="grid grid-cols-2 gap-4">
+                            <input type="date" name="date" value={formData.date} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                            <input type="time" name="startTime" value={formData.startTime} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                            <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                            <input type="time" name="endTime" value={formData.endTime} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                        </div>
+                        <div className="w-full bg-slate-700 p-2 rounded-md border-2 border-slate-600 focus-within:border-indigo-500 transition-colors flex flex-wrap items-center gap-2">
+                            {formData.guests.map(g => (
+                                <div key={g} className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-600 text-sm">
+                                    <span>{g}</span>
+                                    <button type="button" onClick={() => removeGuest(g)} className="rounded-full hover:bg-black/20 transition-colors">
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                            <input type="text" value={guestInput} onChange={(e) => setGuestInput(e.target.value)} onKeyDown={handleGuestKeyDown} placeholder="Add guests..." className="bg-transparent outline-none p-1 text-sm flex-grow min-w-[100px] text-white placeholder-slate-400" />
+                        </div>
+                        <textarea name="description" value={formData.description} onChange={handleChange} rows="2" className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" placeholder="Notes..."/>
 
                         {/* Recurrence Section */}
                         <div className="space-y-3 p-3 bg-slate-900/50 rounded-lg">
                             <div className="flex items-center gap-2"><Repeat size={16}/><label className="font-semibold">Repeat</label></div>
-                            <select name="frequency" value={formData.recurrence.frequency} onChange={handleRecurrenceChange} className="w-full bg-slate-700 p-2 rounded-md">
+                            <select name="frequency" value={formData.recurrence.frequency} onChange={handleRecurrenceChange} className="w-full bg-slate-700 p-2 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors">
                                 <option value="">Does not repeat</option>
                                 <option value="YEARLY">Yearly</option>
                                 <option value="MONTHLY">Monthly</option>
                                 <option value="WEEKLY">Weekly</option>
                             </select>
                             {formData.recurrence.frequency === 'WEEKLY' && (
-                                <div className="flex justify-between gap-1">{weekDays.map(day => <button type="button" key={day.value} onClick={() => handleDayToggle(day.value)} className={`w-9 h-9 rounded-full text-xs font-bold ${formData.recurrence.by_day.includes(day.value) ? 'bg-indigo-600' : 'bg-slate-600'}`}>{day.name}</button>)}</div>
+                                <div className="flex justify-between gap-1">{weekDays.map(day => <button type="button" key={day.value} onClick={() => handleDayToggle(day.value)} className={`w-9 h-9 rounded-full text-xs font-bold transition-colors ${formData.recurrence.by_day.includes(day.value) ? 'bg-indigo-600 text-white' : 'bg-slate-600 text-slate-300 hover:bg-slate-500'}`}>{day.name}</button>)}</div>
                             )}
                             {formData.recurrence.frequency && (
                                 <div className="flex items-center gap-2">
-                                    <input type="date" name="end_date" value={formData.recurrence.end_date} onChange={handleRecurrenceChange} className="bg-slate-700 p-2 rounded-md w-full" />
+                                    <input type="date" name="end_date" value={formData.recurrence.end_date} onChange={handleRecurrenceChange} className="bg-slate-700 p-2 rounded-md w-full border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
                                 </div>
                             )}
                         </div>
 
-                        {error && <div className="text-red-400 text-sm bg-red-900/50 p-3 rounded-lg">{error}</div>}
+                        {error && <div className="text-red-400 text-sm bg-red-900/50 p-3 rounded-lg border border-red-500/30">{error}</div>}
                         <div className="mt-6 flex justify-between items-center">
-                            {isEditMode && <button type="button" onClick={handleDeleteClick} disabled={isSubmitting} className="px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700">Delete</button>}
-                            <div className="flex-grow flex justify-end gap-3"><button type="button" onClick={onClose} className="px-6 py-2.5 bg-slate-600 rounded-lg font-semibold hover:bg-slate-500">Cancel</button><button type="submit" disabled={isSubmitting} className="px-6 py-2.5 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700">{isSubmitting ? '...' : 'Save'}</button></div>
+                            {isEditMode && <button type="button" onClick={handleDeleteClick} disabled={isSubmitting} className="px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Delete</button>}
+                            <div className="flex-grow flex justify-end gap-3">
+                                <button type="button" onClick={onClose} className="px-6 py-2.5 bg-slate-600 rounded-lg font-semibold hover:bg-slate-500 transition-colors">Cancel</button>
+                                <button type="submit" disabled={isSubmitting} className="px-6 py-2.5 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {isSubmitting ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            Saving...
+                                        </div>
+                                    ) : (
+                                        'Save'
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </form>
                 )}
             </div>
 
-            <ConfirmationModal isOpen={isConfirmDeleteOpen} onClose={() => setIsConfirmDeleteOpen(false)} onConfirm={() => performDelete('all')} title="Delete Event" message={`Are you sure you want to permanently delete "${selectedEvent?.title}"?`} />
+            <ConfirmationModal 
+                isOpen={isConfirmDeleteOpen} 
+                onClose={() => setIsConfirmDeleteOpen(false)} 
+                onConfirm={handleDeleteConfirm} 
+                title="Delete Event" 
+                message={`Are you sure you want to permanently delete "${selectedEvent?.title}"?`} 
+            />
             <RecurrenceEditModal isOpen={isRecurrenceModalOpen} onClose={() => setIsRecurrenceModalOpen(false)} onConfirm={handleRecurrenceConfirm} verb={recurrenceAction.action}/>
         </div>
     );
