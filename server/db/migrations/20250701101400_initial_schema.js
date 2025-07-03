@@ -65,7 +65,7 @@ exports.up = function(knex) {
       table.string('title').notNullable();
       table.datetime('start_time').notNullable();
       table.datetime('end_time').notNullable();
-      table.enum('type', ['personal', 'blocked']).defaultTo('personal');
+      table.string('type').notNullable().defaultTo('personal');
       table.timestamps(true, true);
     });
 };
