@@ -53,10 +53,9 @@ router.post('/image', authMiddleware, upload.single('image'), async (req, res, n
             .webp({ quality: 80 })
             .toFile(outputPath);
 
-        // Construct the full, publicly accessible URL for the uploaded file.
-        const port = process.env.PORT || 5001;
-        const serverBaseUrl = process.env.SERVER_BASE_URL || `http://localhost:${port}`;
-        const imageUrl = `${serverBaseUrl}/public/uploads/${filename}`;
+        // Construct a relative path for the image URL.
+        // This is more portable than a full URL.
+        const imageUrl = `/public/uploads/${filename}`;
 
         res.json({ imageUrl });
 

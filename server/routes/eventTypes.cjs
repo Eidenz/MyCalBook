@@ -20,8 +20,16 @@ const deleteOldImage = (imageUrl) => {
     if (!imageUrl) return;
 
     try {
-        // Extract the filename from the full URL
-        const filename = path.basename(new URL(imageUrl).pathname);
+        let filename;
+        // Check if it's a full URL or a relative path
+        if (imageUrl.startsWith('http')) {
+            filename = path.basename(new URL(imageUrl).pathname);
+        } else {
+            // It's already a relative path like /public/uploads/image.webp
+            filename = path.basename(imageUrl);
+        }
+
+        // Construct the absolute path to the file on the server
         const filePath = path.join(__dirname, '..', 'public', 'uploads', filename);
 
         // Check if the file exists before attempting to delete
