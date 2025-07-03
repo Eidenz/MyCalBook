@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/knex.cjs');
 const { randomUUID } = require('crypto');
+const { triggerBookingCancellation } = require('./events.cjs');
 const emailService = require('../services/emailService.cjs');
 const { format, startOfDay } = require('date-fns');
 
@@ -265,14 +266,14 @@ router.get('/bookings/:token', async (req, res) => {
 router.delete('/bookings/:token', async (req, res) => {
     const { token } = req.params;
     // This re-uses the logic from the authenticated delete endpoint but finds by token
-    const bookingToDelete = await db('bookings').where({ cancellation_token: token }).first();
-    if (!bookingToDelete) {
-        return res.status(404).json({ error: 'Booking not found or already cancelled.' });
+    const booking = await db('bookings').where({ cancellation_token: token }).first();
+    if (!booking) {
+        return res.status(404).json({ error: 'Booking not found or has already been cancelled.' });
     }
-    // To avoid duplicating logic, we can call the other delete function or refactor it.
-    // For simplicity here, we'll just delete and assume the user got an email.
-    await db('bookings').where({ id: bookingToDelete.id }).del();
-    res.json({ message: 'Booking cancelled successfully.' });
+    
+    // Use the shared helper to handle deletion and email notifications
+    await triggerBookingCancellation(booking.id, 'booker');
+    res.json({ message: 'Booking has been successfully cancelled.' });
 });
 
 module.exports = router;

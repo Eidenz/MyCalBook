@@ -76,6 +76,53 @@ const expandRecurringEvents = async (userId, startDate, endDate) => {
     return allOccurrences;
 };
 
+// --- Cancellation Helper Function ---
+// This can be called from both authenticated and public routes
+const triggerBookingCancellation = async (bookingId, cancelledBy = 'owner') => {
+    // 1. Fetch booking and verify ownership
+    const booking = await db('bookings')
+        .join('event_types', 'bookings.event_type_id', 'event_types.id')
+        .where('bookings.id', bookingId)
+        .first(
+            'bookings.*', 
+            'event_types.user_id', 
+            'event_types.title as eventTypeTitle', 
+            'event_types.location as eventTypeLocation'
+        );
+
+    if (!booking) {
+        throw new Error('Booking not found.');
+    }
+
+    // 2. Fetch owner details for email
+    const owner = await db('users').where({ id: booking.user_id }).first('username', 'email', 'email_notifications');
+
+    // 3. Delete the booking from the database *first*.
+    // ON DELETE CASCADE will handle the booker's manual_event.
+    await db('bookings').where({ id: bookingId }).del();
+
+    // 4. Send cancellation emails (fire-and-forget)
+    const duration = (new Date(booking.end_time) - new Date(booking.start_time)) / 60000;
+    const emailDetails = {
+        owner: { 
+            username: owner.username, 
+            email: owner.email, 
+            email_notifications: owner.email_notifications 
+        },
+        cancelledBy,
+        eventType: { title: booking.eventTypeTitle, location: booking.eventTypeLocation },
+        booker_name: booking.booker_name,
+        booker_email: booking.booker_email,
+        startTime: booking.start_time,
+        duration: duration,
+        guests: booking.guests ? JSON.parse(booking.guests) : [],
+    };
+    
+    emailService.sendBookingCancellation(emailDetails);
+    
+    return booking; // Return the booking details for verification if needed
+};
+
 // GET /api/events/manual?month=YYYY-MM
 router.get('/manual', async (req, res) => {
     const userId = req.user.id;
@@ -288,57 +335,11 @@ router.delete('/bookings/:id', async (req, res) => {
     const userId = req.user.id;
     const bookingId = parseInt(req.params.id, 10);
 
-    if (isNaN(bookingId)) {
-        return res.status(400).json({ error: 'Invalid booking ID.' });
-    }
-
     try {
-        // 1. Fetch booking and verify ownership
-        const booking = await db('bookings')
-            .join('event_types', 'bookings.event_type_id', 'event_types.id')
-            .where('bookings.id', bookingId)
-            .first(
-                'bookings.*', 
-                'event_types.user_id', 
-                'event_types.title as eventTypeTitle', 
-                'event_types.location as eventTypeLocation'
-            );
-
-        if (!booking) {
-            return res.status(404).json({ error: 'Booking not found.' });
-        }
-
-        if (booking.user_id !== userId) {
+        const cancelledBooking = await triggerBookingCancellation(bookingId, 'owner');
+        if (cancelledBooking.user_id !== userId) {
             return res.status(403).json({ error: 'You do not have permission to delete this booking.' });
         }
-        
-        // 2. Fetch owner details for email
-        const owner = await db('users').where({ id: userId }).first('username', 'email', 'email_notifications');
-
-        // 3. Delete the booking from the database *first*
-        await db('bookings').where({ id: bookingId }).del();
-
-        // 4. Send cancellation emails (fire-and-forget)
-        const duration = (new Date(booking.end_time) - new Date(booking.start_time)) / 60000;
-        const emailDetails = {
-            owner: { 
-                username: owner.username, 
-                email: owner.email, 
-                email_notifications: owner.email_notifications 
-            },
-            cancelledBy: 'owner', // Clarify who initiated the cancellation
-            eventType: { title: booking.eventTypeTitle, location: booking.eventTypeLocation },
-            booker_name: booking.booker_name,
-            booker_email: booking.booker_email,
-            startTime: booking.start_time,
-            duration: duration,
-            guests: booking.guests ? JSON.parse(booking.guests) : [],
-        };
-        
-        emailService.sendBookingCancellation(emailDetails);
-        
-        res.json({ message: 'Booking cancelled successfully.' });
-
     } catch (error) {
         console.error('Error deleting booking:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -347,3 +348,4 @@ router.delete('/bookings/:id', async (req, res) => {
 
 
 module.exports = router;
+module.exports.triggerBookingCancellation = triggerBookingCancellation;

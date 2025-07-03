@@ -11,6 +11,11 @@ module.exports = {
       filename: './mycalbook.sqlite3' // Relative path for local dev
     },
     useNullAsDefault: true,
+    pool: {
+      afterCreate: (conn, done) => {
+        conn.run('PRAGMA foreign_keys = ON', done);
+      }
+    },
     migrations: {
       directory: './db/migrations'
     },
