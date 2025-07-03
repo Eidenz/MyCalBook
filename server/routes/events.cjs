@@ -133,7 +133,7 @@ router.get('/manual', async (req, res) => {
 // POST /api/events/manual
 router.post('/manual', async (req, res) => {
     const userId = req.user.id; 
-    const { title, start_time, end_time, type, description, guests, recurrence } = req.body;
+    const { title, start_time, end_time, type, description, guests, recurrence, booking_id } = req.body;
 
     if (!title || !start_time || !end_time || !type) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -156,6 +156,7 @@ router.post('/manual', async (req, res) => {
             user_id: userId, title, start_time, end_time, type, description,
             guests: JSON.stringify(guests || []),
             recurrence_id: recurrenceId,
+            booking_id: booking_id,
         };
         const [createdEvent] = await trx('manual_events').insert(newEventData).returning('*');
         

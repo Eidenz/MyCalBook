@@ -129,6 +129,7 @@ const BookingPage = () => {
                 end_time: confirmedBooking.end_time,
                 type: 'booked', // Appear as a 'booked' event, not 'personal'
                 description: `Booked via MyCalBook with ${eventType.ownerUsername}.\n\nNotes: ${confirmedBooking.notes || 'N/A'}\n\nManage this booking:\n${cancellationLink}`,
+                booking_id: confirmedBooking.id,
                 guests: confirmedBooking.guests ? JSON.parse(confirmedBooking.guests) : [],
             };
             const response = await fetch('/api/events/manual', {
