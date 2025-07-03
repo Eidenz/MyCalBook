@@ -332,12 +332,25 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                             <option value="blocked">Blocked Time</option>
                             <option value="birthday">Birthday</option>
                         </select>
-                        <div className="grid grid-cols-2 gap-4">
-                            <input type="date" name="date" value={formData.date} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
-                            <input type="time" name="startTime" value={formData.startTime} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
-                            <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
-                            <input type="time" name="endTime" value={formData.endTime} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                        
+                        {/* Updated mobile-friendly date/time section */}
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-300">Start</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <input type="date" name="date" value={formData.date} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                                    <input type="time" name="startTime" value={formData.startTime} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-300">End</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                                    <input type="time" name="endTime" value={formData.endTime} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                                </div>
+                            </div>
                         </div>
+                        
                         <div className="w-full bg-slate-700 p-2 rounded-md border-2 border-slate-600 focus-within:border-indigo-500 transition-colors flex flex-wrap items-center gap-2">
                             {formData.guests.map(g => (
                                 <div key={g} className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-600 text-sm">
@@ -371,15 +384,23 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                         </div>
 
                         {error && <div className="text-red-400 text-sm bg-red-900/50 p-3 rounded-lg border border-red-500/30">{error}</div>}
-                        <div className="mt-6 flex justify-between items-center">
-                            {isEditMode && <button type="button" onClick={handleDeleteClick} disabled={isSubmitting} className="px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Delete</button>}
-                            <div className="flex-grow flex justify-end gap-3">
-                                <button type="button" onClick={onClose} className="px-6 py-2.5 bg-slate-600 rounded-lg font-semibold hover:bg-slate-500 transition-colors">Cancel</button>
-                                <button type="submit" disabled={isSubmitting} className="px-6 py-2.5 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        
+                        {/* Updated mobile-friendly button layout */}
+                        <div className="mt-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                            {isEditMode && (
+                                <button type="button" onClick={handleDeleteClick} disabled={isSubmitting} className="w-full sm:w-auto px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed order-2 sm:order-1">
+                                    Delete
+                                </button>
+                            )}
+                            <div className="flex gap-3 order-1 sm:order-2">
+                                <button type="button" onClick={onClose} className="flex-1 sm:flex-none px-6 py-2.5 bg-slate-600 rounded-lg font-semibold hover:bg-slate-500 transition-colors">
+                                    Cancel
+                                </button>
+                                <button type="submit" disabled={isSubmitting} className="flex-1 sm:flex-none px-6 py-2.5 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                     {isSubmitting ? (
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center justify-center gap-2">
                                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                            Saving...
+                                            <span>Saving...</span>
                                         </div>
                                     ) : (
                                         'Save'
