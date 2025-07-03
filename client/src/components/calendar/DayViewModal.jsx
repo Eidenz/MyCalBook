@@ -4,6 +4,7 @@ import { format, isBefore, isWithinInterval } from 'date-fns';
 
 const DayViewModal = ({ isOpen, onClose, day, events, onEventClick }) => {
     if (!isOpen) return null;
+    const now = new Date();
 
     const EventRow = ({ event }) => {
         const guests = event.guests ? JSON.parse(event.guests) : [];
@@ -15,6 +16,7 @@ const DayViewModal = ({ isOpen, onClose, day, events, onEventClick }) => {
             personal: 'bg-amber-500',
             booked: 'bg-green-500',
             blocked: 'bg-red-500',
+            birthday: 'bg-pink-500',
         };
 
         const dotClass = `
@@ -36,7 +38,9 @@ const DayViewModal = ({ isOpen, onClose, day, events, onEventClick }) => {
                 <div className="flex-grow">
                     <p className="font-semibold text-white">{event.title}</p>
                     <p className="text-sm text-slate-400">
-                        {format(new Date(event.start_time), 'HH:mm')} - {format(new Date(event.end_time), 'HH:mm')}
+                        {event.type === 'birthday' 
+                            ? 'All Day' 
+                            : `${format(new Date(event.start_time), 'HH:mm')} - ${format(new Date(event.end_time), 'HH:mm')}`}
                     </p>
                     {guests.length > 0 && (
                         <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">

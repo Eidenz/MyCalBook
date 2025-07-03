@@ -300,6 +300,23 @@ const createBookingConfirmationTemplate = (details) => {
                 margin: 0;
             ">Contact ${details.owner.username} directly or manage your booking through MyCalBook</p>
         </div>
+
+        ${details.cancellationLink ? `
+        <div style="text-align: center; margin-top: 24px; padding: 16px; background-color: #f8fafc; border-radius: 12px;">
+            <p style="
+                color: #64748b;
+                font-size: 14px;
+                margin: 0;
+                line-height: 1.5;
+            ">Need to cancel or reschedule? 
+            <a href="${details.cancellationLink}" style="
+                color: #4f46e5;
+                font-weight: 600;
+                text-decoration: none;
+            ">Manage your booking here</a>.
+            </p>
+        </div>
+        ` : ''}
         
         <div style="text-align: center; margin-top: 32px;">
             <p style="
@@ -416,9 +433,14 @@ const createBookingNotificationTemplate = (details) => {
  * Creates the booking cancellation email template
  */
 const createBookingCancellationTemplate = (details, recipientType = 'booker') => {
-    const introText = recipientType === 'owner' 
-        ? `You have successfully cancelled the following booking with <strong style="color: #1e293b;">${details.booker_name}</strong>.`
-        : `Your booking for ${details.eventType.title} with <strong style="color: #1e293b;">${details.owner.username}</strong> has been cancelled.`;
+    let introText;
+    if (recipientType === 'owner') {
+        introText = details.cancelledBy === 'owner' 
+            ? `You have successfully cancelled the following booking with <strong style="color: #1e293b;">${details.booker_name}</strong>.`
+            : `Heads up! <strong style="color: #1e293b;">${details.booker_name}</strong> has cancelled their booking with you.`;
+    } else { // 'booker'
+        introText = `Your booking for ${details.eventType.title} with <strong style="color: #1e293b;">${details.owner.username}</strong> has been cancelled.`;
+    }
     
     const content = `
         <div style="text-align: center; margin-bottom: 32px;">

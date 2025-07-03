@@ -121,13 +121,14 @@ const BookingPage = () => {
     const handleAddToInternalCalendar = async () => {
         if (!isAuthenticated || !confirmedBooking) return;
         setIsAddingToInternal(true);
+        const cancellationLink = `${window.location.origin}/cancel/${confirmedBooking.cancellation_token}`;
         try {
             const payload = {
-                title: `${confirmedBooking.title} with ${eventType.ownerUsername}`,
+                title: `${eventType.title} with ${eventType.ownerUsername}`,
                 start_time: confirmedBooking.start_time,
                 end_time: confirmedBooking.end_time,
-                type: 'personal',
-                description: `Booked via MyCalBook.\n\nEvent Notes:\n${confirmedBooking.description || 'N/A'}`,
+                type: 'booked', // Appear as a 'booked' event, not 'personal'
+                description: `Booked via MyCalBook with ${eventType.ownerUsername}.\n\nNotes: ${confirmedBooking.notes || 'N/A'}\n\nManage this booking:\n${cancellationLink}`,
                 guests: confirmedBooking.guests ? JSON.parse(confirmedBooking.guests) : [],
             };
             const response = await fetch('/api/events/manual', {
@@ -156,7 +157,11 @@ const BookingPage = () => {
                     <div className="text-center">
                         <CheckCircle className="mx-auto text-green-400 h-16 w-16" />
                         <h1 className="text-2xl sm:text-3xl font-bold text-white mt-4">Booking Confirmed!</h1>
-                        <p className="text-slate-400 mt-2">{confirmedBooking.booker_email ? 'A calendar invitation and confirmation has been sent to your email.' : 'Your event is scheduled.'}</p>
+                        <p className="text-slate-400 mt-2 px-4">{confirmedBooking.booker_email ? 'A calendar invitation and confirmation has been sent to your email.' : 'Your event is scheduled.'}</p>
+                        <div className="mt-4 text-xs text-slate-500 bg-slate-900/50 rounded-lg p-2 max-w-xs mx-auto">
+                            <p>Keep this link to manage your booking:</p>
+                            <Link to={`/cancel/${confirmedBooking.cancellation_token}`} className="text-indigo-400 hover:underline break-all">{`${window.location.origin}/cancel/${confirmedBooking.cancellation_token}`}</Link>
+                        </div>
                     </div>
 
                     <div className="my-6 space-y-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
@@ -169,7 +174,15 @@ const BookingPage = () => {
                     </div>
 
                     {isAuthenticated && (
-                        <div className="mb-4"><button onClick={handleAddToInternalCalendar} disabled={isAddingToInternal || isAddedToInternal} className="w-full flex items-center justify-center gap-3 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed">{isAddingToInternal ? <><div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>Adding...</> : isAddedToInternal ? <><CheckCircle size={20} />Added to your calendar!</> : <><PlusCircle size={20} />Add to MyCalBook Calendar</>}</button></div>
+                        <div className="mb-4">
+                            <button 
+                                onClick={handleAddToInternalCalendar} 
+                                disabled={isAddingToInternal || isAddedToInternal} 
+                                className="w-full flex items-center justify-center gap-3 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {isAddingToInternal ? <><div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>Adding...</> : isAddedToInternal ? <><CheckCircle size={20} />Added to your calendar!</> : <><PlusCircle size={20} />Add to MyCalBook Calendar</>}
+                            </button>
+                        </div>
                     )}
 
                     <AddToCalendar event={confirmedBooking} />

@@ -54,6 +54,21 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token }) => {
         }
     }, [isOpen, selectedEvent]);
 
+    // Parse description for a booking management link
+    const { bookingManagementLink, cleanDescription } = React.useMemo(() => {
+        if (isBookedEvent && selectedEvent?.description) {
+            const linkRegex = /(https?:\/\/[^\s]+)/;
+            const match = selectedEvent.description.match(linkRegex);
+            if (match && match[0].includes('/cancel/')) {
+                return {
+                    bookingManagementLink: match[0],
+                    cleanDescription: selectedEvent.description.replace(/Manage this booking:[\s\S]*/, '').trim()
+                };
+            }
+        }
+        return { bookingManagementLink: null, cleanDescription: selectedEvent?.description };
+    }, [isBookedEvent, selectedEvent]);
+
     const handleGuestKeyDown = (e) => {
         if (e.key === 'Enter' || e.key === ',') {
             e.preventDefault();
@@ -192,18 +207,34 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token }) => {
                         <h3 className="text-lg font-semibold text-white -mb-2">{selectedEvent.title}</h3>
                         <p className="text-slate-400">{format(new Date(selectedEvent.start_time), 'EEEE, MMMM d, yyyy')} from {format(new Date(selectedEvent.start_time), 'HH:mm')} to {format(new Date(selectedEvent.end_time), 'HH:mm')}</p>
                         <div className="space-y-3 pt-2">
-                             <div className="flex items-center gap-3"><User size={18}/><span className="truncate">{selectedEvent.booker_name}</span></div>
+                            {bookingManagementLink ? (
+                            <></>
+                            ) : (
+                                <div className="flex items-center gap-3"><User size={18}/><span className="truncate">{selectedEvent.booker_name}</span></div>
+                            )}
                              <div className="flex items-center gap-3"><Mail size={18}/><span className="truncate">{selectedEvent.booker_email || 'N/A'}</span></div>
-                             {selectedEvent.guests && JSON.parse(selectedEvent.guests).length > 0 && <div className="flex items-start gap-3"><Users size={18}/><span>{JSON.parse(selectedEvent.guests).join(', ')}</span></div>}
-                             {selectedEvent.description && <div className="flex items-start gap-3"><FileText size={18}/><p className="whitespace-pre-wrap">{selectedEvent.description}</p></div>}
+                             {selectedEvent.guests && JSON.parse(selectedEvent.guests).length > 0 && <div className="flex items-start gap-3"><Users size={18} className="mt-1"/><span>{JSON.parse(selectedEvent.guests).join(', ')}</span></div>}
+                             {cleanDescription && <div className="flex items-start gap-3"><FileText size={18} className="mt-1 flex-shrink-0"/><p className="whitespace-pre-wrap">{cleanDescription}</p></div>}
                         </div>
                         {error && <div className="text-red-400 text-sm bg-red-900/50 p-3 rounded-lg">{error}</div>}
-                        <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={handleDeleteClick} disabled={isSubmitting} className="px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700">Cancel Booking</button></div>
+                        <div className="mt-6 flex justify-end gap-3">
+                            {bookingManagementLink ? (
+                                <a href={bookingManagementLink} target="_self" rel="noopener noreferrer" className="px-6 py-2.5 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 text-center">
+                                    Manage Booking
+                                </a>
+                            ) : (
+                                <button type="button" onClick={handleDeleteClick} disabled={isSubmitting} className="px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700">Cancel Booking</button>
+                            )}
+                        </div>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full bg-slate-700 p-2.5 rounded-md" placeholder="Event Title *"/>
-                        <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-slate-700 p-2.5 rounded-md"><option value="personal">Personal Event</option><option value="blocked">Blocked Time</option></select>
+                        <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-slate-700 p-2.5 rounded-md">
+                            <option value="personal">Personal Event</option>
+                            <option value="blocked">Blocked Time</option>
+                            <option value="birthday">Birthday</option>
+                        </select>
                         <div className="grid grid-cols-2 gap-4"><input type="date" name="date" value={formData.date} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md" /><input type="time" name="startTime" value={formData.startTime} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md" /><input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md" /><input type="time" name="endTime" value={formData.endTime} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md" /></div>
                         <div className="w-full bg-slate-700 p-2 rounded-md flex flex-wrap items-center gap-2"><div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-600 text-sm">{formData.guests.map(g => <span key={g}>{g}<button type="button" onClick={()=>removeGuest(g)} className="ml-1">x</button></span>)}</div><input type="text" value={guestInput} onChange={(e) => setGuestInput(e.target.value)} onKeyDown={handleGuestKeyDown} placeholder="Add guests..." className="bg-transparent outline-none p-1 text-sm flex-grow min-w-[100px]" /></div>
                         <textarea name="description" value={formData.description} onChange={handleChange} rows="2" className="w-full bg-slate-700 p-2.5 rounded-md" placeholder="Notes..."/>
@@ -211,7 +242,12 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token }) => {
                         {/* Recurrence Section */}
                         <div className="space-y-3 p-3 bg-slate-900/50 rounded-lg">
                             <div className="flex items-center gap-2"><Repeat size={16}/><label className="font-semibold">Repeat</label></div>
-                            <select name="frequency" value={formData.recurrence.frequency} onChange={handleRecurrenceChange} className="w-full bg-slate-700 p-2 rounded-md"><option value="">Does not repeat</option><option value="WEEKLY">Weekly</option><option value="MONTHLY">Monthly</option></select>
+                            <select name="frequency" value={formData.recurrence.frequency} onChange={handleRecurrenceChange} className="w-full bg-slate-700 p-2 rounded-md">
+                                <option value="">Does not repeat</option>
+                                <option value="YEARLY">Yearly</option>
+                                <option value="MONTHLY">Monthly</option>
+                                <option value="WEEKLY">Weekly</option>
+                            </select>
                             {formData.recurrence.frequency === 'WEEKLY' && (
                                 <div className="flex justify-between gap-1">{weekDays.map(day => <button type="button" key={day.value} onClick={() => handleDayToggle(day.value)} className={`w-9 h-9 rounded-full text-xs font-bold ${formData.recurrence.by_day.includes(day.value) ? 'bg-indigo-600' : 'bg-slate-600'}`}>{day.name}</button>)}</div>
                             )}

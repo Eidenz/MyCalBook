@@ -10,6 +10,7 @@ import Availability from './pages/Availability';
 import EventTypes from './pages/EventTypes';
 import BookingPage from './pages/BookingPage';
 import Settings from './pages/Settings';
+import CancellationPage from './pages/CancellationPage';
 import UserProfilePage from './pages/UserProfilePage';
 
 // Common Components
@@ -26,6 +27,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/book/:slug" element={<BookingPage />} />
+            <Route path="/cancel/:token" element={<CancellationPage />} />
             <Route path="/u/:username" element={<UserProfilePage />} />
             
             {/* Private Routes - wrapped in the AppLayout to get the header */}

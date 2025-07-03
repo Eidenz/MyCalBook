@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { format, isSameMonth, isToday, isSameDay, startOfDay, endOfDay, isBefore, isWithinInterval } from 'date-fns';
-import { Users, Repeat } from 'lucide-react';
+import { Users, Repeat, Cake } from 'lucide-react';
 
 const MAX_EVENTS_VISIBLE = 3;
 const MAX_EVENTS_VISIBLE_MOBILE = 2;
@@ -14,6 +14,7 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
         personal: 'bg-amber-500 hover:bg-amber-400',
         booked: 'bg-green-500 hover:bg-green-400',
         blocked: 'bg-red-500 hover:bg-red-400',
+        birthday: 'bg-pink-500 hover:bg-pink-400',
     };
 
     const pillClass = `
@@ -32,10 +33,12 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
     if (isMobile) {
         return (
             <div className={pillClass} onClick={() => onClick(event)}>
+                {event.type === 'birthday' && <Cake size={10} className="flex-shrink-0"/>}
                 {event.recurrence_id && <Repeat size={10} className="flex-shrink-0"/>}
-                <span className="font-semibold text-xs truncate">
-                    {format(new Date(event.start_time), 'HH:mm')} {event.title}
-                </span>
+                <span className="font-semibold text-xs truncate flex items-center gap-1">
+                    {event.type !== 'birthday' && format(new Date(event.start_time), 'HH:mm')}
+                    <span>{event.title}</span>
+                 </span>
             </div>
         );
     }
@@ -44,10 +47,13 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
         <div className={pillClass} onClick={() => onClick(event)}>
             {isStart && (
                 <>
+                    {event.type === 'birthday' && <Cake size={12} className="flex-shrink-0"/>}
                     {event.recurrence_id && <Repeat size={12} className="flex-shrink-0"/>}
-                    <span className="font-semibold flex-shrink-0">
-                        {format(new Date(event.start_time), 'HH:mm')}-{format(new Date(event.end_time), 'HH:mm')}
-                    </span>
+                    {event.type !== 'birthday' && (
+                        <span className="font-semibold flex-shrink-0">
+                            {format(new Date(event.start_time), 'HH:mm')}-{format(new Date(event.end_time), 'HH:mm')}
+                        </span>
+                    )}
                     <span className="truncate ml-1">{event.title}</span>
                     {guests.length > 0 && (
                         <span className="flex items-center gap-1 ml-auto text-white/80 pl-1">

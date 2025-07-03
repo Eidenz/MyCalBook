@@ -325,6 +325,7 @@ router.delete('/bookings/:id', async (req, res) => {
                 email: owner.email, 
                 email_notifications: owner.email_notifications 
             },
+            cancelledBy: 'owner', // Clarify who initiated the cancellation
             eventType: { title: booking.eventTypeTitle, location: booking.eventTypeLocation },
             booker_name: booking.booker_name,
             booker_email: booking.booker_email,

@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { format, startOfDay, endOfDay, getHours, getMinutes, isToday, isSameDay, addDays, isBefore, isWithinInterval } from 'date-fns';
-import { Users, Repeat } from 'lucide-react';
+import { Users, Repeat, Cake } from 'lucide-react';
 
 const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, isSingleDay, isMobile, now }) => {
     const start = new Date(event.start_time);
@@ -28,6 +28,7 @@ const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, is
         personal: 'bg-amber-500/80 border-amber-400',
         booked: 'bg-green-500/80 border-green-400',
         blocked: 'bg-red-500/80 border-red-400',
+        birthday: 'bg-pink-500/80 border-pink-400',
     };
     
     const guests = event.guests ? JSON.parse(event.guests) : [];
@@ -49,13 +50,16 @@ const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, is
         >
             <div className="flex flex-col h-full">
                 <div className="flex items-start gap-1">
+                    {event.type === 'birthday' && <Cake size={isMobile ? 10 : 12} className="opacity-80 mt-0.5 flex-shrink-0" />}
                     {event.recurrence_id && <Repeat size={isMobile ? 10 : 12} className="opacity-80 mt-0.5 flex-shrink-0" />}
                     <p className="font-semibold text-xs md:text-sm truncate flex-1">{event.title}</p>
                 </div>
                 {!isMobile && (
-                    <p className="text-xs opacity-80">
-                        {isStart ? format(start, 'HH:mm') : '00:00'} - {isEnd ? format(end, 'HH:mm') : '24:00'}
-                    </p>
+                    event.type !== 'birthday' && (
+                        <p className="text-xs opacity-80">
+                            {isStart ? format(start, 'HH:mm') : '00:00'} - {isEnd ? format(end, 'HH:mm') : '24:00'}
+                        </p>
+                    )
                 )}
                  {guests.length > 0 && isStart && (
                     <div className="flex items-center gap-1 text-xs opacity-90 mt-auto">
