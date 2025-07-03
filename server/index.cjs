@@ -77,7 +77,7 @@ app.get('/book/:slug', async (req, res, next) => {
         let metaTags = `
             <title>${pageTitle}</title>
             <meta name="description" content="${pageDescription}">
-            <meta property="og:title" content="${eventType.title}">
+            <meta property="og:title" content="${pageTitle}">
             <meta property="og:description" content="${pageDescription}">
             <meta property="og:url" content="${fullUrl}">
             <meta property="og:type" content="website">
