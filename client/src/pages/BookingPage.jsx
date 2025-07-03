@@ -226,11 +226,11 @@ const BookingPage = () => {
                         <p className="text-slate-400 mt-6 text-sm">{eventType?.description}</p>
                         
                         {eventType?.image_url && (
-                            <div className="mt-6">
+                             <div className="mt-6">
                                 <img 
                                     src={eventType.image_url} 
                                     alt={eventType.title}
-                                    className="w-full h-auto object-cover rounded-lg shadow-lg border border-slate-700"
+                                    className="w-full max-h-64 h-auto object-cover rounded-lg"
                                 />
                             </div>
                         )}
