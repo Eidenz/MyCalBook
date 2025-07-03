@@ -21,10 +21,10 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
         text-white text-xs cursor-pointer 
         flex items-center gap-1.5
         truncate transition-colors duration-200
-        ${isPast 
+        ${isPast && event.type !== 'birthday' 
             ? 'bg-slate-600 hover:bg-slate-500 opacity-70' 
             : typeStyles[event.type] || 'bg-blue-500 hover:bg-blue-400'}
-        ${isCurrent ? 'ring-2 ring-sky-400' : ''}
+        ${isCurrent && event.type !== 'birthday' ? 'ring-2 ring-sky-400' : ''}
         ${isMobile ? 'px-1 py-0.5 mb-0.5 rounded' : 'p-1 mb-1 rounded-md'}
     `;
 
