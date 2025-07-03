@@ -1,7 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
+
+// Create public directories if they don't exist to store uploads
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 const authRouter = require('./routes/auth.cjs');
 const eventsRouter = require('./routes/events.cjs');
@@ -9,6 +16,7 @@ const availabilityRouter = require('./routes/availability.cjs');
 const eventTypesRouter = require('./routes/eventTypes.cjs');
 const publicRouter = require('./routes/public.cjs');
 const settingsRouter = require('./routes/settings.cjs');
+const uploadRouter = require('./routes/upload.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -16,6 +24,9 @@ const PORT = process.env.PORT || 5001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from the 'public' directory (for uploads)
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // Main API Route
 app.get('/api', (req, res) => {
@@ -29,6 +40,7 @@ app.use('/api/availability', availabilityRouter);
 app.use('/api/event-types', eventTypesRouter);
 app.use('/api/public', publicRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api/upload', uploadRouter);
 
 const frontendBuildPath = path.join(__dirname, '..', 'client', 'dist');
 

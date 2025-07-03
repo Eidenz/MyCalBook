@@ -215,14 +215,35 @@ const BookingPage = () => {
             <div className="w-full max-w-7xl mx-auto bg-slate-800/50 border border-slate-700 rounded-2xl shadow-2xl flex flex-col lg:flex-row lg:h-[750px] transform transition-all duration-300">
                 <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-700 flex flex-col lg:w-[30%] lg:flex-shrink-0">
                     {selectedTime && (<button onClick={handleClearTimeSelection} className="flex lg:hidden items-center gap-2 text-indigo-400 mb-4 -ml-1 hover:text-indigo-300 transition-colors duration-200"><ArrowLeft size={16} /> Back</button>)}
-                    <p className="text-slate-400">{eventType?.ownerUsername}</p>
-                    <h1 className="text-3xl font-bold text-white my-2">{eventType?.title}</h1>
-                    <div className="space-y-2 text-slate-300 mt-4">
-                        <div className="flex items-center gap-3"><Clock size={16} className="text-indigo-400"/><span>{selectedDuration || eventType?.default_duration} minutes</span></div>
-                        <div className="flex items-center gap-3"><MapPin size={16} className="text-indigo-400"/><span>{eventType?.location}</span></div>
+                    
+                    <div className="flex-grow min-h-0 overflow-y-auto pr-2 -mr-2">
+                        <p className="text-slate-400">{eventType?.ownerUsername}</p>
+                        <h1 className="text-3xl font-bold text-white my-2">{eventType?.title}</h1>
+                        <div className="space-y-2 text-slate-300 mt-4">
+                            <div className="flex items-center gap-3"><Clock size={16} className="text-indigo-400"/><span>{selectedDuration || eventType?.default_duration} minutes</span></div>
+                            <div className="flex items-center gap-3"><MapPin size={16} className="text-indigo-400"/><span>{eventType?.location}</span></div>
+                        </div>
+                        <p className="text-slate-400 mt-6 text-sm">{eventType?.description}</p>
+                        
+                        {eventType?.image_url && (
+                            <div className="mt-6">
+                                <img 
+                                    src={eventType.image_url} 
+                                    alt={eventType.title}
+                                    className="w-full h-auto object-cover rounded-lg shadow-lg border border-slate-700"
+                                />
+                            </div>
+                        )}
                     </div>
-                    <p className="text-slate-400 mt-6 text-sm flex-grow">{eventType?.description}</p>
-                    <div className="mt-6 pt-4 border-t border-slate-700"><label htmlFor="interval" className="block text-sm font-semibold mb-2 text-slate-300">Time slot interval</label><select id="interval" name="interval" value={bookingInterval} disabled={!!selectedTime} onChange={(e) => setBookingInterval(parseInt(e.target.value, 10))} className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors duration-200 disabled:opacity-50"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">60 minutes</option></select></div>
+                    
+                    <div className="mt-6 pt-4 border-t border-slate-700 flex-shrink-0">
+                        <label htmlFor="interval" className="block text-sm font-semibold mb-2 text-slate-300">Time slot interval</label>
+                        <select id="interval" name="interval" value={bookingInterval} disabled={!!selectedTime} onChange={(e) => setBookingInterval(parseInt(e.target.value, 10))} className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors duration-200 disabled:opacity-50">
+                            <option value="15">15 minutes</option>
+                            <option value="30">30 minutes</option>
+                            <option value="60">60 minutes</option>
+                        </select>
+                    </div>
                 </div>
                 {selectedTime ? (
                     <div className="p-8 flex flex-col lg:w-[70%] lg:flex-1">

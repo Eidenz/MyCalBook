@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
 
 // POST /api/event-types
 router.post('/', async (req, res) => {
-    const { title, location, schedule_id, description, durations, default_duration, is_public } = req.body;
+    const { title, location, schedule_id, description, durations, default_duration, is_public, image_url } = req.body;
     const userId = req.user.id;
 
     if (!title || !location || !schedule_id || !durations || !default_duration) {
@@ -52,7 +52,8 @@ router.post('/', async (req, res) => {
             durations: JSON.stringify(durations.map(d => parseInt(d, 10))),
             default_duration: parseInt(default_duration, 10),
             is_public: typeof is_public === 'boolean' ? is_public : true,
-            slug: generateSlug(title, userId)
+            slug: generateSlug(title, userId),
+            image_url,
         };
 
         const [createdEventType] = await db('event_types').insert(newEventType).returning('*');
@@ -67,7 +68,7 @@ router.post('/', async (req, res) => {
 // PUT /api/event-types/:id
 router.put('/:id', async (req, res) => {
     const eventTypeId = parseInt(req.params.id, 10);
-    const { title, location, schedule_id, description, durations, default_duration, is_public } = req.body;
+    const { title, location, schedule_id, description, durations, default_duration, is_public, image_url } = req.body;
     const userId = req.user.id;
 
     if (!title || !location || !schedule_id || !durations || !default_duration) {
@@ -91,6 +92,7 @@ router.put('/:id', async (req, res) => {
             durations: JSON.stringify(durations.map(d => parseInt(d, 10))),
             default_duration: parseInt(default_duration, 10),
             is_public: typeof is_public === 'boolean' ? is_public : existingEvent.is_public,
+            image_url,
             updated_at: new Date()
         };
         

@@ -138,7 +138,7 @@ router.get('/availability/:slug', async (req, res) => {
         }
         
         res.json({
-            eventType: { ownerUsername: eventType.ownerUsername, title: eventType.title, description: eventType.description, location: eventType.location, durations: JSON.parse(eventType.durations), default_duration: eventType.default_duration },
+            eventType: { ownerUsername: eventType.ownerUsername, title: eventType.title, description: eventType.description, location: eventType.location, durations: JSON.parse(eventType.durations), default_duration: eventType.default_duration, image_url: eventType.image_url },
             availableSlots: [...new Set(availableSlots)].sort()
         });
     } catch (error) {

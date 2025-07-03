@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, UploadCloud, Trash2, Loader } from 'lucide-react';
 
 const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
     const isEditMode = Boolean(eventType);
+    const fileInputRef = useRef(null);
 
     const getInitialState = () => ({
         title: '',
@@ -12,6 +13,7 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
         durations: [30, 60],
         default_duration: 60,
         is_public: true,
+        image_url: '',
     });
     
     const [formData, setFormData] = useState(getInitialState());
@@ -19,6 +21,7 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
     const [durationInput, setDurationInput] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -27,13 +30,11 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
                 setError('');
                 setDurationInput('');
                 try {
-                    // Fetch schedules
                     const res = await fetch('/api/availability/schedules', { headers: { 'x-auth-token': token } });
                     if (!res.ok) throw new Error('Could not load schedules.');
                     const fetchedSchedules = await res.json();
                     setSchedules(fetchedSchedules);
 
-                    // Set form data based on mode
                     if (isEditMode) {
                         const durations = (typeof eventType.durations === 'string') 
                             ? JSON.parse(eventType.durations) 
@@ -46,6 +47,7 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
                             durations: durations,
                             default_duration: eventType.default_duration || durations[0] || '',
                             is_public: eventType.is_public !== undefined ? eventType.is_public : true,
+                            image_url: eventType.image_url || '',
                         });
                     } else {
                         const initialState = getInitialState();
@@ -95,6 +97,36 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
     const setDefaultDuration = (duration) => {
         setFormData(prev => ({ ...prev, default_duration: duration }));
     };
+    
+    const handleImageUpload = async (file) => {
+        if (!file) return;
+        setIsUploading(true);
+        setError('');
+
+        const uploadFormData = new FormData();
+        uploadFormData.append('image', file);
+
+        try {
+            const res = await fetch('/api/upload/image', {
+                method: 'POST',
+                headers: { 'x-auth-token': token },
+                body: uploadFormData,
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Upload failed');
+            
+            setFormData(prev => ({ ...prev, image_url: data.imageUrl }));
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+    
+    const removeImage = () => {
+        setFormData(prev => ({ ...prev, image_url: '' }));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault(); 
@@ -133,14 +165,44 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-            <div className="bg-slate-800 text-white rounded-xl shadow-2xl w-full max-w-lg p-6 mx-4 transform transition-all" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div className="bg-slate-800 text-white rounded-xl shadow-2xl w-full max-w-lg p-6 mx-4 transform transition-all overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold">{isEditMode ? 'Edit Booking Type' : 'New Booking Type'}</h2>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-700"><X size={24} /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Public Toggle */}
+                    <input type="file" ref={fileInputRef} onChange={(e) => handleImageUpload(e.target.files[0])} accept="image/*" className="hidden" />
+                    
+                    {formData.image_url ? (
+                        <div className="relative group">
+                            <img src={formData.image_url} alt="Event Preview" className="w-full h-48 object-cover rounded-lg bg-slate-700" />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-lg">
+                                <button type="button" onClick={removeImage} className="p-2 bg-red-600 rounded-full text-white hover:bg-red-700">
+                                    <Trash2 size={20} />
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div 
+                            onClick={() => fileInputRef.current.click()}
+                            className="w-full h-48 border-2 border-dashed border-slate-600 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:border-indigo-500 hover:text-indigo-400 cursor-pointer transition-colors"
+                        >
+                            {isUploading ? (
+                                <>
+                                    <Loader className="animate-spin h-8 w-8 mb-2" />
+                                    <span>Uploading...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <UploadCloud size={32} />
+                                    <span className="mt-2 text-sm font-semibold">Upload an image</span>
+                                    <span className="text-xs">PNG, JPG, WEBP, GIF up to 40MB</span>
+                                </>
+                            )}
+                        </div>
+                    )}
+                    
                     <div className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg">
                         <div>
                             <h3 className="font-semibold text-white">Public Booking</h3>
@@ -152,12 +214,10 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
                         </label>
                     </div>
 
-                    {/* Other fields */}
                     <input type="text" name="title" value={formData.title} onChange={handleChange} required placeholder="Title" className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
                     <input type="text" name="location" value={formData.location} onChange={handleChange} required placeholder="Location" className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
                     <textarea name="description" value={formData.description} onChange={handleChange} rows="3" placeholder="Description..." className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
                     
-                    {/* Durations */}
                     <div>
                         <label className="block text-sm font-semibold mb-2 text-slate-300">Durations (minutes)</label>
                         <div className="p-2 bg-slate-700 border-2 border-slate-600 rounded-md flex flex-wrap items-center gap-2">
@@ -172,7 +232,6 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
                         <p className="text-xs text-slate-400 mt-1.5">Click a tag to set as default. Press Enter to add.</p>
                     </div>
                     
-                    {/* Schedule Selector */}
                     <div>
                         <label htmlFor="schedule_id" className="block text-sm font-semibold mb-2 text-slate-300">Availability Schedule</label>
                         <select name="schedule_id" id="schedule_id" value={formData.schedule_id} onChange={handleChange} required className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600">
@@ -181,12 +240,11 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
                         </select>
                     </div>
 
-
                     {error && <div className="text-red-400 text-sm bg-red-900/50 p-3 rounded-lg">{error}</div>}
 
                     <div className="pt-4 flex justify-end gap-3">
                         <button type="button" onClick={onClose} className="px-6 py-2.5 bg-slate-600 rounded-lg font-semibold hover:bg-slate-500">Cancel</button>
-                        <button type="submit" disabled={isSubmitting} className="px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold hover:opacity-90 disabled:opacity-50">
+                        <button type="submit" disabled={isSubmitting || isUploading} className="px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold hover:opacity-90 disabled:opacity-50">
                             {isSubmitting ? 'Saving...' : 'Save Changes'}
                         </button>
                     </div>
