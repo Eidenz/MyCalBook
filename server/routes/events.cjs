@@ -265,8 +265,10 @@ router.put('/manual/:id', async (req, res) => {
         
         } else {
             // Standard non-recurring event update
+            // THE FIX: Destructure `recurrence` out so it's not included in the update.
+            const { recurrence, ...restOfEventData } = eventData;
             await trx('manual_events').where({ id: parentEventId }).update({
-                ...eventData,
+                ...restOfEventData,
                 guests: JSON.stringify(eventData.guests || []),
                 updated_at: new Date(),
             });
