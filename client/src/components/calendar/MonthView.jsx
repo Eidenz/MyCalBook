@@ -33,12 +33,21 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
     const guests = event.guests ? JSON.parse(event.guests) : [];
 
     if (isMobile) {
+        if (isBday) {
+            return (
+            <div className={pillClass} onClick={() => onClick(event)}>
+                <Cake size={10} className="flex-shrink-0"/>
+                <span className="font-semibold text-xs truncate flex items-center gap-1">
+                {event.title}
+                </span>
+            </div>
+            );
+        }
         return (
             <div className={pillClass} onClick={() => onClick(event)}>
-                {isBday && <Cake size={10} className="flex-shrink-0"/>}
-                <span className="font-semibold text-xs truncate flex items-center gap-1">
-                    {isAllDay ? 'Full' : `${format(new Date(event.start_time), 'HH:mm')}`}
-                </span>
+            <span className="font-semibold text-xs truncate flex items-center gap-1">
+                {isAllDay ? 'Full' : `${format(new Date(event.start_time), 'HH:mm')}`}
+            </span>
             </div>
         );
     }
