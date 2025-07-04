@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ConfirmationModal from '../components/common/ConfirmationModal';
-import { Shield, ShieldOff } from 'lucide-react';
+import { Shield, ShieldOff, Copy, Download, KeyRound, Check } from 'lucide-react';
 
 // A sub-component for the 2FA setup flow
 const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
-    const [setupStage, setSetupStage] = useState('idle'); // 'idle', 'generated', 'disabling'
+    const [setupStage, setSetupStage] = useState('idle'); // 'idle', 'generated', 'recovery', 'verify'
     const [qrCode, setQrCode] = useState('');
     const [secret, setSecret] = useState('');
+    const [recoveryCodes, setRecoveryCodes] = useState([]);
     const [otp, setOtp] = useState('');
     const [disablePassword, setDisablePassword] = useState('');
     const [disableOtp, setDisableOtp] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [hasCopied, setHasCopied] = useState(false);
 
     const handleGenerate = async () => {
         setIsSubmitting(true);
@@ -26,6 +28,7 @@ const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
             if (!res.ok) throw new Error(data.error);
             setQrCode(data.qrCode);
             setSecret(data.secret);
+            setRecoveryCodes(data.recoveryCodes);
             setSetupStage('generated');
         } catch (err) {
             setError(err.message);
@@ -47,7 +50,7 @@ const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             setSetupStage('idle');
-            onUpdate(true); // Notify parent that 2FA is now enabled
+            onUpdate(true, '2FA has been enabled successfully!');
         } catch (err) {
             setError(err.message);
         } finally {
@@ -68,14 +71,38 @@ const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             setSetupStage('idle');
-            onUpdate(false); // Notify parent that 2FA is now disabled
             setDisablePassword('');
             setDisableOtp('');
+            onUpdate(false, '2FA has been disabled.');
         } catch (err) {
             setError(err.message);
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleCopyToClipboard = () => {
+        navigator.clipboard.writeText(recoveryCodes.join('\n'));
+        setHasCopied(true);
+        setTimeout(() => setHasCopied(false), 2000);
+    };
+
+    const handleDownloadCodes = () => {
+        const text = recoveryCodes.join('\n');
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'mycalbook-recovery-codes.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const resetFlow = () => {
+        setSetupStage('idle');
+        setError('');
     };
 
     if (isEnabled && setupStage !== 'disabling') {
@@ -95,13 +122,13 @@ const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
     
     if (setupStage === 'disabling') {
         return (
-            <form onSubmit={handleDisable} className="space-y-3 bg-slate-900/50 p-4 rounded-lg">
+            <form onSubmit={handleDisable} className="space-y-3 bg-slate-900/50 p-4 rounded-lg border border-red-500/30">
                  <h3 className="font-semibold text-white">Disable Two-Factor Authentication</h3>
                 <input type="password" value={disablePassword} onChange={(e) => setDisablePassword(e.target.value)} placeholder="Current Password" required className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
                 <input type="text" value={disableOtp} onChange={(e) => setDisableOtp(e.target.value)} placeholder="Authentication Code" required className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
                 {error && <div className="text-red-400 text-sm">{error}</div>}
                 <div className="flex justify-end gap-3 pt-2">
-                    <button type="button" onClick={() => { setSetupStage('idle'); setError(''); }} className="px-4 py-2 bg-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-500">Cancel</button>
+                    <button type="button" onClick={resetFlow} className="px-4 py-2 bg-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-500">Cancel</button>
                     <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-red-800 rounded-lg text-sm font-semibold hover:bg-red-700">
                         {isSubmitting ? 'Disabling...' : 'Confirm & Disable'}
                     </button>
@@ -113,20 +140,59 @@ const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
     if (setupStage === 'generated') {
         return (
             <div className="space-y-4 bg-slate-900/50 p-4 rounded-lg">
-                <p className="text-sm text-slate-300">1. Scan this QR code with your authenticator app.</p>
+                <p className="font-semibold text-slate-300">1. Scan QR Code</p>
+                <p className="text-sm text-slate-400">Scan this image with your preferred authenticator app.</p>
                 <div className="bg-white p-2 rounded-lg inline-block mx-auto">
                     <img src={qrCode} alt="2FA QR Code" />
                 </div>
-                <p className="text-sm text-slate-300">Or, enter this key manually:</p>
-                <p className="font-mono bg-slate-800 p-2 rounded text-center tracking-widest">{secret}</p>
-                <p className="text-sm text-slate-300">2. Enter the code from your app to verify.</p>
-                <form onSubmit={handleVerify} className="flex items-center gap-3">
-                    <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="6-digit code" required className="flex-grow bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
-                    <button type="submit" disabled={isSubmitting} className="px-4 py-2.5 bg-green-600 rounded-lg font-semibold hover:bg-green-700">
-                        {isSubmitting ? 'Verifying...' : 'Verify & Enable'}
+                <p className="font-mono bg-slate-800 p-2 rounded text-center tracking-widest text-sm overflow-x-auto">{secret}</p>
+                <div className="flex justify-end gap-3 pt-2">
+                    <button type="button" onClick={resetFlow} className="px-4 py-2 bg-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-500">Cancel</button>
+                    <button onClick={() => setSetupStage('recovery')} className="px-4 py-2 bg-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-700">Next</button>
+                </div>
+            </div>
+        );
+    }
+
+    if (setupStage === 'recovery') {
+        return (
+            <div className="space-y-4 bg-slate-900/50 p-4 rounded-lg border border-amber-500/30">
+                <div className="flex items-center gap-2"><KeyRound className="text-amber-400" size={20}/><h3 className="font-semibold text-amber-300">2. Save Your Recovery Codes</h3></div>
+                <p className="text-sm text-slate-400">Store these codes in a safe place. They are your only way to access your account if you lose your device.</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 font-mono bg-slate-800 p-4 rounded text-center text-slate-300">
+                    {recoveryCodes.map(code => <span key={code}>{code}</span>)}
+                </div>
+                <div className="flex gap-2">
+                    <button onClick={handleCopyToClipboard} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-500">
+                        {hasCopied ? <><Check size={16}/> Copied!</> : <><Copy size={16}/> Copy</>}
                     </button>
+                    <button onClick={handleDownloadCodes} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-500">
+                        <Download size={16}/> Download
+                    </button>
+                </div>
+                 <div className="flex justify-end gap-3 pt-2">
+                    <button type="button" onClick={() => setSetupStage('generated')} className="px-4 py-2 bg-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-500">Back</button>
+                    <button onClick={() => setSetupStage('verify')} className="px-4 py-2 bg-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-700">Next</button>
+                </div>
+            </div>
+        );
+    }
+    
+    if (setupStage === 'verify') {
+         return (
+            <div className="space-y-4 bg-slate-900/50 p-4 rounded-lg">
+                <h3 className="font-semibold text-slate-300">3. Verify & Enable</h3>
+                <p className="text-sm text-slate-400">To finish setup, enter the 6-digit code from your authenticator app.</p>
+                <form onSubmit={handleVerify} className="flex flex-col gap-3">
+                    <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="6-digit code" required className="flex-grow bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
+                    {error && <div className="text-red-400 text-sm pt-2">{error}</div>}
+                    <div className="flex justify-end gap-3 pt-2">
+                        <button type="button" onClick={() => setSetupStage('recovery')} className="px-4 py-2.5 bg-slate-600 rounded-lg font-semibold hover:bg-slate-500">Back</button>
+                        <button type="submit" disabled={isSubmitting} className="px-4 py-2.5 bg-green-600 rounded-lg font-semibold hover:bg-green-700">
+                            {isSubmitting ? 'Verifying...' : 'Verify & Enable'}
+                        </button>
+                    </div>
                 </form>
-                {error && <div className="text-red-400 text-sm pt-2">{error}</div>}
             </div>
         );
     }
@@ -239,6 +305,11 @@ const Settings = () => {
         }
     };
 
+    const handle2faUpdate = (newStatus, message) => {
+        setSettings(prev => ({ ...prev, is_two_factor_enabled: newStatus }));
+        showSuccessMessage(message);
+    };
+
     const showSuccessMessage = (message) => {
         setSuccess(message);
         setTimeout(() => setSuccess(''), 3000);
@@ -259,11 +330,7 @@ const Settings = () => {
                     <TwoFactorAuthSetup 
                         token={token} 
                         isEnabled={settings.is_two_factor_enabled}
-                        onUpdate={(newStatus) => {
-                            setSettings(prev => ({...prev, is_two_factor_enabled: newStatus}));
-                            // This will also update the user object in the AuthContext on next reload
-                            logout(); // Force re-login to get a new token with updated 2FA status
-                        }}
+                        onUpdate={handle2faUpdate}
                     />
                 </div>
 

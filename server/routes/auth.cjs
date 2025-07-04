@@ -98,25 +98,21 @@ router.post('/2fa/verify', async (req, res) => {
     }
 
     try {
-        // 1. Verify the temporary token
         const decoded = jwt.verify(tfaToken, JWT_SECRET);
         if (!decoded.tfa_required) {
             return res.status(401).json({ error: 'Invalid temporary token.' });
         }
 
-        // 2. Fetch the user's secret
         const user = await db('users').where({ id: decoded.user.id }).first();
         if (!user || !user.is_two_factor_enabled || !user.two_factor_secret) {
             return res.status(401).json({ error: '2FA is not properly configured for this user.' });
         }
 
-        // 3. Check the OTP
         const isValid = authenticator.check(otp, user.two_factor_secret);
         if (!isValid) {
             return res.status(401).json({ error: 'Invalid authentication code.' });
         }
 
-        // 4. OTP is valid, issue the final, full-privilege JWT
         const payload = {
             user: {
                 id: user.id,
@@ -137,6 +133,74 @@ router.post('/2fa/verify', async (req, res) => {
         }
         console.error('2FA Verification Error:', error);
         res.status(500).json({ error: 'Internal server error during 2FA verification.' });
+    }
+});
+
+// --- User Login (Step 2b: Recovery Code Verification) ---
+router.post('/2fa/recover', async (req, res) => {
+    const { tfaToken, recoveryCode } = req.body;
+    if (!tfaToken || !recoveryCode) {
+        return res.status(400).json({ error: 'Temporary token and recovery code are required.' });
+    }
+
+    const trx = await db.transaction();
+    try {
+        const decoded = jwt.verify(tfaToken, JWT_SECRET);
+        if (!decoded.tfa_required) {
+            await trx.rollback();
+            return res.status(401).json({ error: 'Invalid temporary token.' });
+        }
+
+        const user = await trx('users').where({ id: decoded.user.id }).first();
+        if (!user || !user.is_two_factor_enabled) {
+            await trx.rollback();
+            return res.status(401).json({ error: '2FA is not enabled for this user.' });
+        }
+
+        const hashedCodes = await trx('recovery_codes').where({ user_id: user.id });
+        let isMatch = false;
+        for (const code of hashedCodes) {
+            if (await bcrypt.compare(recoveryCode, code.hashed_code)) {
+                isMatch = true;
+                break;
+            }
+        }
+
+        if (!isMatch) {
+            await trx.rollback();
+            return res.status(401).json({ error: 'Invalid recovery code.' });
+        }
+
+        // --- SECURITY CRITICAL ---
+        // If recovery code is valid, disable 2FA and delete all recovery codes.
+        await trx('users').where({ id: user.id }).update({
+            is_two_factor_enabled: false,
+            two_factor_secret: null,
+        });
+        await trx('recovery_codes').where({ user_id: user.id }).del();
+        
+        // Issue the final JWT. The new payload reflects that 2FA is now disabled.
+        const payload = {
+            user: {
+                id: user.id,
+                username: user.username,
+                is_admin: user.is_admin,
+                is_two_factor_enabled: false, // Update status in token
+            }
+        };
+
+        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
+        
+        await trx.commit();
+        res.json({ token });
+
+    } catch (error) {
+        await trx.rollback();
+        if (error instanceof jwt.JsonWebTokenError) {
+            return res.status(401).json({ error: 'Invalid or expired token.' });
+        }
+        console.error('2FA Recovery Error:', error);
+        res.status(500).json({ error: 'Internal server error during recovery.' });
     }
 });
 

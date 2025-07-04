@@ -4,7 +4,20 @@ const db = require('../db/knex.cjs');
 const bcrypt = require('bcryptjs');
 const { authenticator } = require('otplib');
 const qrcode = require('qrcode');
+const { randomBytes } = require('crypto');
 const authMiddleware = require('../middleware/auth.cjs');
+
+// Helper to generate recovery codes
+const generateRecoveryCodes = () => {
+    const codes = [];
+    for (let i = 0; i < 10; i++) {
+        // Generate a 6-byte random buffer, convert to a hex string of 12 chars
+        // and format it into three groups of four. e.g., "ab12-cd34-ef56"
+        const code = randomBytes(6).toString('hex').match(/.{1,4}/g).join('-');
+        codes.push(code);
+    }
+    return codes;
+};
 
 // Protect all routes in this file
 router.use(authMiddleware);
@@ -100,35 +113,53 @@ router.delete('/account', async (req, res) => {
 });
 
 // --- POST /api/settings/2fa/generate ---
-// Generates a new 2FA secret and QR code for setup.
 router.post('/2fa/generate', async (req, res) => {
+    const trx = await db.transaction();
     try {
-        const user = await db('users').where({ id: req.user.id }).first();
-        if (!user) return res.status(404).json({ error: 'User not found' });
-
+        const user = await trx('users').where({ id: req.user.id }).first();
+        if (!user) {
+            await trx.rollback();
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Generate new 2FA secret and recovery codes
         const secret = authenticator.generateSecret();
+        const recoveryCodes = generateRecoveryCodes();
+        
+        // Hash the recovery codes
+        const salt = await bcrypt.genSalt(10);
+        const hashedCodes = await Promise.all(recoveryCodes.map(code => bcrypt.hash(code, salt)));
+        
+        // Store everything in the database
+        await trx('users')
+            .where({ id: user.id })
+            .update({ two_factor_secret: secret, is_two_factor_enabled: false });
+
+        // Remove old recovery codes and insert new ones
+        await trx('recovery_codes').where({ user_id: user.id }).del();
+        await trx('recovery_codes').insert(hashedCodes.map(hashed_code => ({
+            user_id: user.id,
+            hashed_code
+        })));
+        
+        // Generate QR code
         const appName = 'MyCalBook';
         const otpauth = authenticator.keyuri(user.email, appName, secret);
+        const qrCode = await qrcode.toDataURL(otpauth);
+        
+        await trx.commit();
+        
+        // Return the QR code and the *plain-text* recovery codes for the user to save
+        res.json({ secret, qrCode, recoveryCodes });
 
-        await db('users')
-            .where({ id: req.user.id })
-            .update({ two_factor_secret: secret, is_two_factor_enabled: false }); // Store secret, but not yet enabled
-
-        qrcode.toDataURL(otpauth, (err, imageUrl) => {
-            if (err) {
-                console.error('QR Code Generation Error:', err);
-                return res.status(500).json({ error: 'Failed to generate QR code.' });
-            }
-            res.json({ secret, qrCode: imageUrl });
-        });
     } catch (error) {
+        await trx.rollback();
         console.error('2FA Generation Error:', error);
         res.status(500).json({ error: 'Internal server error.' });
     }
 });
 
 // --- POST /api/settings/2fa/verify ---
-// Verifies the user's OTP and enables 2FA.
 router.post('/2fa/verify', async (req, res) => {
     const { otp } = req.body;
     if (!otp) return res.status(400).json({ error: 'OTP is required.' });
@@ -153,7 +184,6 @@ router.post('/2fa/verify', async (req, res) => {
 });
 
 // --- POST /api/settings/2fa/disable ---
-// Disables 2FA for the user.
 router.post('/2fa/disable', async (req, res) => {
     const { password, otp } = req.body;
     if (!password || !otp) {
@@ -176,10 +206,14 @@ router.post('/2fa/disable', async (req, res) => {
             return res.status(401).json({ error: 'Invalid OTP.' });
         }
 
-        await db('users').where({ id: req.user.id }).update({
+        // Use a transaction to ensure all or nothing
+        const trx = await db.transaction();
+        await trx('users').where({ id: req.user.id }).update({
             two_factor_secret: null,
             is_two_factor_enabled: false,
         });
+        await trx('recovery_codes').where({ user_id: req.user.id }).del();
+        await trx.commit();
 
         res.json({ message: '2FA has been disabled.' });
     } catch (error) {

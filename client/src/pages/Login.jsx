@@ -3,24 +3,23 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
-    // State for the password form
     const [formData, setFormData] = useState({ email: '', password: '' });
-    
-    // State for the 2FA form
     const [otp, setOtp] = useState('');
-    const [tfaRequired, setTfaRequired] = useState(false);
-    const [tfaToken, setTfaToken] = useState('');
-
-    // Shared state
+    const [recoveryCode, setRecoveryCode] = useState('');
+    
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // State for the 2FA flow
+    const [tfaRequired, setTfaRequired] = useState(false);
+    const [tfaToken, setTfaToken] = useState('');
+    const [isRecoveryMode, setIsRecoveryMode] = useState(false);
     
     const { setAuthToken } = useAuth();
     const navigate = useNavigate();
 
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    // Step 1: Handle password submission
     const handlePasswordSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -35,11 +34,9 @@ const Login = () => {
             if (!res.ok) throw new Error(data.error || 'Something went wrong');
             
             if (data.tfaRequired) {
-                // 2FA is enabled, show the OTP form
                 setTfaRequired(true);
                 setTfaToken(data.tfaToken);
             } else {
-                // No 2FA, login is complete
                 setAuthToken(data.token);
                 navigate('/');
             }
@@ -50,21 +47,23 @@ const Login = () => {
         }
     };
 
-    // Step 2: Handle 2FA OTP submission
     const handleTfaSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setIsSubmitting(true);
+
+        const url = isRecoveryMode ? '/api/auth/2fa/recover' : '/api/auth/2fa/verify';
+        const body = isRecoveryMode ? { tfaToken, recoveryCode } : { tfaToken, otp };
+
         try {
-            const res = await fetch('/api/auth/2fa/verify', {
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tfaToken, otp }),
+                body: JSON.stringify(body),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Verification failed');
             
-            // 2FA successful, login is complete
             setAuthToken(data.token);
             navigate('/');
         } catch (err) {
@@ -79,20 +78,24 @@ const Login = () => {
             <div className="w-full max-w-md p-8 space-y-6 bg-slate-800 rounded-xl shadow-lg">
                 {tfaRequired ? (
                     <>
-                        <h1 className="text-2xl font-bold text-center text-white">Two-Factor Authentication</h1>
-                        <p className="text-sm text-center text-slate-400">Enter the code from your authenticator app.</p>
+                        <h1 className="text-2xl font-bold text-center text-white">{isRecoveryMode ? 'Enter Recovery Code' : 'Two-Factor Authentication'}</h1>
+                        <p className="text-sm text-center text-slate-400">
+                            {isRecoveryMode ? 'Enter one of your emergency recovery codes.' : 'Enter the code from your authenticator app.'}
+                        </p>
+                        { isRecoveryMode ? (
+                            <p className="text-sm text-center text-slate-400">Using a recovery code will disable two-factor authentication.</p>
+                        ) : <></>}
                         <form onSubmit={handleTfaSubmit} className="space-y-4">
                             <div>
-                                <label className="text-sm font-medium text-slate-300">Authentication Code</label>
+                                <label className="text-sm font-medium text-slate-300">{isRecoveryMode ? 'Recovery Code' : 'Authentication Code'}</label>
                                 <input
                                     type="text"
-                                    name="otp"
                                     required
-                                    value={otp}
-                                    onChange={(e) => setOtp(e.target.value)}
+                                    value={isRecoveryMode ? recoveryCode : otp}
+                                    onChange={(e) => isRecoveryMode ? setRecoveryCode(e.target.value) : setOtp(e.target.value)}
                                     className="w-full px-3 py-2 mt-1 text-white bg-slate-700 border-2 border-slate-600 rounded-md focus:outline-none focus:border-indigo-500"
                                     autoComplete="one-time-code"
-                                    inputMode="numeric"
+                                    inputMode={isRecoveryMode ? "text" : "numeric"}
                                 />
                             </div>
                             {error && <div className="text-red-400 text-sm p-3 bg-red-900/50 rounded-md">{error}</div>}
@@ -100,8 +103,8 @@ const Login = () => {
                                 {isSubmitting ? 'Verifying...' : 'Verify & Log In'}
                             </button>
                         </form>
-                         <button onClick={() => { setTfaRequired(false); setError(''); }} className="text-sm text-center text-slate-400 hover:underline w-full mt-2">
-                            Back to login
+                         <button onClick={() => { setIsRecoveryMode(!isRecoveryMode); setError(''); }} className="text-sm text-center text-indigo-400 hover:underline w-full mt-2">
+                            {isRecoveryMode ? 'Use an authentication code' : 'Use a recovery code'}
                         </button>
                     </>
                 ) : (
