@@ -204,11 +204,18 @@ const BookingPage = () => {
 
     return (
         <div className="min-h-screen bg-slate-900 flex flex-col lg:items-center lg:justify-center p-4 sm:p-6 md:p-8">
-            {isAuthenticated && user && (
+            {isAuthenticated && user ? (
                 <div className="w-full max-w-7xl mx-auto mb-4">
                     <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-2 px-4 text-sm text-center text-slate-300 flex items-center justify-center gap-2">
                         <UserCheck size={16} className="text-green-400" />
                         Logged in as <strong className="text-white">{user.username}</strong>
+                    </div>
+                </div>
+            ) : (
+                <div className="w-full max-w-7xl mx-auto mb-4">
+                    <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-2 px-4 text-sm text-center text-slate-300 flex items-center justify-center gap-2">
+                        <UserCheck size={16} className="text-slate-400" />
+                        <Link to="/login" className="text-indigo-400 hover:underline">Log in</Link> to save booking to your own calendar.
                     </div>
                 </div>
             )}
