@@ -36,11 +36,9 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
         return (
             <div className={pillClass} onClick={() => onClick(event)}>
                 {isBday && <Cake size={10} className="flex-shrink-0"/>}
-                {event.recurrence_id && !isAllDay && <Repeat size={10} className="flex-shrink-0"/>}
                 <span className="font-semibold text-xs truncate flex items-center gap-1">
-                    {!isAllDay && format(new Date(event.start_time), 'HH:mm')}
-                    <span>{event.title}</span>
-                 </span>
+                    {isAllDay ? 'Full' : `${format(new Date(event.start_time), 'HH:mm')}`}
+                </span>
             </div>
         );
     }
