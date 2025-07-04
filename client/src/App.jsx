@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 // Pages
 import CalendarView from './pages/CalendarView';
@@ -21,35 +22,37 @@ import AppLayout from './components/common/AppLayout';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-slate-900 text-white font-sans">
-          <Routes>
-            {/* Public Routes - these do not have the header */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/book/:slug" element={<BookingPage />} />
-            <Route path="/cancel/:token" element={<CancellationPage />} />
-            <Route path="/u/:username" element={<UserProfilePage />} />
-            
-            {/* Private Routes - wrapped in the AppLayout to get the header */}
-            <Route element={<PrivateRoute />}>
-              <Route element={<AppLayout />}>
-                <Route path="/" element={<CalendarView />} />
-                <Route path="/availability" element={<Availability />} />
-                <Route path="/event-types" element={<EventTypes />} />
-                <Route path="/settings" element={<Settings />} />
-                
-                {/* Admin-only Routes */}
-                <Route element={<AdminRoute />}>
-                  <Route path="/admin" element={<AdminDashboard />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <div className="min-h-screen font-sans">
+            <Routes>
+              {/* Public Routes - these do not have the header */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/book/:slug" element={<BookingPage />} />
+              <Route path="/cancel/:token" element={<CancellationPage />} />
+              <Route path="/u/:username" element={<UserProfilePage />} />
+              
+              {/* Private Routes - wrapped in the AppLayout to get the header */}
+              <Route element={<PrivateRoute />}>
+                <Route element={<AppLayout />}>
+                  <Route path="/" element={<CalendarView />} />
+                  <Route path="/availability" element={<Availability />} />
+                  <Route path="/event-types" element={<EventTypes />} />
+                  <Route path="/settings" element={<Settings />} />
+                  
+                  {/* Admin-only Routes */}
+                  <Route element={<AdminRoute />}>
+                    <Route path="/admin" element={<AdminDashboard />} />
+                  </Route>
                 </Route>
               </Route>
-            </Route>
-          </Routes>
-        </div>
-      </Router>
-    </AuthProvider>
+            </Routes>
+          </div>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

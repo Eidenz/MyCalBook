@@ -192,32 +192,32 @@ const Availability = () => {
     return (
         <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
             <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Set your availability</h1>
-                <p className="text-slate-400 mt-1 text-sm md:text-base">Manage schedules, define recurring weekly hours, and set overrides for specific dates.</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-2">Set your availability</h1>
+                <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 mt-1 text-sm md:text-base">Manage schedules, define recurring weekly hours, and set overrides for specific dates.</p>
             </div>
             
             {error && (
-                <div className="bg-red-900/50 text-red-300 p-3 rounded-md animate-fadeIn cursor-pointer" onClick={() => setError('')}>
+                <div className="bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 p-3 rounded-md animate-fadeIn cursor-pointer" onClick={() => setError('')}>
                     {error}
                 </div>
             )}
 
             {/* Schedules Section */}
-            <div className="bg-slate-800 rounded-lg p-6">
+            <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-6">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-                    <h2 className="text-xl font-bold text-white">Schedules</h2>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Schedules</h2>
                     <button 
                         onClick={() => handleOpenScheduleModal(null)} 
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-slate-900 dark:text-white rounded-lg font-semibold transition-colors"
                     >
                         <Plus size={18}/> New Schedule
                     </button>
                 </div>
                 
                 {isLoading && schedules.length === 0 ? (
-                    <p className="text-slate-400">Loading...</p>
+                    <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400">Loading...</p>
                 ) : schedules.length === 0 ? (
-                    <div className="text-slate-500 text-center py-12">
+                    <div className="text-slate-400 dark:text-slate-500 text-center py-12">
                         <Calendar size={48} className="mx-auto mb-4 opacity-50" />
                         <p className="text-lg">No schedules yet.</p>
                         <p className="text-sm">Create your first schedule to get started.</p>
@@ -231,22 +231,22 @@ const Availability = () => {
                                 className={`p-4 rounded-lg cursor-pointer transition-all border-2 ${
                                     selectedScheduleId === schedule.id 
                                         ? 'bg-indigo-600/20 border-indigo-500' 
-                                        : 'bg-slate-700/50 border-transparent hover:bg-slate-700 hover:border-slate-600'
+                                        : 'bg-slate-200/50 dark:bg-slate-700/50 border-transparent hover:bg-slate-300/70 dark:hover:bg-slate-600/70 hover:border-slate-400 dark:hover:border-slate-500'
                                 }`}
                             >
                                 <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-semibold text-white truncate">{schedule.name}</h3>
+                                    <h3 className="font-semibold text-slate-900 dark:text-white truncate">{schedule.name}</h3>
                                     <div className="flex items-center gap-1 ml-2">
                                         <button 
                                             onClick={(e) => {e.stopPropagation(); handleOpenScheduleModal(schedule)}} 
-                                            className="p-1.5 text-slate-400 hover:text-white rounded transition-colors"
+                                            className="p-1.5 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white rounded transition-colors"
                                             title="Edit schedule"
                                         >
                                             <Edit size={16}/>
                                         </button>
                                         <button 
                                             onClick={(e) => {e.stopPropagation(); handleDeleteSchedule(schedule)}} 
-                                            className="p-1.5 text-slate-400 hover:text-red-400 rounded transition-colors"
+                                            className="p-1.5 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-red-400 rounded transition-colors"
                                             title="Delete schedule"
                                         >
                                             <Trash2 size={16}/>
@@ -254,7 +254,7 @@ const Availability = () => {
                                     </div>
                                 </div>
                                 {selectedScheduleId === schedule.id && (
-                                    <div className="text-sm text-indigo-300">Currently selected</div>
+                                    <div className="text-sm text-indigo-600 dark:text-indigo-300">Currently selected</div>
                                 )}
                             </div>
                         ))}
@@ -264,16 +264,16 @@ const Availability = () => {
 
             {/* Weekly Hours Section */}
             {selectedSchedule && !isLoading && (
-                <div className="bg-slate-800 rounded-lg p-6">
+                <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-6">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                         <div>
-                            <h2 className="text-xl font-bold text-white">Weekly Hours</h2>
-                            <p className="text-slate-400 text-sm mt-1">Set your regular availability for "{selectedSchedule.name}"</p>
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Weekly Hours</h2>
+                            <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 text-sm mt-1">Set your regular availability for "{selectedSchedule.name}"</p>
                         </div>
                         <button 
                             onClick={handleSaveRules} 
                             disabled={isSaving || isLoading} 
-                            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold text-white transition-colors"
+                            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold text-slate-900 dark:text-white transition-colors"
                         >
                             {isSaving ? 'Saving...' : 'Save Rules'}
                         </button>
@@ -283,12 +283,12 @@ const Availability = () => {
                         {daysOfWeek.map((dayName, dayIndex) => {
                             const dayRules = rules.map((r, i) => ({...r, originalIndex: i})).filter(r => r.day_of_week === dayIndex);
                             return (
-                                <div key={dayIndex} className="bg-slate-700/50 rounded-lg p-4">
+                                <div key={dayIndex} className="bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 rounded-lg p-4">
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className="font-semibold text-white">{dayName}</h3>
+                                        <h3 className="font-semibold text-slate-900 dark:text-white">{dayName}</h3>
                                         <button 
                                             onClick={() => handleAddTimeSlot(dayIndex)} 
-                                            className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors"
+                                            className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2 py-1 rounded-md text-sm font-medium transition-colors"
                                         >
                                             <Plus size={16}/> Add Time
                                         </button>
@@ -296,13 +296,13 @@ const Availability = () => {
                                     
                                     <div className="space-y-3">
                                         {dayRules.length === 0 ? (
-                                            <div className="text-slate-500 text-center py-6">
+                                            <div className="text-slate-400 dark:text-slate-500 text-center py-6">
                                                 <Clock size={24} className="mx-auto mb-2 opacity-50" />
                                                 <p className="text-sm">Unavailable</p>
                                             </div>
                                         ) : (
                                             dayRules.map(rule => (
-                                                <div key={rule.originalIndex} className="bg-slate-800 rounded-lg p-3">
+                                                <div key={rule.originalIndex} className="bg-slate-100 dark:bg-slate-800 rounded-lg p-3">
                                                     {/* Mobile-optimized layout */}
                                                     <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                                                         <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 min-w-0">
@@ -310,19 +310,19 @@ const Availability = () => {
                                                                 type="time" 
                                                                 value={rule.start_time} 
                                                                 onChange={e => handleRuleChange(rule.originalIndex, 'start_time', e.target.value)} 
-                                                                className="flex-1 min-w-0 bg-slate-600 text-white p-2 text-sm rounded-md border border-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                                                                className="flex-1 min-w-0 bg-slate-300 dark:bg-slate-600 text-slate-900 dark:text-white p-2 text-sm rounded-md border border-slate-400 dark:border-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
                                                             />
-                                                            <span className="text-slate-400 font-medium text-sm text-center sm:text-left px-2">to</span>
+                                                            <span className="text-slate-400 dark:text-slate-500 dark:text-slate-400 font-medium text-sm text-center sm:text-left px-2">to</span>
                                                             <input 
                                                                 type="time" 
                                                                 value={rule.end_time} 
                                                                 onChange={e => handleRuleChange(rule.originalIndex, 'end_time', e.target.value)} 
-                                                                className="flex-1 min-w-0 bg-slate-600 text-white p-2 text-sm rounded-md border border-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                                                                className="flex-1 min-w-0 bg-slate-300 dark:bg-slate-600 text-slate-900 dark:text-white p-2 text-sm rounded-md border border-slate-400 dark:border-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
                                                             />
                                                         </div>
                                                         <button 
                                                             onClick={() => handleRemoveTimeSlot(rule.originalIndex)} 
-                                                            className="self-center p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors flex-shrink-0"
+                                                            className="self-center p-2 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors flex-shrink-0"
                                                             title="Remove time slot"
                                                         >
                                                             <Trash2 size={16}/>
@@ -340,42 +340,42 @@ const Availability = () => {
             )}
 
             {!selectedSchedule && !isLoading && (
-                <div className="bg-slate-800 rounded-lg p-12 text-center">
-                    <Clock size={48} className="mx-auto mb-4 text-slate-500" />
-                    <h3 className="text-lg font-semibold text-white mb-2">Select a Schedule</h3>
-                    <p className="text-slate-400">Choose a schedule above to set weekly hours and date overrides.</p>
+                <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-12 text-center">
+                    <Clock size={48} className="mx-auto mb-4 text-slate-400 dark:text-slate-500" />
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Select a Schedule</h3>
+                    <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400">Choose a schedule above to set weekly hours and date overrides.</p>
                 </div>
             )}
 
             {/* Date Overrides Calendar */}
             {selectedSchedule && !isLoading && (
-                <div className="bg-slate-800 rounded-lg p-6">
+                <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-6">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                         <div>
-                            <h2 className="text-xl font-bold text-white">Date Overrides</h2>
-                            <p className="text-slate-400 text-sm mt-1">Override specific dates for "{selectedSchedule.name}"</p>
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Date Overrides</h2>
+                            <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 text-sm mt-1">Override specific dates for "{selectedSchedule.name}"</p>
                         </div>
-                        <div className="flex items-center gap-2 bg-slate-700 rounded-lg p-1">
+                        <div className="flex items-center gap-2 bg-slate-200 dark:bg-slate-700 rounded-lg p-1">
                             <button 
                                 onClick={calendar.prevMonth} 
-                                className="p-2 rounded-md hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
+                                className="p-2 rounded-md hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
                             >
                                 <ChevronLeft size={20} />
                             </button>
-                            <span className="font-semibold text-white px-4 py-2 min-w-[140px] text-center">
+                            <span className="font-semibold text-slate-900 dark:text-white px-4 py-2 min-w-[140px] text-center">
                                 {calendar.monthName}
                             </span>
                             <button 
                                 onClick={calendar.nextMonth} 
-                                className="p-2 rounded-md hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
+                                className="p-2 rounded-md hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
                             >
                                 <ChevronRight size={20} />
                             </button>
                         </div>
                     </div>
                     
-                    <div className="bg-slate-700/50 rounded-lg p-4">
-                        <div className="grid grid-cols-7 text-center text-sm font-semibold text-slate-400 mb-3">
+                    <div className="bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 rounded-lg p-4">
+                        <div className="grid grid-cols-7 text-center text-sm font-semibold text-slate-400 dark:text-slate-500 dark:text-slate-400 mb-3">
                             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
                                 <div key={d} className="py-2">{d}</div>
                             ))}
@@ -393,8 +393,8 @@ const Availability = () => {
                                         className={`
                                             relative h-20 sm:h-24 flex flex-col p-2 rounded-md cursor-pointer transition-all
                                             ${isCurrent 
-                                                ? 'hover:bg-slate-600 text-white' 
-                                                : 'text-slate-500 bg-slate-800/50 hover:bg-slate-700/50'
+                                                ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-500' 
+                                                : 'text-slate-400 dark:text-slate-500 bg-slate-100/50 dark:bg-slate-800/50 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
                                             }
                                             ${isCurrentDay && isCurrent ? 'ring-1 ring-indigo-500' : ''}
                                         `}
@@ -402,7 +402,7 @@ const Availability = () => {
                                     >
                                         <span className={`text-sm font-medium ${
                                             isCurrentDay && isCurrent
-                                                ? 'bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center' 
+                                                ? 'bg-indigo-600 text-slate-900 dark:text-white rounded-full w-6 h-6 flex items-center justify-center' 
                                                 : ''
                                         }`}>
                                             {format(day, 'd')}
@@ -411,7 +411,7 @@ const Availability = () => {
                                         {override && isCurrent && (
                                             <div className="mt-auto text-center text-[10px] sm:text-xs leading-tight">
                                                 {override.is_unavailable ? (
-                                                    <span className="px-1.5 py-0.5 bg-red-500/20 text-red-300 rounded">
+                                                    <span className="px-1.5 py-0.5 bg-red-500/20 text-red-700 dark:text-red-300 rounded">
                                                         Unavailable
                                                     </span>
                                                 ) : (
@@ -426,12 +426,12 @@ const Availability = () => {
                             })}
                         </div>
                         
-                        <div className="flex justify-center gap-6 mt-4 pt-4 border-t border-slate-600">
-                            <div className="flex items-center gap-2 text-sm text-slate-400">
+                        <div className="flex justify-center gap-6 mt-4 pt-4 border-t border-slate-300 dark:border-slate-600">
+                            <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500" />
                                 Custom Available
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-slate-400">
+                            <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
                                 <div className="w-2 h-2 rounded-full bg-red-500" />
                                 Unavailable
                             </div>

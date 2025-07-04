@@ -28,7 +28,7 @@ const DayViewModal = ({ isOpen, onClose, day, events, onEventClick }) => {
 
         return (
             <div 
-                className={`flex items-start p-3 -mx-3 rounded-lg hover:bg-slate-700 cursor-pointer transition-colors ${isPast ? 'opacity-70' : ''}`}
+                className={`flex items-start p-3 -mx-3 rounded-lg hover:bg-slate-200 dark:bg-slate-700 cursor-pointer transition-colors ${isPast ? 'opacity-70' : ''}`}
                 onClick={() => {
                     onEventClick(event);
                     onClose();
@@ -36,14 +36,14 @@ const DayViewModal = ({ isOpen, onClose, day, events, onEventClick }) => {
             >
                 <div className={dotClass}></div>
                 <div className="flex-grow">
-                    <p className="font-semibold text-white">{event.title}</p>
-                    <p className="text-sm text-slate-400">
+                    <p className="font-semibold text-slate-900 dark:text-white">{event.title}</p>
+                    <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
                         {event.type === 'birthday' 
                             ? 'All Day' 
                             : `${format(new Date(event.start_time), 'HH:mm')} - ${format(new Date(event.end_time), 'HH:mm')}`}
                     </p>
                     {guests.length > 0 && (
-                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
+                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
                             <Users size={14} />
                             <span>{guests.join(', ')}</span>
                         </div>
@@ -55,16 +55,16 @@ const DayViewModal = ({ isOpen, onClose, day, events, onEventClick }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-            <div className="bg-slate-800 text-white rounded-xl shadow-2xl w-full max-w-md p-6 mx-4" onClick={e => e.stopPropagation()}>
+            <div className="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl shadow-2xl w-full max-w-md p-6 mx-4" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">Events for {format(day, 'MMMM d, yyyy')}</h2>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-700"><X size={24} /></button>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-200 dark:bg-slate-700"><X size={24} /></button>
                 </div>
                 <div className="space-y-1">
                     {events.length > 0 ? (
                         events.map(event => <EventRow key={event.id} event={event} />)
                     ) : (
-                        <p className="text-slate-400">No events for this day.</p>
+                        <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400">No events for this day.</p>
                     )}
                 </div>
             </div>

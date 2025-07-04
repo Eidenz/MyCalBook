@@ -18,11 +18,11 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
     };
 
     const pillClass = `
-        text-white text-xs cursor-pointer 
+        text-slate-900 dark:text-white text-xs cursor-pointer 
         flex items-center gap-1.5
         truncate transition-colors duration-200
         ${isPast && event.type !== 'birthday' 
-            ? 'bg-slate-600 hover:bg-slate-500 opacity-70' 
+            ? 'bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500 opacity-70' 
             : typeStyles[event.type] || 'bg-blue-500 hover:bg-blue-400'}
         ${isCurrent && event.type !== 'birthday' ? 'ring-2 ring-sky-400' : ''}
         ${isMobile ? 'px-1 py-0.5 mb-0.5 rounded' : 'p-1 mb-1 rounded-md'}
@@ -56,7 +56,7 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
                     )}
                     <span className="truncate ml-1">{event.title}</span>
                     {guests.length > 0 && (
-                        <span className="flex items-center gap-1 ml-auto text-white/80 pl-1">
+                        <span className="flex items-center gap-1 ml-auto text-slate-900 dark:text-white/80 pl-1">
                             <Users size={12} />
                             <span>{guests.length}</span>
                         </span>
@@ -110,14 +110,14 @@ const MonthView = ({ days, month, events = [], onEventClick, onShowMoreClick }) 
                 const today = isToday(day);
                 
                 const cellClasses = `
-                    border-r border-b border-slate-700 p-1 md:p-2 flex flex-col transition-colors duration-300
+                    border-r border-b border-slate-300 dark:border-slate-700 p-1 md:p-2 flex flex-col transition-colors duration-300
                     ${isMobile ? 'min-h-[80px]' : 'min-h-[120px]'}
-                    ${isCurrentMonth ? 'bg-slate-800 hover:bg-slate-700/50' : 'bg-slate-900 text-slate-600'}
+                    ${isCurrentMonth ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50' : 'bg-slate-50 dark:bg-slate-900 text-slate-600'}
                 `;
                 
                 const dateClasses = `
                     font-semibold mb-1 md:mb-2 self-start text-sm md:text-base
-                    ${today ? 'bg-indigo-600 text-white rounded-full w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-xs md:text-sm' : ''} 
+                    ${today ? 'bg-indigo-600 text-slate-900 dark:text-white rounded-full w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-xs md:text-sm' : ''} 
                     ${!isCurrentMonth ? 'text-slate-700' : ''}
                 `;
 
@@ -136,7 +136,7 @@ const MonthView = ({ days, month, events = [], onEventClick, onShowMoreClick }) 
                             )}
                             {hiddenCount > 0 && (
                                 <div 
-                                    className={`text-xs text-slate-400 mt-1 cursor-pointer hover:underline ${isMobile ? 'text-xs' : ''}`}
+                                    className={`text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 mt-1 cursor-pointer hover:underline ${isMobile ? 'text-xs' : ''}`}
                                     onClick={() => onShowMoreClick(day, dayEvents)}
                                 >
                                     + {hiddenCount} more

@@ -319,17 +319,17 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-            <div className="bg-slate-800 text-white rounded-xl shadow-2xl w-full max-w-lg p-6 mx-4 transform transition-all overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <div className="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl shadow-2xl w-full max-w-lg p-6 mx-4 transform transition-all overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold">{isBookedEvent ? 'Booking Details' : (isEditMode ? 'Edit Event' : 'Add New Event')}</h2>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-700 transition-colors">
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-200 dark:bg-slate-700 transition-colors">
                         <X size={24} />
                     </button>
                 </div>
                 {isBookedEvent ? (
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-white -mb-2">{selectedEvent.title}</h3>
-                        <p className="text-slate-400">{format(new Date(selectedEvent.start_time), 'EEEE, MMMM d, yyyy')} from {format(new Date(selectedEvent.start_time), 'HH:mm')} to {format(new Date(selectedEvent.end_time), 'HH:mm')}</p>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white -mb-2">{selectedEvent.title}</h3>
+                        <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400">{format(new Date(selectedEvent.start_time), 'EEEE, MMMM d, yyyy')} from {format(new Date(selectedEvent.start_time), 'HH:mm')} to {format(new Date(selectedEvent.end_time), 'HH:mm')}</p>
                         <div className="space-y-3 pt-2">
                             {bookingManagementLink ? (
                             <></>
@@ -341,7 +341,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                              {cleanDescription && <div className="flex items-start gap-3"><FileText size={18} className="mt-1 flex-shrink-0"/><p className="whitespace-pre-wrap">{cleanDescription}</p></div>}
                         </div>
                         {error && (
-                            <div className="text-red-400 text-sm bg-red-900/50 p-3 rounded-lg border border-red-500/30">
+                            <div className="text-red-400 text-sm bg-red-100 dark:bg-red-900/50 p-3 rounded-lg border border-red-500/30">
                                 {error}
                             </div>
                         )}
@@ -349,7 +349,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                             <button
                                 type="button"
                                 onClick={handleDownloadIcs}
-                                className="flex items-center gap-2 px-4 py-2.5 text-sm bg-slate-600 rounded-lg font-semibold hover:bg-slate-500 transition-colors"
+                                className="flex items-center gap-2 px-4 py-2.5 text-sm bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors"
                             >
                                 <Download size={16} />
                                 <span>Download .ics</span>
@@ -374,8 +374,8 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" placeholder="Event Title *"/>
-                        <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors">
+                        <input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" placeholder="Event Title *"/>
+                        <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors">
                             <option value="personal">Personal Event</option>
                             <option value="blocked">Blocked Time</option>
                             <option value="birthday">Birthday</option>
@@ -384,54 +384,54 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                         {/* Updated mobile-friendly date/time section */}
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-300">Start</label>
+                                <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Start</label>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <input type="date" name="date" value={formData.date} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
-                                    <input type="time" name="startTime" value={formData.startTime} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                                    <input type="date" name="date" value={formData.date} onChange={handleChange} required className="bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                                    <input type="time" name="startTime" value={formData.startTime} onChange={handleChange} required className="bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-300">End</label>
+                                <label className="text-sm font-medium text-slate-600 dark:text-slate-300">End</label>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
-                                    <input type="time" name="endTime" value={formData.endTime} onChange={handleChange} required className="bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                                    <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required className="bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                                    <input type="time" name="endTime" value={formData.endTime} onChange={handleChange} required className="bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
                                 </div>
                             </div>
                         </div>
                         
-                        <div className="w-full bg-slate-700 p-2 rounded-md border-2 border-slate-600 focus-within:border-indigo-500 transition-colors flex flex-wrap items-center gap-2">
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600 focus-within:border-indigo-500 transition-colors flex flex-wrap items-center gap-2">
                             {formData.guests.map(g => (
-                                <div key={g} className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-600 text-sm">
+                                <div key={g} className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-300 dark:bg-slate-600 text-sm">
                                     <span>{g}</span>
                                     <button type="button" onClick={() => removeGuest(g)} className="rounded-full hover:bg-black/20 transition-colors">
                                         <X size={14} />
                                     </button>
                                 </div>
                             ))}
-                            <input type="text" value={guestInput} onChange={(e) => setGuestInput(e.target.value)} onKeyDown={handleGuestKeyDown} placeholder="Add guests..." className="bg-transparent outline-none p-1 text-sm flex-grow min-w-[100px] text-white placeholder-slate-400" />
+                            <input type="text" value={guestInput} onChange={(e) => setGuestInput(e.target.value)} onKeyDown={handleGuestKeyDown} placeholder="Add guests..." className="bg-transparent outline-none p-1 text-sm flex-grow min-w-[100px] text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400" />
                         </div>
-                        <textarea name="description" value={formData.description} onChange={handleChange} rows="2" className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" placeholder="Notes..."/>
+                        <textarea name="description" value={formData.description} onChange={handleChange} rows="2" className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" placeholder="Notes..."/>
 
                         {/* Recurrence Section */}
-                        <div className="space-y-3 p-3 bg-slate-900/50 rounded-lg">
+                        <div className="space-y-3 p-3 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 rounded-lg">
                             <div className="flex items-center gap-2"><Repeat size={16}/><label className="font-semibold">Repeat</label></div>
-                            <select name="frequency" value={formData.recurrence.frequency} onChange={handleRecurrenceChange} className="w-full bg-slate-700 p-2 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors">
+                            <select name="frequency" value={formData.recurrence.frequency} onChange={handleRecurrenceChange} className="w-full bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors">
                                 <option value="">Does not repeat</option>
                                 <option value="YEARLY">Yearly</option>
                                 <option value="MONTHLY">Monthly</option>
                                 <option value="WEEKLY">Weekly</option>
                             </select>
                             {formData.recurrence.frequency === 'WEEKLY' && (
-                                <div className="flex justify-between gap-1">{weekDays.map(day => <button type="button" key={day.value} onClick={() => handleDayToggle(day.value)} className={`w-9 h-9 rounded-full text-xs font-bold transition-colors ${formData.recurrence.by_day.includes(day.value) ? 'bg-indigo-600 text-white' : 'bg-slate-600 text-slate-300 hover:bg-slate-500'}`}>{day.name}</button>)}</div>
+                                <div className="flex justify-between gap-1">{weekDays.map(day => <button type="button" key={day.value} onClick={() => handleDayToggle(day.value)} className={`w-9 h-9 rounded-full text-xs font-bold transition-colors ${formData.recurrence.by_day.includes(day.value) ? 'bg-indigo-600 text-slate-900 dark:text-white' : 'bg-slate-300 dark:bg-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-400 dark:hover:bg-slate-500'}`}>{day.name}</button>)}</div>
                             )}
                             {formData.recurrence.frequency && (
                                 <div className="flex items-center gap-2">
-                                    <input type="date" name="end_date" value={formData.recurrence.end_date} onChange={handleRecurrenceChange} className="bg-slate-700 p-2 rounded-md w-full border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                                    <input type="date" name="end_date" value={formData.recurrence.end_date} onChange={handleRecurrenceChange} className="bg-slate-200 dark:bg-slate-700 p-2 rounded-md w-full border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
                                 </div>
                             )}
                         </div>
 
-                        {error && <div className="text-red-400 text-sm bg-red-900/50 p-3 rounded-lg border border-red-500/30">{error}</div>}
+                        {error && <div className="text-red-400 text-sm bg-red-100 dark:bg-red-900/50 p-3 rounded-lg border border-red-500/30">{error}</div>}
                         
                         <div className="mt-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                             <div className="flex gap-3 w-full sm:w-auto order-2 sm:order-1">
@@ -440,7 +440,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                                         <button type="button" onClick={handleDeleteClick} disabled={isSubmitting} className="flex-1 px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50">
                                             Delete
                                         </button>
-                                        <button type="button" onClick={handleDownloadIcs} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm bg-slate-600 rounded-lg font-semibold hover:bg-slate-500 transition-colors">
+                                        <button type="button" onClick={handleDownloadIcs} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors">
                                             <Download size={16} /> .ics
                                         </button>
                                     </>
@@ -448,7 +448,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                             </div>
                             
                             <div className="flex gap-3 order-1 sm:order-2">
-                                <button type="button" onClick={onClose} className="flex-1 sm:flex-none px-6 py-2.5 bg-slate-600 rounded-lg font-semibold hover:bg-slate-500 transition-colors">
+                                <button type="button" onClick={onClose} className="flex-1 sm:flex-none px-6 py-2.5 bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors">
                                     Cancel
                                 </button>
                                 <button type="submit" disabled={isSubmitting} className="flex-1 sm:flex-none px-6 py-2.5 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">

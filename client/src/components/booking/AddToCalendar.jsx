@@ -82,7 +82,7 @@ const AddToCalendar = ({ event }) => {
 
     return (
         <div className="w-full max-w-sm mx-auto mt-6 space-y-3">
-            <h3 className="text-center font-semibold text-slate-300">Add to your calendar:</h3>
+            <h3 className="text-center font-semibold text-slate-600 dark:text-slate-300">Add to your calendar:</h3>
             
             {calendarLinks.map(link => (
                 <a 
@@ -90,7 +90,7 @@ const AddToCalendar = ({ event }) => {
                     href={link.href} 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="flex items-center justify-center gap-3 w-full py-3 bg-slate-700/80 rounded-lg font-semibold text-white hover:bg-slate-700 transition-colors duration-200 border border-slate-600"
+                    className="flex items-center justify-center gap-3 w-full py-3 bg-slate-200 dark:bg-slate-700/80 rounded-lg font-semibold text-slate-900 dark:text-white hover:bg-slate-200 dark:bg-slate-700 transition-colors duration-200 border border-slate-300 dark:border-slate-600"
                 >
                     <Calendar size={18} />
                     {link.name}
@@ -99,7 +99,7 @@ const AddToCalendar = ({ event }) => {
             
             <button
                 onClick={handleDownloadIcs}
-                className="flex items-center justify-center gap-3 w-full py-3 bg-slate-700/80 rounded-lg font-semibold text-white hover:bg-slate-700 transition-colors duration-200 border border-slate-600"
+                className="flex items-center justify-center gap-3 w-full py-3 bg-slate-200 dark:bg-slate-700/80 rounded-lg font-semibold text-slate-900 dark:text-white hover:bg-slate-200 dark:bg-slate-700 transition-colors duration-200 border border-slate-300 dark:border-slate-600"
             >
                 <Download size={18} />
                 Download (.ics file)

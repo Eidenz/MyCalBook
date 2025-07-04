@@ -52,9 +52,9 @@ const BookingForm = ({ eventType, selectedTime, selectedDate, duration, onConfir
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4 text-left p-4 bg-slate-900/50 rounded-lg border border-slate-700 animate-fadeIn">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4 text-left p-4 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-300 dark:border-slate-700 animate-fadeIn">
             <div>
-                <label className="text-sm font-medium text-slate-300">Username *</label>
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Username *</label>
                 <input 
                     type="text" 
                     name="name" 
@@ -62,18 +62,18 @@ const BookingForm = ({ eventType, selectedTime, selectedDate, duration, onConfir
                     onChange={handleChange} 
                     required
                     readOnly={!!loggedInUsername}
-                    className="w-full mt-1 bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors read-only:bg-slate-800 read-only:cursor-not-allowed"
+                    className="w-full mt-1 bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors read-only:bg-slate-100 dark:bg-slate-800 read-only:cursor-not-allowed"
                 />
             </div>
             <div>
-                <label className="text-sm font-medium text-slate-300">Email <em className="text-xs">(optional)</em></label>
-                <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full mt-1 bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Email <em className="text-xs">(optional)</em></label>
+                <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full mt-1 bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600"/>
             </div>
             <div>
-                <label className="text-sm font-medium text-slate-300">Guests <em className="text-xs">(optional)</em></label>
-                <div className="w-full mt-1 bg-slate-700 p-2 rounded-md border-2 border-slate-600 flex flex-wrap items-center gap-2">
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Guests <em className="text-xs">(optional)</em></label>
+                <div className="w-full mt-1 bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600 flex flex-wrap items-center gap-2">
                     {guests.map((guest) => (
-                        <div key={guest} className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-600 text-sm">
+                        <div key={guest} className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-300 dark:bg-slate-600 text-sm">
                             <span>{guest}</span>
                             <button type="button" onClick={() => removeGuest(guest)} className="rounded-full hover:bg-black/20">
                                 <X size={14} />
@@ -89,25 +89,25 @@ const BookingForm = ({ eventType, selectedTime, selectedDate, duration, onConfir
                         className="bg-transparent outline-none p-1 text-sm flex-grow min-w-[100px]"
                     />
                 </div>
-                <p className="text-xs text-slate-400 mt-1.5">Type a username and press Enter to add a guest.</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 mt-1.5">Type a username and press Enter to add a guest.</p>
             </div>
              <div>
-                <label className="text-sm font-medium text-slate-300">Additional Notes <em className="text-xs">(optional)</em></label>
-                <textarea name="notes" value={formData.notes} onChange={handleChange} rows="2" className="w-full mt-1 bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Additional Notes <em className="text-xs">(optional)</em></label>
+                <textarea name="notes" value={formData.notes} onChange={handleChange} rows="2" className="w-full mt-1 bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600"/>
             </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <div className="flex items-center gap-3 pt-2">
                 <button 
                     type="button" 
                     onClick={onCancel}
-                    className="w-full py-3 bg-slate-600 rounded-lg font-semibold text-white hover:bg-slate-500 transition"
+                    className="w-full py-3 bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold text-slate-900 dark:text-white hover:bg-slate-400 dark:hover:bg-slate-500 transition"
                 >
                     Cancel
                 </button>
                 <button 
                     type="submit" 
                     disabled={isSubmitting} 
-                    className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition disabled:opacity-50"
+                    className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-slate-900 dark:text-white hover:opacity-90 transition disabled:opacity-50"
                 >
                     {isSubmitting ? 'Confirming...' : 'Confirm'}
                 </button>

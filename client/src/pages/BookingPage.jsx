@@ -154,32 +154,32 @@ const BookingPage = () => {
 
     // --- Render Logic ---
     if (isInitialLoading) {
-        return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4"><div className="text-center"><div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400 mb-4"></div><p className="text-slate-300">Loading booking page...</p></div></div>;
+        return <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4"><div className="text-center"><div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400 mb-4"></div><p className="text-slate-600 dark:text-slate-300">Loading booking page...</p></div></div>;
     }
     if (error) {
-        return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4"><div className="text-center text-red-400 p-8"><p className="text-xl mb-4">⚠️ {error}</p><Link to="/" className="text-indigo-400 hover:text-indigo-300 underline">Go back to home</Link></div></div>;
+        return <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4"><div className="text-center text-red-400 p-8"><p className="text-xl mb-4">⚠️ {error}</p><Link to="/" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-600 dark:text-indigo-300 underline">Go back to home</Link></div></div>;
     }
 
     if (isBookingConfirmed && confirmedBooking) {
         return (
-            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-                <div className="w-full max-w-lg p-6 sm:p-8 bg-slate-800 rounded-2xl shadow-2xl animate-fade-in-up">
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4">
+                <div className="w-full max-w-lg p-6 sm:p-8 bg-slate-100 dark:bg-slate-800 rounded-2xl shadow-2xl animate-fade-in-up">
                     <div className="text-center">
                         <CheckCircle className="mx-auto text-green-400 h-16 w-16" />
-                        <h1 className="text-2xl sm:text-3xl font-bold text-white mt-4">Booking Confirmed!</h1>
-                        <p className="text-slate-400 mt-2 px-4">{confirmedBooking.booker_email ? 'A calendar invitation and confirmation has been sent to your email.' : 'Your event is scheduled.'}</p>
-                        <div className="mt-4 text-xs text-slate-500 bg-slate-900/50 rounded-lg p-2 max-w-xs mx-auto">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-4">Booking Confirmed!</h1>
+                        <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 mt-2 px-4">{confirmedBooking.booker_email ? 'A calendar invitation and confirmation has been sent to your email.' : 'Your event is scheduled.'}</p>
+                        <div className="mt-4 text-xs text-slate-400 dark:text-slate-500 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 rounded-lg p-2 max-w-xs mx-auto">
                             <p>Keep this link to manage your booking:</p>
-                            <Link to={`/cancel/${confirmedBooking.cancellation_token}`} className="text-indigo-400 hover:underline break-all">{`${window.location.origin}/cancel/${confirmedBooking.cancellation_token}`}</Link>
+                            <Link to={`/cancel/${confirmedBooking.cancellation_token}`} className="text-indigo-600 dark:text-indigo-400 hover:underline break-all">{`${window.location.origin}/cancel/${confirmedBooking.cancellation_token}`}</Link>
                         </div>
                     </div>
 
-                    <div className="my-6 space-y-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
-                        <p className="text-lg font-semibold text-white">{confirmedBooking.title}</p>
-                        <div className="text-slate-300 space-y-2">
-                           <div className="flex items-center gap-3"><CalendarIcon size={16} className="text-indigo-400"/><span>{format(new Date(confirmedBooking.start_time), 'EEEE, MMMM d, yyyy')}</span></div>
-                           <div className="flex items-center gap-3"><Clock size={16} className="text-indigo-400"/><span>{format(new Date(confirmedBooking.start_time), 'HH:mm')} - {format(new Date(confirmedBooking.end_time), 'HH:mm')}</span></div>
-                           <div className="flex items-center gap-3"><MapPin size={16} className="text-indigo-400"/><span>{confirmedBooking.location}</span></div>
+                    <div className="my-6 space-y-4 p-4 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-300 dark:border-slate-700">
+                        <p className="text-lg font-semibold text-slate-900 dark:text-white">{confirmedBooking.title}</p>
+                        <div className="text-slate-600 dark:text-slate-300 space-y-2">
+                           <div className="flex items-center gap-3"><CalendarIcon size={16} className="text-indigo-600 dark:text-indigo-400"/><span>{format(new Date(confirmedBooking.start_time), 'EEEE, MMMM d, yyyy')}</span></div>
+                           <div className="flex items-center gap-3"><Clock size={16} className="text-indigo-600 dark:text-indigo-400"/><span>{format(new Date(confirmedBooking.start_time), 'HH:mm')} - {format(new Date(confirmedBooking.end_time), 'HH:mm')}</span></div>
+                           <div className="flex items-center gap-3"><MapPin size={16} className="text-indigo-600 dark:text-indigo-400"/><span>{confirmedBooking.location}</span></div>
                         </div>
                     </div>
 
@@ -188,7 +188,7 @@ const BookingPage = () => {
                             <button 
                                 onClick={handleAddToInternalCalendar} 
                                 disabled={isAddingToInternal || isAddedToInternal} 
-                                className="w-full flex items-center justify-center gap-3 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="w-full flex items-center justify-center gap-3 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-slate-900 dark:text-white hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 {isAddingToInternal ? <><div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>Adding...</> : isAddedToInternal ? <><CheckCircle size={20} />Added to your calendar!</> : <><PlusCircle size={20} />Add to MyCalBook Calendar</>}
                             </button>
@@ -196,51 +196,51 @@ const BookingPage = () => {
                     )}
 
                     <AddToCalendar event={confirmedBooking} />
-                    <div className="mt-8 text-center"><Link to={`/u/${eventType.ownerUsername}`} className="text-sm text-slate-400 hover:text-white transition">Book another event with {eventType.ownerUsername}</Link></div>
+                    <div className="mt-8 text-center"><Link to={`/u/${eventType.ownerUsername}`} className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition">Book another event with {eventType.ownerUsername}</Link></div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-900 flex flex-col lg:items-center lg:justify-center p-4 sm:p-6 md:p-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col lg:items-center lg:justify-center p-4 sm:p-6 md:p-8">
             {isAuthenticated && user ? (
                 <div className="w-full max-w-7xl mx-auto mb-4">
-                    <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-2 px-4 text-sm text-center text-slate-300 flex items-center justify-center gap-2">
+                    <div className="bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-lg p-2 px-4 text-sm text-center text-slate-600 dark:text-slate-300 flex items-center justify-center gap-2">
                         <UserCheck size={16} className="text-green-400" />
-                        Logged in as <strong className="text-white">{user.username}</strong>
+                        Logged in as <strong className="text-slate-900 dark:text-white">{user.username}</strong>
                     </div>
                 </div>
             ) : (
                 <div className="w-full max-w-7xl mx-auto mb-4">
-                    <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-2 px-4 text-sm text-center text-slate-300 flex items-center justify-center gap-2">
-                        <UserCheck size={16} className="text-slate-400" />
-                        <Link to="/login" className="text-indigo-400 hover:underline">Log in</Link> to save booking to your own calendar.
+                    <div className="bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-lg p-2 px-4 text-sm text-center text-slate-600 dark:text-slate-300 flex items-center justify-center gap-2">
+                        <UserCheck size={16} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
+                        <Link to="/login" className="text-indigo-600 dark:text-indigo-400 hover:underline">Log in</Link> to save booking to your own calendar.
                     </div>
                 </div>
             )}
-            <div className="w-full max-w-7xl mx-auto bg-slate-800/50 border border-slate-700 rounded-2xl shadow-2xl flex flex-col lg:flex-row lg:h-[750px] transform transition-all duration-300">
-                <div className="p-6 border-b lg:border-r lg:border-b-0 border-slate-700 flex flex-col lg:w-[30%] lg:flex-shrink-0">
+            <div className="w-full max-w-7xl mx-auto bg-slate-100/50 dark:bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-2xl shadow-2xl flex flex-col lg:flex-row lg:h-[750px] transform transition-all duration-300">
+                <div className="p-6 border-b lg:border-r lg:border-b-0 border-slate-300 dark:border-slate-700 flex flex-col lg:w-[30%] lg:flex-shrink-0">
                     <div className="flex-shrink-0 -ml-2 mb-4">
                         <Link 
                             to={`/u/${eventType?.ownerUsername}`} 
-                            className="inline-flex items-center gap-1 text-slate-400 hover:text-white transition-colors p-2 rounded-lg"
+                            className="inline-flex items-center gap-1 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors p-2 rounded-lg"
                         >
                             <ChevronLeft size={20} />
                             <span className="font-semibold text-sm">All booking options</span>
                         </Link>
                     </div>
 
-                    {selectedTime && (<button onClick={handleClearTimeSelection} className="flex lg:hidden items-center gap-2 text-indigo-400 mb-4 -ml-1 hover:text-indigo-300 transition-colors duration-200"><ArrowLeft size={16} /> Back</button>)}
+                    {selectedTime && (<button onClick={handleClearTimeSelection} className="flex lg:hidden items-center gap-2 text-indigo-600 dark:text-indigo-400 mb-4 -ml-1 hover:text-indigo-600 dark:text-indigo-300 transition-colors duration-200"><ArrowLeft size={16} /> Back</button>)}
                     
                     <div className="flex-grow min-h-0 overflow-y-auto pr-2 -mr-2">
-                        <p className="text-slate-400">{eventType?.ownerUsername}</p>
-                        <h1 className="text-3xl font-bold text-white my-2">{eventType?.title}</h1>
-                        <div className="space-y-2 text-slate-300 mt-4">
-                            <div className="flex items-center gap-3"><Clock size={16} className="text-indigo-400"/><span>{selectedDuration || eventType?.default_duration} minutes</span></div>
-                            <div className="flex items-center gap-3"><MapPin size={16} className="text-indigo-400"/><span>{eventType?.location}</span></div>
+                        <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400">{eventType?.ownerUsername}</p>
+                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white my-2">{eventType?.title}</h1>
+                        <div className="space-y-2 text-slate-600 dark:text-slate-300 mt-4">
+                            <div className="flex items-center gap-3"><Clock size={16} className="text-indigo-600 dark:text-indigo-400"/><span>{selectedDuration || eventType?.default_duration} minutes</span></div>
+                            <div className="flex items-center gap-3"><MapPin size={16} className="text-indigo-600 dark:text-indigo-400"/><span>{eventType?.location}</span></div>
                         </div>
-                        <p className="text-slate-400 mt-6 text-sm">{eventType?.description}</p>
+                        <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 mt-6 text-sm">{eventType?.description}</p>
                         
                         {eventType?.image_url && (
                              <div className="mt-6">
@@ -253,9 +253,9 @@ const BookingPage = () => {
                         )}
                     </div>
                     
-                    <div className="mt-6 pt-4 border-t border-slate-700 flex-shrink-0">
-                        <label htmlFor="interval" className="block text-sm font-semibold mb-2 text-slate-300">Time slot interval</label>
-                        <select id="interval" name="interval" value={bookingInterval} disabled={!!selectedTime} onChange={(e) => setBookingInterval(parseInt(e.target.value, 10))} className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors duration-200 disabled:opacity-50">
+                    <div className="mt-6 pt-4 border-t border-slate-300 dark:border-slate-700 flex-shrink-0">
+                        <label htmlFor="interval" className="block text-sm font-semibold mb-2 text-slate-600 dark:text-slate-300">Time slot interval</label>
+                        <select id="interval" name="interval" value={bookingInterval} disabled={!!selectedTime} onChange={(e) => setBookingInterval(parseInt(e.target.value, 10))} className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors duration-200 disabled:opacity-50">
                             <option value="15">15 minutes</option>
                             <option value="30">30 minutes</option>
                             <option value="60">60 minutes</option>
@@ -266,11 +266,11 @@ const BookingPage = () => {
                     <div className="p-8 flex flex-col lg:w-[70%] lg:flex-1">
                         <div className="flex-grow flex flex-col items-center justify-center">
                             <div className="w-full max-w-sm text-center">
-                                <h2 className="text-xl font-bold text-white mb-2">Confirm your booking</h2>
-                                <div className="my-6 p-4 rounded-lg border-2 border-slate-600 bg-slate-900/50 flex items-center justify-center gap-3 transform transition-all duration-200 hover:border-indigo-500">
-                                    <CalendarIcon className="text-indigo-400" size={20} />
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Confirm your booking</h2>
+                                <div className="my-6 p-4 rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center gap-3 transform transition-all duration-200 hover:border-indigo-500">
+                                    <CalendarIcon className="text-indigo-600 dark:text-indigo-400" size={20} />
                                     <span className="text-lg font-semibold text-slate-200">{format(new Date(selectedTime), 'HH:mm')}</span>
-                                    <span className="text-lg text-slate-400">on</span>
+                                    <span className="text-lg text-slate-400 dark:text-slate-500 dark:text-slate-400">on</span>
                                     <span className="text-lg font-semibold text-slate-200">{format(selectedDate, 'EEEE, MMMM d')}</span>
                                 </div>
                                 <BookingForm 
@@ -287,8 +287,8 @@ const BookingPage = () => {
                     </div>
                 ) : (
                     <div className="flex flex-col lg:flex-row lg:flex-1 min-h-0">
-                        <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-700 lg:w-1/2 flex flex-col justify-center"><CalendarSelector hook={calendar} onDateSelect={handleDateSelect} selectedDate={selectedDate} availableDays={monthlyAvailability} /><div className="mt-4 text-center"><div className="inline-flex items-center gap-2 text-xs text-slate-400 bg-slate-900/50 px-3 py-1.5 rounded-full"><Globe size={14}/><span>Timezone: {userTimezone.replace(/_/g, ' ')}</span></div></div></div>
-                        <div className="p-8 flex flex-col lg:w-1/2"><h2 className="font-semibold text-white mb-4 text-lg flex-shrink-0">{format(selectedDate, 'EEEE, MMMM d')}</h2><TimeSlotPicker durations={eventType?.durations || []} selectedDuration={selectedDuration} onSelectDuration={setSelectedDuration} slots={dailySlots} selectedTime={selectedTime} onSelectTime={setSelectedTime} isLoading={isLoadingSlots} bookingInterval={bookingInterval} selectedDate={selectedDate} /></div>
+                        <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-300 dark:border-slate-700 lg:w-1/2 flex flex-col justify-center"><CalendarSelector hook={calendar} onDateSelect={handleDateSelect} selectedDate={selectedDate} availableDays={monthlyAvailability} /><div className="mt-4 text-center"><div className="inline-flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-full"><Globe size={14}/><span>Timezone: {userTimezone.replace(/_/g, ' ')}</span></div></div></div>
+                        <div className="p-8 flex flex-col lg:w-1/2"><h2 className="font-semibold text-slate-900 dark:text-white mb-4 text-lg flex-shrink-0">{format(selectedDate, 'EEEE, MMMM d')}</h2><TimeSlotPicker durations={eventType?.durations || []} selectedDuration={selectedDuration} onSelectDuration={setSelectedDuration} slots={dailySlots} selectedTime={selectedTime} onSelectTime={setSelectedTime} isLoading={isLoadingSlots} bookingInterval={bookingInterval} selectedDate={selectedDate} /></div>
                     </div>
                 )}
             </div>

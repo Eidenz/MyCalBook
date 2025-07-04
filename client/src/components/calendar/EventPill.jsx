@@ -23,7 +23,7 @@ const EventPill = ({ event, onClick }) => {
     };
 
     const pillClass = `
-        text-white text-xs cursor-pointer 
+        text-slate-900 dark:text-white text-xs cursor-pointer 
         flex items-center gap-1.5
         truncate transition-colors duration-200
         ${typeStyles[event.type] || 'bg-blue-500 hover:bg-blue-400'}

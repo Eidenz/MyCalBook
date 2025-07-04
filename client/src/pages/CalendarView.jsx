@@ -9,7 +9,7 @@ import EventModal from '../components/calendar/EventModal';
 import DayViewModal from '../components/calendar/DayViewModal';
 
 const CalendarLegend = () => (
-    <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1 mb-2 md:mb-3 text-xs text-slate-400">
+    <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1 mb-2 md:mb-3 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
         <div className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
             <span>Booked</span>
@@ -23,7 +23,7 @@ const CalendarLegend = () => (
             <span>Blocked</span>
         </div>
         <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
+            <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600"></div>
             <span>Past Event</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -138,13 +138,13 @@ const CalendarView = () => {
         : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     const ViewSwitcher = () => (
-        <div className="flex items-center bg-slate-700/50 p-1 rounded-lg">
+        <div className="flex items-center bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 p-1 rounded-lg">
             {['month', 'week', 'day'].map(v => (
                 <button
                     key={v}
                     onClick={() => setView(v)}
                     className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors capitalize ${
-                        view === v ? 'bg-slate-600 text-white' : 'text-slate-300 hover:text-white'
+                        view === v ? 'bg-slate-300 dark:bg-slate-600 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-600/50'
                     }`}
                 >
                     {v}
@@ -159,45 +159,45 @@ const CalendarView = () => {
                 {/* Desktop layout */}
                 <div className="hidden md:flex md:justify-between md:items-center md:gap-4">
                     <div className="flex items-center gap-4">
-                        <button onClick={goToToday} className="px-4 py-2 text-sm font-semibold border border-slate-600 rounded-lg hover:bg-slate-700 transition-colors">Today</button>
-                        <div className="flex items-center bg-slate-700/50 rounded-lg p-1">
-                            <button onClick={handlePrev} className="p-2 rounded-md hover:bg-slate-600 transition-colors" aria-label="Previous"><ChevronLeft size={20} /></button>
-                            <button onClick={handleNext} className="p-2 rounded-md hover:bg-slate-600 transition-colors" aria-label="Next"><ChevronRight size={20} /></button>
+                        <button onClick={goToToday} className="px-4 py-2 text-sm font-semibold border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white transition-colors">Today</button>
+                        <div className="flex items-center bg-slate-200/50 dark:bg-slate-600 rounded-lg p-1">
+                            <button onClick={handlePrev} className="p-2 rounded-md hover:bg-slate-300 dark:hover:bg-slate-500 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" aria-label="Previous"><ChevronLeft size={20} /></button>
+                            <button onClick={handleNext} className="p-2 rounded-md hover:bg-slate-300 dark:hover:bg-slate-500 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" aria-label="Next"><ChevronRight size={20} /></button>
                         </div>
-                        <h1 className="text-2xl font-bold text-white ml-2">{getTitle()}</h1>
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white ml-2">{getTitle()}</h1>
                     </div>
                     <CalendarLegend />
                     <div className="flex items-center gap-4">
                         <ViewSwitcher />
-                        <button onClick={() => handleOpenModal(null, currentDate)} className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-all"><Plus size={18} /> <span className="text-sm">Add Event</span></button>
+                        <button onClick={() => handleOpenModal(null, currentDate)} className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-4 py-2 rounded-lg hover:opacity-90 hover:shadow-lg transition-all"><Plus size={18} /> <span className="text-sm">Add Event</span></button>
                     </div>
                 </div>
 
                 {/* Mobile layout */}
                 <div className="md:hidden space-y-4">
                     <div className="flex items-center gap-3">
-                        <button onClick={goToToday} className="px-3 py-2 text-sm font-semibold border border-slate-600 rounded-lg hover:bg-slate-700"><ChevronLeft size={16} className="inline-block" /><span className="ml-1">Today</span></button>
-                        <h1 className="text-xl font-bold text-white flex-1 truncate">{getTitle()}</h1>
-                        <div className="flex items-center bg-slate-700/50 rounded-lg p-1">
-                            <button onClick={handlePrev} className="p-2 rounded-md hover:bg-slate-600" aria-label="Previous"><ChevronLeft size={20} /></button>
-                            <button onClick={handleNext} className="p-2 rounded-md hover:bg-slate-600" aria-label="Next"><ChevronRight size={20} /></button>
+                        <button onClick={goToToday} className="px-3 py-2 text-sm font-semibold border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white transition-colors"><span className="ml-1">Today</span></button>
+                        <h1 className="text-xl font-bold text-slate-900 dark:text-white flex-1 truncate">{getTitle()}</h1>
+                        <div className="flex items-center bg-slate-200/50 dark:bg-slate-600 rounded-lg p-1">
+                            <button onClick={handlePrev} className="p-2 rounded-md hover:bg-slate-300 dark:hover:bg-slate-500 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" aria-label="Previous"><ChevronLeft size={20} /></button>
+                            <button onClick={handleNext} className="p-2 rounded-md hover:bg-slate-300 dark:hover:bg-slate-500 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" aria-label="Next"><ChevronRight size={20} /></button>
                         </div>
                     </div>
                     <CalendarLegend />
                     <div className="flex items-center justify-between gap-3">
                         <ViewSwitcher />
-                        <button onClick={() => handleOpenModal(null, currentDate)} className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-4 py-2.5 rounded-lg"><Plus size={18} /> <span className="text-sm">Add Event</span></button>
+                        <button onClick={() => handleOpenModal(null, currentDate)} className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-4 py-2.5 rounded-lg hover:opacity-90 hover:shadow-lg transition-all"><Plus size={18} /> <span className="text-sm">Add Event</span></button>
                     </div>
                 </div>
             </header>
 
-            <main className="flex-1 bg-slate-800 rounded-lg shadow-lg overflow-hidden flex flex-col">
+            <main className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-lg shadow-lg overflow-hidden flex flex-col">
                 {isLoading ? (
-                    <div className="flex-1 flex items-center justify-center text-slate-400"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div></div>
+                    <div className="flex-1 flex items-center justify-center text-slate-400 dark:text-slate-500 dark:text-slate-400"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div></div>
                 ) : (
                     <>
-                        <div className="grid grid-cols-7 bg-slate-900/50 border-b border-slate-700">
-                            {weekDays.map(day => <div key={day} className="p-1 md:p-3 text-center font-semibold text-xs md:text-sm text-slate-400">{day}</div>)}
+                        <div className="grid grid-cols-7 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 border-b border-slate-300 dark:border-slate-700">
+                            {weekDays.map(day => <div key={day} className="p-1 md:p-3 text-center font-semibold text-xs md:text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">{day}</div>)}
                         </div>
                         {view === 'month' && <MonthView days={daysForMonthView} month={startOfMonth(currentDate)} events={events} onEventClick={handleOpenModal} onShowMoreClick={handleOpenDayView}/>}
                         {view === 'week' && <TimeGridView days={daysForWeekView} events={events} onEventClick={handleOpenModal} />}

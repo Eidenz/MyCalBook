@@ -11,19 +11,19 @@ const CalendarSelector = ({ hook, onDateSelect, selectedDate, availableDays }) =
     return (
         <div>
             <div className="flex justify-between items-center mb-4">
-                <h2 className="font-semibold text-lg text-white">{monthName}</h2>
+                <h2 className="font-semibold text-lg text-slate-900 dark:text-white">{monthName}</h2>
                 <div className="flex items-center gap-2">
-                    <button onClick={prevMonth} className="p-2 rounded-md hover:bg-slate-700 transition-colors">
+                    <button onClick={prevMonth} className="p-2 rounded-md hover:bg-slate-200 dark:bg-slate-700 transition-colors">
                         <ChevronLeft size={20} />
                     </button>
-                    <button onClick={nextMonth} className="p-2 rounded-md hover:bg-slate-700 transition-colors">
+                    <button onClick={nextMonth} className="p-2 rounded-md hover:bg-slate-200 dark:bg-slate-700 transition-colors">
                         <ChevronRight size={20} />
                     </button>
                 </div>
             </div>
             <div className="grid grid-cols-7 gap-2">
                 {weekDays.map(day => (
-                    <div key={day} className="text-center text-xs font-semibold text-slate-400 pb-2">{day}</div>
+                    <div key={day} className="text-center text-xs font-semibold text-slate-400 dark:text-slate-500 dark:text-slate-400 pb-2">{day}</div>
                 ))}
                 {days.map((day, index) => {
                     const isCurrent = isSameMonth(day, currentMonth);
@@ -39,10 +39,10 @@ const CalendarSelector = ({ hook, onDateSelect, selectedDate, availableDays }) =
                         ${!isCurrent ? 'text-slate-600 cursor-not-allowed' : ''}
                         
                         ${isSelected 
-                            ? 'bg-indigo-600 text-white font-bold cursor-pointer' 
+                            ? 'bg-indigo-600 text-slate-900 dark:text-white font-bold cursor-pointer' 
                             : isBookable 
-                                ? 'bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/40 cursor-pointer' 
-                                : isCurrent ? 'text-slate-400' : 'text-slate-600'
+                                ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/40 cursor-pointer' 
+                                : isCurrent ? 'text-slate-400 dark:text-slate-500 dark:text-slate-400' : 'text-slate-600'
                         }
 
                         ${(!isBookable || isPastDay) && isCurrent ? 'cursor-not-allowed opacity-50' : ''}
@@ -56,7 +56,7 @@ const CalendarSelector = ({ hook, onDateSelect, selectedDate, availableDays }) =
                                 disabled={!isBookable}
                             >
                                 {today && !isSelected && (
-                                    <span className="absolute -inset-0.5 rounded-full border-2 border-slate-500"></span>
+                                    <span className="absolute -inset-0.5 rounded-full border-2 border-slate-400 dark:border-slate-500"></span>
                                 )}
                                 <span className="relative">{format(day, 'd')}</span>
                             </button>

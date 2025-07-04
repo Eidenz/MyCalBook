@@ -69,7 +69,7 @@ const TimeSlotPicker = ({
         <div className="flex flex-col flex-auto min-h-0">
             {/* Duration Selector - with smooth transitions */}
             <div className="flex-shrink-0">
-                <h3 className="font-semibold text-white mb-2">Select Duration</h3>
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Select Duration</h3>
                 <div className="grid grid-cols-2 gap-2">
                     {durations.map((duration, index) => (
                         <button 
@@ -78,8 +78,8 @@ const TimeSlotPicker = ({
                             style={{ animationDelay: `${index * 50}ms` }}
                             className={`p-2 text-center rounded-lg border-2 transition-all duration-200 text-sm font-medium transform hover:scale-105 animate-fade-in-up
                                 ${selectedDuration === duration 
-                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/25'
-                                    : 'border-slate-600 hover:border-indigo-500 hover:bg-slate-700/50'
+                                    ? 'bg-indigo-600 border-indigo-600 text-slate-900 dark:text-white shadow-lg shadow-indigo-500/25'
+                                    : 'border-slate-300 dark:border-slate-600 hover:border-indigo-500 hover:bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50'
                                 }
                             `}
                         >
@@ -89,10 +89,10 @@ const TimeSlotPicker = ({
                 </div>
             </div>
 
-            <div className="border-t border-slate-700 my-4 flex-shrink-0"></div>
+            <div className="border-t border-slate-300 dark:border-slate-700 my-4 flex-shrink-0"></div>
 
             <div className="flex-auto min-h-0 overflow-y-auto pr-2">
-                <h3 className="font-semibold text-white mb-2 sticky top-0 bg-slate-800 py-1 z-10">Available Times</h3>
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-2 sticky top-0 bg-slate-100 dark:bg-slate-800 py-1 z-10">Available Times</h3>
                 
                 <div className="relative min-h-[100px]">
                     {/* Loading State */}
@@ -100,7 +100,7 @@ const TimeSlotPicker = ({
                         isLoading ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
                     }`}>
                         <div className="text-center">
-                            <div className="inline-flex items-center gap-3 text-slate-400">
+                            <div className="inline-flex items-center gap-3 text-slate-400 dark:text-slate-500 dark:text-slate-400">
                                 <div className="flex space-x-1">
                                     <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
                                     <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
@@ -127,8 +127,8 @@ const TimeSlotPicker = ({
                                         }}
                                         className={`slot-button p-2.5 w-full text-center rounded-lg border-2 transition-all duration-200 font-semibold transform hover:scale-105 hover:-translate-y-0.5
                                             ${selectedTime === slot 
-                                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/25'
-                                                : 'border-slate-600 hover:border-indigo-500 hover:bg-slate-700/50 hover:shadow-md'
+                                                ? 'bg-indigo-600 border-indigo-600 text-slate-900 dark:text-white shadow-lg shadow-indigo-500/25'
+                                                : 'border-slate-300 dark:border-slate-600 hover:border-indigo-500 hover:bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 hover:shadow-md'
                                             }
                                             ${showSlots ? 'animate-slide-in-up' : ''}
                                         `}
@@ -142,8 +142,8 @@ const TimeSlotPicker = ({
                                 showSlots ? 'animate-fade-in' : ''
                             }`}>
                                 <div className="text-6xl mb-2 opacity-50">📅</div>
-                                <p className="text-slate-400">No available slots for this day.</p>
-                                <p className="text-slate-500 text-sm mt-1">Try selecting a different date</p>
+                                <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400">No available slots for this day.</p>
+                                <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">Try selecting a different date</p>
                             </div>
                         )}
                     </div>

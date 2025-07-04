@@ -49,14 +49,14 @@ const InputModal = ({
             onClick={onClose}
         >
             <div 
-                className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm p-4 md:p-6 transform transition-all scale-100 animate-in fade-in-0 zoom-in-95 duration-200" 
+                className="bg-slate-100 dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm p-4 md:p-6 transform transition-all scale-100 animate-in fade-in-0 zoom-in-95 duration-200" 
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center mb-4 md:mb-6">
-                    <h2 className="text-lg md:text-xl font-bold text-white">{title}</h2>
+                    <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white">{title}</h2>
                     <button 
                         onClick={onClose} 
-                        className="p-1.5 md:p-1 rounded-full hover:bg-slate-700 transition-colors active:scale-95"
+                        className="p-1.5 md:p-1 rounded-full hover:bg-slate-200 dark:bg-slate-700 transition-colors active:scale-95"
                     >
                         <X size={20} className="md:w-6 md:h-6" />
                     </button>
@@ -65,7 +65,7 @@ const InputModal = ({
                 <form onSubmit={handleSubmit}>
                     <label 
                         htmlFor="input-field" 
-                        className="block text-sm font-medium text-slate-300 mb-2"
+                        className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2"
                     >
                         {label}
                     </label>
@@ -77,7 +77,7 @@ const InputModal = ({
                         placeholder={placeholder}
                         required
                         autoFocus
-                        className="w-full bg-slate-700 p-3 md:p-2.5 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors text-white placeholder-slate-400"
+                        className="w-full bg-slate-200 dark:bg-slate-700 p-3 md:p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
                     />
                     {error && (
                         <p className="text-red-400 text-sm mt-2 animate-in slide-in-from-top-1 duration-200">
@@ -89,14 +89,14 @@ const InputModal = ({
                         <button 
                             type="button" 
                             onClick={onClose} 
-                            className="w-full sm:w-auto px-6 py-3 md:py-2.5 bg-slate-600 rounded-lg font-semibold hover:bg-slate-500 active:bg-slate-400 transition-all active:scale-95 text-white"
+                            className="w-full sm:w-auto px-6 py-3 md:py-2.5 bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 active:bg-slate-400 transition-all active:scale-95 text-slate-900 dark:text-white"
                         >
                             Cancel
                         </button>
                         <button 
                             type="submit" 
                             disabled={isSubmitting} 
-                            className="w-full sm:w-auto px-6 py-3 md:py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold hover:opacity-90 disabled:opacity-50 transition-all active:scale-95 text-white disabled:cursor-not-allowed"
+                            className="w-full sm:w-auto px-6 py-3 md:py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold hover:opacity-90 disabled:opacity-50 transition-all active:scale-95 text-slate-900 dark:text-white disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? (
                                 <span className="flex items-center justify-center gap-2">

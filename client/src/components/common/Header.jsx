@@ -1,18 +1,41 @@
 import React, { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, Menu, X, Shield } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
+import { LogOut, Menu, X, Shield, Sun, Moon } from 'lucide-react';
+
+const ThemeToggle = () => {
+    const { theme, setTheme } = useTheme();
+
+    return (
+        <div className="flex items-center bg-slate-200 dark:bg-slate-700 p-1 rounded-full">
+            <button
+                onClick={() => setTheme('light')}
+                className={`p-1.5 rounded-full transition-colors ${theme === 'light' ? 'bg-white text-indigo-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                aria-label="Light mode"
+            >
+                <Sun size={16} />
+            </button>
+            <button
+                onClick={() => setTheme('dark')}
+                className={`p-1.5 rounded-full transition-colors ${theme === 'dark' ? 'bg-slate-800 text-indigo-400' : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-900'}`}
+                aria-label="Dark mode"
+            >
+                <Moon size={16} />
+            </button>
+        </div>
+    );
+};
 
 const Header = () => {
     const { user, logout } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-    // NavLink will automatically add an 'active' class to the link when its path matches the current URL.
     const navLinkClasses = ({ isActive }) =>
         `px-3 py-2 md:py-1.5 text-sm font-semibold rounded-md transition-colors ${
             isActive 
-            ? 'text-white bg-slate-700' 
-            : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+            ? 'text-slate-900 dark:text-white bg-slate-200 dark:bg-slate-700' 
+            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'
         }`;
 
     const toggleMobileMenu = () => {
@@ -24,12 +47,11 @@ const Header = () => {
     };
 
     return (
-        <header className="bg-slate-900/80 backdrop-blur-sm border-b border-slate-700 sticky top-0 z-40">
+        <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40">
             {/* Desktop Header */}
             <div className="hidden md:flex justify-between items-center p-4">
-                {/* Left Side: Logo and Navigation */}
                 <div className="flex items-center gap-6">
-                    <Link to="/" className="text-xl font-bold text-white">📅 MyCalendar</Link>
+                    <Link to="/" className="text-xl font-bold text-slate-900 dark:text-white">📅 MyCalendar</Link>
                     <nav className="flex items-center gap-2">
                         <NavLink to="/" className={navLinkClasses} end>Calendar</NavLink>
                         <NavLink to="/availability" className={navLinkClasses}>Availability</NavLink>
@@ -43,14 +65,14 @@ const Header = () => {
                     </nav>
                 </div>
 
-                {/* Right Side: User Menu */}
                 <div className="flex items-center gap-4">
-                    <span className="text-slate-300 text-sm">
-                        Welcome, <span className="font-semibold text-white">{user?.username}</span>
+                    <ThemeToggle />
+                    <span className="text-slate-600 dark:text-slate-300 text-sm">
+                        Welcome, <span className="font-semibold text-slate-900 dark:text-white">{user?.username}</span>
                     </span>
                     <button 
                         onClick={logout}
-                        className="flex items-center gap-2 bg-slate-700 text-slate-300 font-semibold px-3 py-1.5 rounded-lg hover:bg-red-500 hover:text-white transition-colors text-sm"
+                        className="flex items-center gap-2 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold px-3 py-1.5 rounded-lg hover:bg-red-500 hover:text-white transition-colors text-sm"
                     >
                         <LogOut size={16} />
                         <span>Logout</span>
@@ -60,76 +82,52 @@ const Header = () => {
 
             {/* Mobile Header */}
             <div className="md:hidden">
-                {/* Top bar */}
                 <div className="flex justify-between items-center p-4">
-                    <Link to="/" className="text-lg font-bold text-white" onClick={closeMobileMenu}>
+                    <Link to="/" className="text-lg font-bold text-slate-900 dark:text-white" onClick={closeMobileMenu}>
                         📅 MyCalendar
                     </Link>
                     <div className="flex items-center gap-3">
+                         <ThemeToggle />
                         <button
                             onClick={toggleMobileMenu}
-                            className="p-2 rounded-md hover:bg-slate-700 transition-colors active:scale-95"
+                            className="p-2 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors active:scale-95"
                         >
                             {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
                         </button>
                     </div>
                 </div>
 
-                {/* Mobile Navigation Menu */}
                 <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
                     isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                 }`}>
-                    <div className="bg-slate-900/50">
-                        {/* Navigation Links */}
-                        <nav className="px-4 pt-2 space-y-1">
-                            <NavLink 
-                                to="/" 
-                                className={navLinkClasses} 
-                                end
-                                onClick={closeMobileMenu}
-                            >
-                                Calendar
-                            </NavLink>
-                            <NavLink 
-                                to="/availability" 
-                                className={navLinkClasses}
-                                onClick={closeMobileMenu}
-                            >
-                                Availability
-                            </NavLink>
-                            <NavLink 
-                                to="/event-types" 
-                                className={navLinkClasses}
-                                onClick={closeMobileMenu}
-                            >
-                                Event Types
-                            </NavLink>
-                            <NavLink 
-                                to="/settings" 
-                                className={navLinkClasses}
-                                onClick={closeMobileMenu}
-                            >
-                                Settings
-                            </NavLink>
+                    <div className="bg-white/50 dark:bg-slate-900/50">
+                        <nav className="p-4 space-y-1">
+                            {['/', '/availability', '/event-types', '/settings'].map(path => (
+                                 <NavLink 
+                                    key={path}
+                                    to={path} 
+                                    className={({isActive}) => `block text-base ${navLinkClasses({isActive})}`}
+                                    end={path === '/'}
+                                    onClick={closeMobileMenu}
+                                >
+                                    {path.charAt(1).toUpperCase() + path.slice(2) || 'Calendar'}
+                                </NavLink>
+                            ))}
                         </nav>
                         
-                        {/* User Section - Separated */}
-                        <div className="mt-4 px-4 py-3 bg-slate-800/50 border-t border-slate-700">
+                        <div className="mt-4 p-4 bg-slate-100 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
                                         {user?.username?.charAt(0).toUpperCase()}
                                     </div>
-                                    <span className="text-slate-300 text-sm font-medium">
+                                    <span className="text-slate-600 dark:text-slate-300 text-sm font-medium">
                                         {user?.username}
                                     </span>
                                 </div>
                                 <button 
-                                    onClick={() => {
-                                        logout();
-                                        closeMobileMenu();
-                                    }}
-                                    className="flex items-center gap-2 bg-slate-600 text-slate-300 font-medium px-3 py-1.5 rounded-md hover:bg-red-600 hover:text-white transition-colors text-sm active:scale-95"
+                                    onClick={() => { logout(); closeMobileMenu(); }}
+                                    className="flex items-center gap-2 bg-slate-300 dark:bg-slate-600 text-slate-600 dark:text-slate-300 font-medium px-3 py-1.5 rounded-md hover:bg-red-600 hover:text-white transition-colors text-sm active:scale-95"
                                 >
                                     <LogOut size={14} />
                                     <span>Logout</span>

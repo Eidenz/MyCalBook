@@ -15,7 +15,7 @@ const AllDayEvent = ({ event, onClick, isMobile }) => {
     return (
         <div
             onClick={() => onClick(event)}
-            className={`mx-0.5 md:mx-1 mb-1 p-1.5 md:p-2 text-white border-l-4 cursor-pointer rounded-lg backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
+            className={`mx-0.5 md:mx-1 mb-1 p-1.5 md:p-2 text-slate-900 dark:text-white border-l-4 cursor-pointer rounded-lg backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
                 typeStyles[event.type] || 'bg-blue-500/90 border-blue-400'
             }`}
         >
@@ -76,8 +76,8 @@ const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, is
         <div
             onClick={() => onClick(event)}
             style={{ top: `${top}%`, height: `${height}%` }}
-            className={`absolute left-0 right-0 mx-0.5 md:mx-1 p-1 md:p-2 text-white border-l-4 cursor-pointer overflow-hidden backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
-                isPast && event.type !== 'birthday' ? 'bg-slate-600/80 border-slate-500 opacity-70' : typeStyles[event.type]
+            className={`absolute left-0 right-0 mx-0.5 md:mx-1 p-1 md:p-2 text-slate-900 dark:text-white border-l-4 cursor-pointer overflow-hidden backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
+                isPast && event.type !== 'birthday' ? 'bg-slate-300 dark:bg-slate-600/80 border-slate-400 dark:border-slate-500 opacity-70' : typeStyles[event.type]
             } ${isCurrent && event.type !== 'birthday' ? 'ring-2 ring-sky-400 z-10' : ''} ${roundingClasses}`}
         >
             <div className="flex flex-col h-full">
@@ -165,15 +165,15 @@ const TimeGridView = ({ days, events, onEventClick }) => {
     return (
         <div className="flex-1 flex flex-col overflow-y-scroll">
             {/* Header with day names */}
-            <div className="flex sticky top-0 bg-slate-800 z-10 border-b border-slate-700">
-                <div className="w-14 shrink-0 border-r border-slate-700 flex items-end justify-end pb-2 pr-2">
-                    <span className="text-xs text-slate-400">GMT</span>
+            <div className="flex sticky top-0 bg-slate-100 dark:bg-slate-800 z-10 border-b border-slate-300 dark:border-slate-700">
+                <div className="w-14 shrink-0 border-r border-slate-300 dark:border-slate-700 flex items-end justify-end pb-2 pr-2">
+                    <span className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">GMT</span>
                 </div>
                 <div className="flex-1 grid" style={{ gridTemplateColumns }}>
                     {days.map(day => (
-                        <div key={day.toString()} className="text-center py-2 md:py-3 border-r border-slate-700 last:border-r-0 min-w-0 px-1">
-                            <span className="text-xs text-slate-400 block">{format(day, 'EEE')}</span>
-                            <p className={`text-lg md:text-xl font-bold truncate ${isToday(day) ? 'text-indigo-400' : 'text-white'}`}>{format(day, 'd')}</p>
+                        <div key={day.toString()} className="text-center py-2 md:py-3 border-r border-slate-300 dark:border-slate-700 last:border-r-0 min-w-0 px-1">
+                            <span className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 block">{format(day, 'EEE')}</span>
+                            <p className={`text-lg md:text-xl font-bold truncate ${isToday(day) ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-900 dark:text-white'}`}>{format(day, 'd')}</p>
                         </div>
                     ))}
                 </div>
@@ -181,9 +181,9 @@ const TimeGridView = ({ days, events, onEventClick }) => {
             
             {/* All-day events section */}
             {hasAllDayEvents && (
-                <div className="flex bg-slate-800/50 border-b border-slate-700">
-                    <div className="w-14 shrink-0 border-r border-slate-700 flex items-start justify-end pt-2 pr-2">
-                        <span className="text-xs text-slate-400 leading-none">All day</span>
+                <div className="flex bg-slate-100/50 dark:bg-slate-100 dark:bg-slate-800/50 border-b border-slate-300 dark:border-slate-700">
+                    <div className="w-14 shrink-0 border-r border-slate-300 dark:border-slate-700 flex items-start justify-end pt-2 pr-2">
+                        <span className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 leading-none">All day</span>
                     </div>
                     <div className="flex-1 grid py-2" style={{ gridTemplateColumns }}>
                         {days.map(day => {
@@ -191,7 +191,7 @@ const TimeGridView = ({ days, events, onEventClick }) => {
                             const dayAllDayEvents = allDayEventsByDay.get(dayStr) || [];
                             
                             return (
-                                <div key={`allday-${day.toString()}`} className="border-r border-slate-700/50 last:border-r-0 min-w-0 px-1">
+                                <div key={`allday-${day.toString()}`} className="border-r border-slate-300 dark:border-slate-700/50 last:border-r-0 min-w-0 px-1">
                                     {dayAllDayEvents.map(event => (
                                         <AllDayEvent 
                                             key={`allday-${event.id}-${dayStr}`} 
@@ -210,17 +210,17 @@ const TimeGridView = ({ days, events, onEventClick }) => {
             {/* Time grid section */}
             <div className="flex-1 flex">
                 <div className="flex-1 flex">
-                    <div className="w-14 shrink-0 text-right pr-2 border-r border-slate-700 bg-slate-900/20">
-                        {hours.map(hour => <div key={hour} className="h-12 md:h-16 flex items-start pt-1"><span className="text-xs text-slate-400 leading-none">{format(new Date(2000, 0, 1, hour), 'ha')}</span></div>)}
+                    <div className="w-14 shrink-0 text-right pr-2 border-r border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/20">
+                        {hours.map(hour => <div key={hour} className="h-12 md:h-16 flex items-start pt-1"><span className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 leading-none">{format(new Date(2000, 0, 1, hour), 'ha')}</span></div>)}
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="grid h-full" style={{ gridTemplateColumns }}>
                             {days.map((day, dayIndex) => (
-                                <div key={day.toString()} className="relative border-r border-slate-700 last:border-r-0 min-w-0">
-                                    {hours.map(hour => <div key={hour} className="h-12 md:h-16 border-b border-slate-700/50"></div>)}
+                                <div key={day.toString()} className="relative border-r border-slate-300 dark:border-slate-700 last:border-r-0 min-w-0">
+                                    {hours.map(hour => <div key={hour} className="h-12 md:h-16 border-b border-slate-300 dark:border-slate-700/50"></div>)}
                                     {isToday(day) && (
                                         <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: `${currentTimePosition}%` }}>
-                                            <div className="relative h-px bg-red-400"><div className="absolute -left-1.5 -top-[5px] w-3 h-3 bg-red-400 rounded-full ring-2 ring-slate-800"></div></div>
+                                            <div className="relative h-px bg-red-400"><div className="absolute -left-1.5 -top-[5px] w-3 h-3 bg-red-400 rounded-full ring-2 ring-white dark:ring-slate-800"></div></div>
                                         </div>
                                     )}
                                     {(timedEventsByDay.get(format(day, 'yyyy-MM-dd')) || []).map(event => (

@@ -65,20 +65,20 @@ const OverrideModal = ({ isOpen, onClose, onSave, onDelete, date, scheduleId, ex
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4" onClick={onClose}>
-            <div className="bg-slate-800 text-white rounded-xl shadow-2xl w-full max-w-sm sm:max-w-md p-4 sm:p-6 transform transition-all animate-in fade-in-0 zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl shadow-2xl w-full max-w-sm sm:max-w-md p-4 sm:p-6 transform transition-all animate-in fade-in-0 zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                 {/* Header - Mobile optimized */}
                 <div className="flex justify-between items-start gap-3 mb-4 sm:mb-6">
                     <div className="flex-1 min-w-0">
                         <h2 className="text-lg sm:text-xl font-bold leading-tight">
                             <span className="block sm:inline">Edit Availability</span>
-                            <span className="block sm:inline sm:ml-1 text-slate-300">
+                            <span className="block sm:inline sm:ml-1 text-slate-600 dark:text-slate-300">
                                 {format(date, 'MMM d')}
                             </span>
                         </h2>
                     </div>
                     <button 
                         onClick={onClose} 
-                        className="p-1.5 rounded-full hover:bg-slate-700 transition-colors flex-shrink-0"
+                        className="p-1.5 rounded-full hover:bg-slate-200 dark:bg-slate-700 transition-colors flex-shrink-0"
                         aria-label="Close modal"
                     >
                         <X size={20} />
@@ -90,9 +90,9 @@ const OverrideModal = ({ isOpen, onClose, onSave, onDelete, date, scheduleId, ex
                     {/* Unavailable Toggle */}
                     <label 
                         htmlFor="unavailable-toggle" 
-                        className="flex items-center justify-between bg-slate-700/50 p-3 sm:p-4 rounded-lg cursor-pointer transition-colors hover:bg-slate-700"
+                        className="flex items-center justify-between bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 p-3 sm:p-4 rounded-lg cursor-pointer transition-colors hover:bg-slate-200 dark:bg-slate-700"
                     >
-                        <span className="font-semibold text-white text-sm sm:text-base">Mark as unavailable</span>
+                        <span className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base">Mark as unavailable</span>
                         <div className="relative inline-flex items-center">
                             <input 
                                 type="checkbox" 
@@ -101,39 +101,39 @@ const OverrideModal = ({ isOpen, onClose, onSave, onDelete, date, scheduleId, ex
                                 onChange={(e) => setIsUnavailable(e.target.checked)} 
                                 className="sr-only peer" 
                             />
-                            <div className="w-11 h-6 bg-slate-600 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                            <div className="w-11 h-6 bg-slate-300 dark:bg-slate-600 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                         </div>
                     </label>
 
                     {/* Time Selection */}
                     <div className={`transition-all duration-300 ${isUnavailable ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                        <p className="text-xs sm:text-sm text-slate-400 mb-3">Or, set specific hours for this day:</p>
+                        <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400 mb-3">Or, set specific hours for this day:</p>
                         
                         {/* Mobile-optimized time inputs */}
                         <div className="space-y-3 sm:space-y-0 sm:flex sm:items-center sm:gap-3">
                             <div className="flex-1">
-                                <label className="block text-xs text-slate-400 mb-1 sm:sr-only">Start time</label>
+                                <label className="block text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 mb-1 sm:sr-only">Start time</label>
                                 <input 
                                     type="time" 
                                     value={startTime} 
                                     onChange={e => setStartTime(e.target.value)} 
                                     disabled={isUnavailable} 
-                                    className="w-full bg-slate-700 p-2.5 sm:p-3 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors text-sm sm:text-base"
+                                    className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 sm:p-3 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors text-sm sm:text-base"
                                 />
                             </div>
                             
                             <div className="flex items-center justify-center sm:block">
-                                <span className="text-slate-400 font-mono text-sm sm:text-base px-2">to</span>
+                                <span className="text-slate-400 dark:text-slate-500 dark:text-slate-400 font-mono text-sm sm:text-base px-2">to</span>
                             </div>
                             
                             <div className="flex-1">
-                                <label className="block text-xs text-slate-400 mb-1 sm:sr-only">End time</label>
+                                <label className="block text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 mb-1 sm:sr-only">End time</label>
                                 <input 
                                     type="time" 
                                     value={endTime} 
                                     onChange={e => setEndTime(e.target.value)} 
                                     disabled={isUnavailable} 
-                                    className="w-full bg-slate-700 p-2.5 sm:p-3 rounded-md border-2 border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors text-sm sm:text-base"
+                                    className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 sm:p-3 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors text-sm sm:text-base"
                                 />
                             </div>
                         </div>
@@ -142,7 +142,7 @@ const OverrideModal = ({ isOpen, onClose, onSave, onDelete, date, scheduleId, ex
 
                 {/* Error Message */}
                 {error && (
-                    <div className="text-red-400 text-xs sm:text-sm bg-red-900/50 p-3 rounded-lg mt-4 animate-in fade-in-0 duration-200">
+                    <div className="text-red-400 text-xs sm:text-sm bg-red-100 dark:bg-red-900/50 p-3 rounded-lg mt-4 animate-in fade-in-0 duration-200">
                         {error}
                     </div>
                 )}
@@ -166,7 +166,7 @@ const OverrideModal = ({ isOpen, onClose, onSave, onDelete, date, scheduleId, ex
                     <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2">
                         <button 
                             onClick={onClose} 
-                            className="w-full sm:w-auto px-4 sm:px-6 py-2.5 bg-slate-600 rounded-lg font-semibold hover:bg-slate-500 transition-colors text-sm sm:text-base"
+                            className="w-full sm:w-auto px-4 sm:px-6 py-2.5 bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors text-sm sm:text-base"
                         >
                             Cancel
                         </button>
