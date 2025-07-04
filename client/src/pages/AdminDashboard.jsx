@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
-import { Trash2, ShieldCheck, User, AlertTriangle } from 'lucide-react';
+import { Trash2, ShieldCheck, User, AlertTriangle, Shield } from 'lucide-react';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 
 const AdminDashboard = () => {
@@ -78,8 +78,19 @@ const AdminDashboard = () => {
                                 <tr key={user.id} className="hover:bg-slate-700/30 transition-colors">
                                     <td className="p-3 whitespace-nowrap">
                                         <div className="flex items-center gap-3">
-                                            {user.is_admin ? <ShieldCheck className="text-indigo-400" size={18} /> : <User className="text-slate-500" size={18} />}
-                                            <span className="font-medium text-white">{user.username}</span>
+                                            {user.is_admin ? (
+                                                <ShieldCheck className="text-indigo-400 flex-shrink-0" size={18} title="Admin" />
+                                            ) : (
+                                                <User className="text-slate-500 flex-shrink-0" size={18} />
+                                            )}
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-medium text-white">{user.username}</span>
+                                                {user.is_two_factor_enabled ? (
+                                                    <Shield className="text-green-400" size={16} title="2FA Enabled" />
+                                                ) : (
+                                                    <></>
+                                                )}
+                                            </div>
                                         </div>
                                     </td>
                                     <td className="p-3 text-slate-400 hidden sm:table-cell">{user.email}</td>

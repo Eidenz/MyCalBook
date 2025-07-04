@@ -1,10 +1,156 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ConfirmationModal from '../components/common/ConfirmationModal';
+import { Shield, ShieldOff } from 'lucide-react';
+
+// A sub-component for the 2FA setup flow
+const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
+    const [setupStage, setSetupStage] = useState('idle'); // 'idle', 'generated', 'disabling'
+    const [qrCode, setQrCode] = useState('');
+    const [secret, setSecret] = useState('');
+    const [otp, setOtp] = useState('');
+    const [disablePassword, setDisablePassword] = useState('');
+    const [disableOtp, setDisableOtp] = useState('');
+    const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleGenerate = async () => {
+        setIsSubmitting(true);
+        setError('');
+        try {
+            const res = await fetch('/api/settings/2fa/generate', {
+                method: 'POST',
+                headers: { 'x-auth-token': token },
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            setQrCode(data.qrCode);
+            setSecret(data.secret);
+            setSetupStage('generated');
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleVerify = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setError('');
+        try {
+            const res = await fetch('/api/settings/2fa/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                body: JSON.stringify({ otp }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            setSetupStage('idle');
+            onUpdate(true); // Notify parent that 2FA is now enabled
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDisable = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setError('');
+        try {
+            const res = await fetch('/api/settings/2fa/disable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                body: JSON.stringify({ password: disablePassword, otp: disableOtp }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            setSetupStage('idle');
+            onUpdate(false); // Notify parent that 2FA is now disabled
+            setDisablePassword('');
+            setDisableOtp('');
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (isEnabled && setupStage !== 'disabling') {
+        return (
+            <div className="flex items-center justify-between bg-slate-700/50 p-4 rounded-lg">
+                <div className="flex items-center gap-3">
+                    <Shield className="text-green-400" size={24} />
+                    <div>
+                        <p className="font-semibold text-white">2FA is Enabled</p>
+                        <p className="text-xs text-slate-400">Your account is protected.</p>
+                    </div>
+                </div>
+                <button onClick={() => setSetupStage('disabling')} className="px-4 py-2 bg-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-500">Disable</button>
+            </div>
+        );
+    }
+    
+    if (setupStage === 'disabling') {
+        return (
+            <form onSubmit={handleDisable} className="space-y-3 bg-slate-900/50 p-4 rounded-lg">
+                 <h3 className="font-semibold text-white">Disable Two-Factor Authentication</h3>
+                <input type="password" value={disablePassword} onChange={(e) => setDisablePassword(e.target.value)} placeholder="Current Password" required className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
+                <input type="text" value={disableOtp} onChange={(e) => setDisableOtp(e.target.value)} placeholder="Authentication Code" required className="w-full bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
+                {error && <div className="text-red-400 text-sm">{error}</div>}
+                <div className="flex justify-end gap-3 pt-2">
+                    <button type="button" onClick={() => { setSetupStage('idle'); setError(''); }} className="px-4 py-2 bg-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-500">Cancel</button>
+                    <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-red-800 rounded-lg text-sm font-semibold hover:bg-red-700">
+                        {isSubmitting ? 'Disabling...' : 'Confirm & Disable'}
+                    </button>
+                </div>
+            </form>
+        );
+    }
+
+    if (setupStage === 'generated') {
+        return (
+            <div className="space-y-4 bg-slate-900/50 p-4 rounded-lg">
+                <p className="text-sm text-slate-300">1. Scan this QR code with your authenticator app.</p>
+                <div className="bg-white p-2 rounded-lg inline-block mx-auto">
+                    <img src={qrCode} alt="2FA QR Code" />
+                </div>
+                <p className="text-sm text-slate-300">Or, enter this key manually:</p>
+                <p className="font-mono bg-slate-800 p-2 rounded text-center tracking-widest">{secret}</p>
+                <p className="text-sm text-slate-300">2. Enter the code from your app to verify.</p>
+                <form onSubmit={handleVerify} className="flex items-center gap-3">
+                    <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="6-digit code" required className="flex-grow bg-slate-700 p-2.5 rounded-md border-2 border-slate-600"/>
+                    <button type="submit" disabled={isSubmitting} className="px-4 py-2.5 bg-green-600 rounded-lg font-semibold hover:bg-green-700">
+                        {isSubmitting ? 'Verifying...' : 'Verify & Enable'}
+                    </button>
+                </form>
+                {error && <div className="text-red-400 text-sm pt-2">{error}</div>}
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center justify-between bg-slate-700/50 p-4 rounded-lg">
+             <div className="flex items-center gap-3">
+                <ShieldOff className="text-slate-400" size={24} />
+                <div>
+                    <p className="font-semibold text-white">2FA is Disabled</p>
+                    <p className="text-xs text-slate-400">Add an extra layer of security.</p>
+                </div>
+            </div>
+            <button onClick={handleGenerate} disabled={isSubmitting} className="px-4 py-2 bg-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-700">
+                {isSubmitting ? 'Generating...' : 'Enable'}
+            </button>
+        </div>
+    );
+};
+
 
 const Settings = () => {
     const { token, logout } = useAuth();
-    const [settings, setSettings] = useState({ email_notifications: true });
+    const [settings, setSettings] = useState({ email_notifications: true, is_two_factor_enabled: false });
     const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     
     const [isLoading, setIsLoading] = useState(true);
@@ -12,20 +158,21 @@ const Settings = () => {
     const [success, setSuccess] = useState('');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
+    const fetchSettings = async () => {
+        setIsLoading(true);
+        try {
+            const res = await fetch('/api/settings', { headers: { 'x-auth-token': token } });
+            if (!res.ok) throw new Error('Failed to fetch settings.');
+            const data = await res.json();
+            setSettings(data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
     useEffect(() => {
-        const fetchSettings = async () => {
-            setIsLoading(true);
-            try {
-                const res = await fetch('/api/settings', { headers: { 'x-auth-token': token } });
-                if (!res.ok) throw new Error('Failed to fetch settings.');
-                const data = await res.json();
-                setSettings(data);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setIsLoading(false);
-            }
-        };
         fetchSettings();
     }, [token]);
 
@@ -43,7 +190,6 @@ const Settings = () => {
             showSuccessMessage('Notification settings saved!');
         } catch (err) {
             setError(err.message);
-            // Revert on failure
             setSettings(prev => ({...prev, email_notifications: !e.target.checked}));
         }
     };
@@ -69,7 +215,7 @@ const Settings = () => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to change password.');
             showSuccessMessage(data.message);
-            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' }); // Clear fields
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         } catch (err) {
             setError(err.message);
         }
@@ -87,7 +233,6 @@ const Settings = () => {
                 const data = await res.json();
                 throw new Error(data.error || 'Failed to delete account.');
             }
-            // On successful deletion, log the user out. The PrivateRoute will handle the redirect.
             logout();
         } catch (err) {
             setError(err.message);
@@ -109,7 +254,19 @@ const Settings = () => {
             {success && <div className="bg-green-900/50 text-green-300 p-3 rounded-md mb-4">{success}</div>}
 
             <div className="bg-slate-800 rounded-lg shadow-lg p-6 space-y-8">
-                {/* Email Notifications Section */}
+                <div>
+                    <h2 className="text-xl font-semibold mb-2">Two-Factor Authentication</h2>
+                    <TwoFactorAuthSetup 
+                        token={token} 
+                        isEnabled={settings.is_two_factor_enabled}
+                        onUpdate={(newStatus) => {
+                            setSettings(prev => ({...prev, is_two_factor_enabled: newStatus}));
+                            // This will also update the user object in the AuthContext on next reload
+                            logout(); // Force re-login to get a new token with updated 2FA status
+                        }}
+                    />
+                </div>
+
                 <div>
                     <h2 className="text-xl font-semibold mb-2">Email Notifications</h2>
                     <div className="flex items-center justify-between bg-slate-700/50 p-4 rounded-lg">
@@ -121,7 +278,6 @@ const Settings = () => {
                     </div>
                 </div>
 
-                {/* Change Password Section */}
                 <div>
                     <h2 className="text-xl font-semibold mb-4">Change Password</h2>
                     <form onSubmit={handlePasswordSubmit} className="space-y-4">
@@ -136,7 +292,6 @@ const Settings = () => {
                     </form>
                 </div>
 
-                {/* Delete Account Section */}
                 <div className="border-t border-red-500/30 pt-6">
                      <h2 className="text-xl font-semibold mb-2 text-red-300">Delete Account</h2>
                      <p className="text-slate-400 mb-4 text-sm">Once you delete your account, all of your data will be permanently removed. This action cannot be undone.</p>

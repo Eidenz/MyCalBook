@@ -12,7 +12,7 @@ router.use(authMiddleware, adminMiddleware);
 router.get('/users', async (req, res) => {
     try {
         const users = await db('users')
-            .select('id', 'username', 'email', 'is_admin', 'created_at')
+            .select('id', 'username', 'email', 'is_admin', 'created_at', 'is_two_factor_enabled')
             .orderBy('created_at', 'desc');
         res.json(users);
     } catch (error) {
