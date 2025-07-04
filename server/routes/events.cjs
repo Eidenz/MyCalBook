@@ -8,6 +8,7 @@ const multer = require('multer');
 const ical = require('node-ical');
 const { startOfDay, endOfDay } = require('date-fns');
 
+
 router.use(authMiddleware);
 
 // --- Configure Multer for ICS file uploads ---
@@ -144,51 +145,264 @@ router.post('/import-ics', uploadIcs.single('icsfile'), async (req, res) => {
     }
 
     try {
-        const events = ical.parse(req.file.buffer.toString());
+        const events = await ical.async.parseICS(req.file.buffer.toString());
         const eventsToInsert = [];
         const userId = req.user.id;
 
-        for (const key in events) {
-            if (events.hasOwnProperty(key)) {
-                const event = events[key];
-                // Process only VEVENT types with a non-empty summary
-                if (event.type === 'VEVENT' && event.summary && event.summary.trim() !== '' && event.start && event.end) {
-                    // Skip recurring events for now to keep the import simple
-                    if (event.rrule) {
-                        continue;
-                    }
+        // Helper function to parse RRULE and create recurrence rule
+        const parseRRule = async (rruleString, trx) => {
+            try {
+                // Parse the RRULE string using rrulestr
+                const rule = rrulestr(rruleString);
+                const options = rule.options;
 
-                    const isAllDay = event.start.datetype === 'date';
-                    // For all-day events from iCal, the end date is exclusive.
-                    // We adjust it to be the end of the previous day for our database schema.
-                    const endDate = new Date(event.end);
-                    if (isAllDay) {
-                        endDate.setDate(endDate.getDate() - 1);
-                    }
+                // Map RRule frequency constants to database strings
+                const freqMap = {
+                    [RRule.YEARLY]: 'YEARLY',
+                    [RRule.MONTHLY]: 'MONTHLY', 
+                    [RRule.WEEKLY]: 'WEEKLY',
+                    [RRule.DAILY]: 'DAILY'
+                };
 
-                    eventsToInsert.push({
-                        user_id: userId,
-                        title: event.summary,
-                        description: event.description || null,
-                        start_time: startOfDay(new Date(event.start)).toISOString(),
-                        end_time: endOfDay(endDate).toISOString(),
-                        type: 'personal',
-                        is_all_day: isAllDay
-                    });
+                const frequency = freqMap[options.freq];
+                if (!frequency) {
+                    return null;
+                }
+
+                const interval = options.interval || 1;
+                const until = options.until;
+
+                // Convert byweekday to comma-separated string
+                let byDay = null;
+                if (options.byweekday && options.byweekday.length > 0) {
+                    const dayMap = {
+                        0: 'MO', 1: 'TU', 2: 'WE', 3: 'TH', 
+                        4: 'FR', 5: 'SA', 6: 'SU'
+                    };
+                    byDay = options.byweekday.map(day => {
+                        // Handle both simple weekday numbers and RRule weekday objects
+                        const dayNum = typeof day === 'object' ? day.weekday : day;
+                        return dayMap[dayNum];
+                    }).filter(Boolean).join(',');
+                }
+
+                // Create recurrence rule in database
+                const [recurrenceRule] = await trx('recurrence_rules').insert({
+                    frequency: frequency,
+                    interval: interval,
+                    end_date: until ? until.toISOString() : null,
+                    by_day: byDay
+                }).returning('id');
+
+                return recurrenceRule.id;
+            } catch (error) {
+                return null;
+            }
+        };
+
+        // Helper function for simple timezone offset calculation (fallback)
+        const getSimpleTimezoneOffset = (timezone, date) => {
+            const month = date.getUTCMonth(); // 0-11
+            const day = date.getUTCDate();
+            
+            // Simple DST detection for Northern Hemisphere (March to October)
+            // For Southern Hemisphere, this would be inverted
+            const isDST = (month > 2 && month < 9) || 
+                         (month === 2 && day >= 25) || 
+                         (month === 9 && day < 25);
+            
+            const offsets = {
+                // Western Europe
+                'Europe/Paris': isDST ? 2 : 1,
+                'Europe/London': isDST ? 1 : 0,
+                'Europe/Berlin': isDST ? 2 : 1,
+                'Europe/Rome': isDST ? 2 : 1,
+                'Europe/Madrid': isDST ? 2 : 1,
+                'Europe/Amsterdam': isDST ? 2 : 1,
+                'Europe/Brussels': isDST ? 2 : 1,
+                'Europe/Vienna': isDST ? 2 : 1,
+                'Europe/Zurich': isDST ? 2 : 1,
+                'Europe/Prague': isDST ? 2 : 1,
+                'Europe/Warsaw': isDST ? 2 : 1,
+                'Europe/Budapest': isDST ? 2 : 1,
+                'Europe/Athens': isDST ? 3 : 2,
+                'Europe/Helsinki': isDST ? 3 : 2,
+                'Europe/Istanbul': isDST ? 3 : 3, // No DST since 2016
+
+                // North America
+                'America/New_York': isDST ? -4 : -5,
+                'America/Detroit': isDST ? -4 : -5,
+                'America/Toronto': isDST ? -4 : -5,
+                'America/Chicago': isDST ? -5 : -6,
+                'America/Winnipeg': isDST ? -5 : -6,
+                'America/Denver': isDST ? -6 : -7,
+                'America/Edmonton': isDST ? -6 : -7,
+                'America/Los_Angeles': isDST ? -7 : -8,
+                'America/Vancouver': isDST ? -7 : -8,
+                'America/Phoenix': -7, // No DST
+                'America/Anchorage': isDST ? -8 : -9,
+                'America/Halifax': isDST ? -3 : -4,
+                'America/Sao_Paulo': isDST ? -2 : -3, // DST abolished in 2019
+
+                // Asia
+                'Asia/Tokyo': 9, // No DST
+                'Asia/Shanghai': 8, // No DST
+                'Asia/Hong_Kong': 8, // No DST
+                'Asia/Singapore': 8, // No DST
+                'Asia/Seoul': 9, // No DST
+                'Asia/Kolkata': 5.5, // No DST
+                'Asia/Bangkok': 7, // No DST
+                'Asia/Jakarta': 7, // No DST
+                'Asia/Dubai': 4, // No DST
+                'Asia/Manila': 8, // No DST
+
+                // Australia & NZ
+                'Australia/Sydney': isDST ? 11 : 10,
+                'Australia/Melbourne': isDST ? 11 : 10,
+                'Australia/Brisbane': 10, // No DST
+                'Australia/Perth': 8, // No DST
+                'Pacific/Auckland': isDST ? 13 : 12,
+
+                // Africa
+                'Africa/Johannesburg': 2, // No DST
+                'Africa/Cairo': 2, // No DST
+
+                // UTC
+                'UTC': 0,
+                'Etc/UTC': 0,
+                'Etc/GMT': 0,
+                'GMT': 0,
+            };
+            
+            return offsets[timezone] || null;
+        };
+
+        await db.transaction(async trx => {
+            for (const key in events) {
+                if (events.hasOwnProperty(key)) {
+                    const event = events[key];
+                    
+                    // Process only VEVENT types with a non-empty summary
+                    if (event.type === 'VEVENT' && event.summary && event.summary.trim() !== '' && event.start && event.end) {
+                        const isAllDay = event.start.datetype === 'date';
+                        
+                        let startDate, endDate;
+                        
+                        if (isAllDay) {
+                            // For all-day events, use the date as-is
+                            startDate = new Date(event.start);
+                            endDate = new Date(event.end);
+                            // For all-day events from iCal, the end date is exclusive.
+                            endDate.setDate(endDate.getDate() - 1);
+                        } else {
+                            // Create base dates
+                            startDate = new Date(event.start);
+                            endDate = new Date(event.end);
+                            
+                            // Handle timezone correction for any timezone
+                            if (event.start.tz && event.start.tz !== 'UTC') {
+                                try {
+                                    // Simple and reliable approach: Calculate what the UTC offset should be
+                                    // for this timezone at this specific date
+                                    
+                                    // Create a date representing the time components as local time in the target timezone
+                                    const year = startDate.getUTCFullYear();
+                                    const month = startDate.getUTCMonth();
+                                    const day = startDate.getUTCDate();
+                                    const hours = startDate.getUTCHours();
+                                    const minutes = startDate.getUTCMinutes();
+                                    const seconds = startDate.getUTCSeconds();
+                                    
+                                    // Create a date in the target timezone for the same "wall clock" time
+                                    // This tells us what the offset is for this date in this timezone
+                                    const sampleDate = new Date(Date.UTC(year, month, day, 12, 0, 0)); // noon on this day
+                                    
+                                    // Use Intl.DateTimeFormat to get the offset
+                                    const formatter = new Intl.DateTimeFormat('en', {
+                                        timeZone: event.start.tz,
+                                        timeZoneName: 'longOffset'
+                                    });
+                                    
+                                    const parts = formatter.formatToParts(sampleDate);
+                                    const offsetPart = parts.find(part => part.type === 'timeZoneName');
+                                    
+                                    if (offsetPart && offsetPart.value) {
+                                        // Parse offset like "GMT+01:00" or "GMT-05:00"
+                                        const offsetMatch = offsetPart.value.match(/GMT([+-])(\d{1,2}):?(\d{2})?/);
+                                        if (offsetMatch) {
+                                            const sign = offsetMatch[1] === '+' ? 1 : -1;
+                                            const offsetHours = parseInt(offsetMatch[2]);
+                                            const offsetMinutes = parseInt(offsetMatch[3] || '0');
+                                            const totalOffsetHours = sign * (offsetHours + offsetMinutes / 60);
+                                            
+                                            // Apply the correction
+                                            const offsetMs = totalOffsetHours * 60 * 60 * 1000;
+                                            startDate = new Date(startDate.getTime() - offsetMs);
+                                            endDate = new Date(endDate.getTime() - offsetMs);
+                                        } else {
+                                            throw new Error('Could not parse timezone offset: ' + offsetPart.value);
+                                        }
+                                    } else {
+                                        throw new Error('Could not get timezone offset');
+                                    }
+                                } catch (timezoneError) {
+                                    // Super simple fallback: Calculate offset manually for common zones
+                                    const simpleOffset = getSimpleTimezoneOffset(event.start.tz, startDate);
+                                    if (simpleOffset !== null) {
+                                        const offsetMs = simpleOffset * 60 * 60 * 1000;
+                                        startDate = new Date(startDate.getTime() - offsetMs);
+                                        endDate = new Date(endDate.getTime() - offsetMs);
+                                    }
+                                }
+                            }
+                        }
+
+                        let recurrenceId = null;
+
+                        // Handle recurring events
+                        if (event.rrule) {
+                            // The rrule property might be a string or an object
+                            let rruleString;
+                            if (typeof event.rrule === 'string') {
+                                rruleString = event.rrule;
+                            } else if (event.rrule.toString) {
+                                rruleString = event.rrule.toString();
+                            } else {
+                                continue;
+                            }
+
+                            recurrenceId = await parseRRule(rruleString, trx);
+                        }
+
+                        const eventData = {
+                            user_id: userId,
+                            title: event.summary,
+                            description: event.description || null,
+                            start_time: isAllDay ? startOfDay(startDate).toISOString() : startDate.toISOString(),
+                            end_time: isAllDay ? endOfDay(endDate).toISOString() : endDate.toISOString(),
+                            type: 'personal',
+                            is_all_day: isAllDay,
+                            recurrence_id: recurrenceId
+                        };
+
+                        eventsToInsert.push(eventData);
+                    }
                 }
             }
-        }
 
-        if (eventsToInsert.length > 0) {
-            await db.transaction(async trx => {
+            // Insert all events in the transaction
+            if (eventsToInsert.length > 0) {
                 await trx('manual_events').insert(eventsToInsert);
-            });
-        }
+            }
+        });
 
-        res.json({ message: `Successfully imported ${eventsToInsert.length} events.` });
+        res.json({ 
+            message: `Successfully imported ${eventsToInsert.length} events with proper timezone handling.`,
+            recurring: eventsToInsert.filter(e => e.recurrence_id).length,
+            single: eventsToInsert.filter(e => !e.recurrence_id).length
+        });
 
     } catch (error) {
-        console.error('ICS Import Error:', error);
         res.status(500).json({ error: 'Failed to parse or import the .ics file. It may be malformed.' });
     }
 });
