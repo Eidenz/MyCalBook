@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const Register = () => {
-    const [formData, setFormData] = useState({ username: '', email: '', password: '' });
+    const [formData, setFormData] = useState({ username: '', email: '', password: '', confirmPassword: '' });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -14,12 +14,22 @@ const Register = () => {
         e.preventDefault();
         setError('');
         setSuccess('');
+
+        // Client-side validation for matching passwords
+        if (formData.password !== formData.confirmPassword) {
+            setError('Passwords do not match.');
+            return;
+        }
+
         setIsSubmitting(true);
         try {
+            // We only need to send username, email, and password to the API
+            const { confirmPassword, ...payload } = formData;
+
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(payload)
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Something went wrong');
@@ -52,6 +62,11 @@ const Register = () => {
                     <div>
                         <label className="text-sm font-medium text-slate-300">Password</label>
                         <input type="password" name="password" required onChange={handleChange}
+                               className="w-full px-3 py-2 mt-1 text-white bg-slate-700 border-2 border-slate-600 rounded-md focus:outline-none focus:border-indigo-500" />
+                    </div>
+                    <div>
+                        <label className="text-sm font-medium text-slate-300">Confirm Password</label>
+                        <input type="password" name="confirmPassword" required onChange={handleChange}
                                className="w-full px-3 py-2 mt-1 text-white bg-slate-700 border-2 border-slate-600 rounded-md focus:outline-none focus:border-indigo-500" />
                     </div>
                     {error && <div className="text-red-400 text-sm p-3 bg-red-900/50 rounded-md">{error}</div>}

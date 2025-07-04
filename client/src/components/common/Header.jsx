@@ -35,11 +35,11 @@ const Header = () => {
                         <NavLink to="/availability" className={navLinkClasses}>Availability</NavLink>
                         <NavLink to="/event-types" className={navLinkClasses}>Booking Setup</NavLink>
                         <NavLink to="/settings" className={navLinkClasses}>Settings</NavLink>
-                        {user?.is_admin && (
+                        {user?.is_admin ? (
                             <NavLink to="/admin" className={navLinkClasses}>
                                 <div className="flex items-center gap-1.5"><Shield size={14} />Admin</div>
                             </NavLink>
-                        )}
+                        ) : <></>}
                     </nav>
                 </div>
 
