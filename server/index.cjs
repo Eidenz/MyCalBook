@@ -22,7 +22,8 @@ const eventTypesRouter = require('./routes/eventTypes.cjs');
 const publicRouter = require('./routes/public.cjs');
 const settingsRouter = require('./routes/settings.cjs');
 const uploadRouter = require('./routes/upload.cjs');
-const db = require('./db/knex.cjs'); // Import db for SSR
+const adminRouter = require('./routes/admin.cjs');
+const db = require('./db/knex.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -47,6 +48,7 @@ app.use('/api/event-types', eventTypesRouter);
 app.use('/api/public', publicRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/admin', adminRouter);
 
 const frontendBuildPath = path.join(__dirname, '..', 'client', 'dist');
 

@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import ConfirmationModal from '../components/common/ConfirmationModal';
 
 const Settings = () => {
-    const { token } = useAuth();
+    const { token, logout } = useAuth();
     const [settings, setSettings] = useState({ email_notifications: true });
     const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -72,6 +74,25 @@ const Settings = () => {
             setError(err.message);
         }
     };
+    
+    const handleDeleteAccount = async () => {
+        setIsDeleteModalOpen(false);
+        setError('');
+        try {
+            const res = await fetch('/api/settings/account', {
+                method: 'DELETE',
+                headers: { 'x-auth-token': token },
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to delete account.');
+            }
+            // On successful deletion, log the user out. The PrivateRoute will handle the redirect.
+            logout();
+        } catch (err) {
+            setError(err.message);
+        }
+    };
 
     const showSuccessMessage = (message) => {
         setSuccess(message);
@@ -114,7 +135,27 @@ const Settings = () => {
                         </div>
                     </form>
                 </div>
+
+                {/* Delete Account Section */}
+                <div className="border-t border-red-500/30 pt-6">
+                     <h2 className="text-xl font-semibold mb-2 text-red-300">Delete Account</h2>
+                     <p className="text-slate-400 mb-4 text-sm">Once you delete your account, all of your data will be permanently removed. This action cannot be undone.</p>
+                     <div className="flex justify-end">
+                        <button onClick={() => setIsDeleteModalOpen(true)} className="px-6 py-2.5 bg-red-800 rounded-lg font-semibold text-white hover:bg-red-700 transition">
+                            Delete My Account
+                        </button>
+                    </div>
+                </div>
             </div>
+            
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleDeleteAccount}
+                title="Confirm Account Deletion"
+                message="Are you absolutely sure? All of your event types, availability schedules, and bookings will be permanently deleted."
+                confirmText="Yes, delete my account"
+            />
         </div>
     );
 };

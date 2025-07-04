@@ -12,9 +12,11 @@ import BookingPage from './pages/BookingPage';
 import Settings from './pages/Settings';
 import CancellationPage from './pages/CancellationPage';
 import UserProfilePage from './pages/UserProfilePage';
+import AdminDashboard from './pages/AdminDashboard';
 
 // Common Components
 import PrivateRoute from './components/PrivateRoute';
+import AdminRoute from './components/AdminRoute';
 import AppLayout from './components/common/AppLayout';
 
 function App() {
@@ -37,6 +39,11 @@ function App() {
                 <Route path="/availability" element={<Availability />} />
                 <Route path="/event-types" element={<EventTypes />} />
                 <Route path="/settings" element={<Settings />} />
+                
+                {/* Admin-only Routes */}
+                <Route element={<AdminRoute />}>
+                  <Route path="/admin" element={<AdminDashboard />} />
+                </Route>
               </Route>
             </Route>
           </Routes>

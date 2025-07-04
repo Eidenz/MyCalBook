@@ -70,6 +70,7 @@ router.post('/login', async (req, res) => {
             user: {
                 id: user.id,
                 username: user.username,
+                is_admin: user.is_admin,
             }
         };
 

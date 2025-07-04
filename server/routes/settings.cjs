@@ -93,5 +93,20 @@ router.put('/password', async (req, res) => {
     }
 });
 
+// --- DELETE /api/settings/account ---
+// A dedicated endpoint for a user to delete their own account
+router.delete('/account', async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+        // The ON DELETE CASCADE in the DB schema handles cleaning up related data
+        await db('users').where({ id: userId }).del();
+        res.json({ message: 'Account deleted successfully.' });
+    } catch (error) {
+        console.error(`Error deleting account for user ${userId}:`, error);
+        res.status(500).json({ error: 'Internal server error during account deletion.' });
+    }
+});
+
 
 module.exports = router;
