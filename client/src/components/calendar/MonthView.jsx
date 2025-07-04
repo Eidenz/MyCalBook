@@ -9,6 +9,8 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
     const now = new Date();
     const isPast = isBefore(new Date(event.end_time), now);
     const isCurrent = !isPast && isWithinInterval(now, { start: new Date(event.start_time), end: new Date(event.end_time) });
+    const isAllDay = event.is_all_day || event.type === 'birthday';
+    const isBday = event.type === 'birthday';
 
     const typeStyles = {
         personal: 'bg-amber-500 hover:bg-amber-400',
@@ -21,10 +23,10 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
         text-slate-900 dark:text-white text-xs cursor-pointer 
         flex items-center gap-1.5
         truncate transition-colors duration-200
-        ${isPast && event.type !== 'birthday' 
+        ${isPast && !isAllDay 
             ? 'bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500 opacity-70' 
             : typeStyles[event.type] || 'bg-blue-500 hover:bg-blue-400'}
-        ${isCurrent && event.type !== 'birthday' ? 'ring-2 ring-sky-400' : ''}
+        ${isCurrent && !isAllDay ? 'ring-2 ring-sky-400' : ''}
         ${isMobile ? 'px-1 py-0.5 mb-0.5 rounded' : 'p-1 mb-1 rounded-md'}
     `;
 
@@ -33,10 +35,10 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
     if (isMobile) {
         return (
             <div className={pillClass} onClick={() => onClick(event)}>
-                {event.type === 'birthday' && <Cake size={10} className="flex-shrink-0"/>}
-                {event.recurrence_id && <Repeat size={10} className="flex-shrink-0"/>}
+                {isBday && <Cake size={10} className="flex-shrink-0"/>}
+                {event.recurrence_id && !isAllDay && <Repeat size={10} className="flex-shrink-0"/>}
                 <span className="font-semibold text-xs truncate flex items-center gap-1">
-                    {event.type !== 'birthday' && format(new Date(event.start_time), 'HH:mm')}
+                    {!isAllDay && format(new Date(event.start_time), 'HH:mm')}
                     <span>{event.title}</span>
                  </span>
             </div>
@@ -45,11 +47,11 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
 
     return (
         <div className={pillClass} onClick={() => onClick(event)}>
-            {isStart && (
+            {isStart ? (
                 <>
-                    {event.type === 'birthday' && <Cake size={12} className="flex-shrink-0"/>}
-                    {event.recurrence_id && <Repeat size={12} className="flex-shrink-0"/>}
-                    {event.type !== 'birthday' && (
+                    {isBday && <Cake size={12} className="flex-shrink-0"/>}
+                    {event.recurrence_id && !isAllDay && <Repeat size={12} className="flex-shrink-0"/>}
+                    {!isAllDay && (
                         <span className="font-semibold flex-shrink-0">
                             {format(new Date(event.start_time), 'HH:mm')}-{format(new Date(event.end_time), 'HH:mm')}
                         </span>
@@ -62,8 +64,7 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
                         </span>
                     )}
                 </>
-            )}
-            {!isStart && (
+            ) : (
                 <span className="truncate opacity-70">{event.title}</span>
             )}
         </div>
@@ -84,7 +85,16 @@ const MonthView = ({ days, month, events = [], onEventClick, onShowMoreClick }) 
         const dayMap = new Map();
         for (const day of days) { dayMap.set(day.toDateString(), []); }
 
-        const sortedEvents = [...events].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+        const sortedEvents = [...events].sort((a, b) => {
+            const aIsAllDay = a.is_all_day || a.type === 'birthday';
+            const bIsAllDay = b.is_all_day || b.type === 'birthday';
+            // All-day events first
+            if (aIsAllDay !== bIsAllDay) {
+                return aIsAllDay ? -1 : 1;
+            }
+            // Then by start time
+            return new Date(a.start_time) - new Date(b.start_time);
+        });
 
         for (const event of sortedEvents) {
             const start = startOfDay(new Date(event.start_time));
@@ -127,7 +137,7 @@ const MonthView = ({ days, month, events = [], onEventClick, onShowMoreClick }) 
                         <div className="flex-grow overflow-hidden">
                             {visibleEvents.map(event => 
                                 <EventPill 
-                                    key={event.id} 
+                                    key={`${event.id}-${dayKey}`} 
                                     event={event} 
                                     isStart={isSameDay(day, new Date(event.start_time))} 
                                     onClick={onEventClick}

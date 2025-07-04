@@ -72,7 +72,7 @@ const Register = () => {
                     {error && <div className="text-red-400 text-sm p-3 bg-red-100 dark:bg-red-900/50 rounded-md">{error}</div>}
                     {success && <div className="text-green-400 text-sm p-3 bg-green-100 dark:bg-green-900/50 rounded-md">{success}</div>}
                     <button type="submit" disabled={isSubmitting}
-                            className="w-full py-2 font-semibold text-slate-900 dark:text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-md hover:opacity-90 transition disabled:opacity-50">
+                            className="w-full py-2 font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-md hover:opacity-90 transition disabled:opacity-50">
                         {isSubmitting ? 'Registering...' : 'Register'}
                     </button>
                 </form>

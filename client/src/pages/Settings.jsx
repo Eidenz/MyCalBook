@@ -1,7 +1,82 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ConfirmationModal from '../components/common/ConfirmationModal';
-import { Shield, ShieldOff, Copy, Download, KeyRound, Check } from 'lucide-react';
+import { Shield, ShieldOff, Copy, Download, KeyRound, Check, UploadCloud, Loader } from 'lucide-react';
+
+// Sub-component for ICS import
+const CalendarImport = ({ token }) => {
+    const [file, setFile] = useState(null);
+    const [isImporting, setIsImporting] = useState(false);
+    const [importStatus, setImportStatus] = useState({ message: '', type: '' }); // type can be 'success' or 'error'
+
+    const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        if (selectedFile && (selectedFile.type === "text/calendar" || selectedFile.name.endsWith(".ics"))) {
+            setFile(selectedFile);
+            setImportStatus({ message: '', type: '' });
+        } else {
+            setFile(null);
+            if (selectedFile) {
+                setImportStatus({ message: 'Please select a valid .ics file.', type: 'error' });
+            }
+        }
+    };
+    
+    const handleImport = async () => {
+        if (!file) {
+            setImportStatus({ message: 'No file selected.', type: 'error' });
+            return;
+        }
+        
+        setIsImporting(true);
+        setImportStatus({ message: '', type: '' });
+        
+        const formData = new FormData();
+        formData.append('icsfile', file);
+        
+        try {
+            const res = await fetch('/api/events/import-ics', {
+                method: 'POST',
+                headers: { 'x-auth-token': token },
+                body: formData,
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            setImportStatus({ message: data.message, type: 'success' });
+        } catch (err) {
+            setImportStatus({ message: err.message, type: 'error' });
+        } finally {
+            setIsImporting(false);
+            setFile(null);
+            document.getElementById('ics-upload').value = ''; // Reset file input
+        }
+    };
+
+    return (
+        <div>
+            <h2 className="text-xl font-semibold mb-2">Import Calendar</h2>
+            <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 mb-4 text-sm">Import non-recurring events from an external calendar using an .ics file.</p>
+            <div className="bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 p-4 rounded-lg">
+                <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    <input type="file" id="ics-upload" accept=".ics,text/calendar" onChange={handleFileChange} className="hidden" />
+                    <label htmlFor="ics-upload" className="flex-1 w-full text-center px-4 py-2 bg-slate-300 dark:bg-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 cursor-pointer truncate flex items-center justify-center gap-2">
+                        <UploadCloud size={16} />
+                        {file ? file.name : "Choose .ics file"}
+                    </label>
+                    <button onClick={handleImport} disabled={isImporting || !file} className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                        {isImporting ? <><Loader size={16} className="animate-spin" /> Importing...</> : "Import"}
+                    </button>
+                </div>
+                {importStatus.message && (
+                    <div className={`mt-4 text-sm p-2 rounded-md ${importStatus.type === 'error' ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300' : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'}`}>
+                        {importStatus.message}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 
 // A sub-component for the 2FA setup flow
 const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
@@ -326,16 +401,7 @@ const Settings = () => {
 
             <div className="bg-slate-100 dark:bg-slate-800 rounded-lg shadow-lg p-6 space-y-8">
                 <div>
-                    <h2 className="text-xl font-semibold mb-2">Two-Factor Authentication</h2>
-                    <TwoFactorAuthSetup 
-                        token={token} 
-                        isEnabled={settings.is_two_factor_enabled}
-                        onUpdate={handle2faUpdate}
-                    />
-                </div>
-
-                <div>
-                    <h2 className="text-xl font-semibold mb-2">Email Notifications</h2>
+                    <h2 className="text-xl font-semibold mb-2">Profile</h2>
                     <div className="flex items-center justify-between bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 p-4 rounded-lg">
                         <p className="text-slate-600 dark:text-slate-300">Notify me about new bookings</p>
                         <label className="relative inline-flex items-center cursor-pointer">
@@ -344,6 +410,8 @@ const Settings = () => {
                         </label>
                     </div>
                 </div>
+                
+                <CalendarImport token={token} />
 
                 <div>
                     <h2 className="text-xl font-semibold mb-4">Change Password</h2>
@@ -357,6 +425,15 @@ const Settings = () => {
                             </button>
                         </div>
                     </form>
+                </div>
+
+                <div>
+                    <h2 className="text-xl font-semibold mb-2">Two-Factor Authentication</h2>
+                    <TwoFactorAuthSetup 
+                        token={token} 
+                        isEnabled={settings.is_two_factor_enabled}
+                        onUpdate={handle2faUpdate}
+                    />
                 </div>
 
                 <div className="border-t border-red-500/30 pt-6">

@@ -21,14 +21,14 @@ const DayViewModal = ({ isOpen, onClose, day, events, onEventClick }) => {
 
         const dotClass = `
             w-2 h-2 rounded-full mr-4 mt-2 flex-shrink-0
-            ${isPast ? 'bg-slate-500' : typeStyles[event.type]}
-            ${isCurrent ? 'ring-2 ring-offset-2 ring-offset-slate-800 ring-sky-400' : ''}
+            ${isPast && event.type !== 'birthday' ? 'bg-slate-500' : typeStyles[event.type]}
+            ${isCurrent && event.type !== 'birthday' ? 'ring-2 ring-offset-2 ring-offset-slate-800 ring-sky-400' : ''}
         `;
 
 
         return (
             <div 
-                className={`flex items-start p-3 -mx-3 rounded-lg hover:bg-slate-200 dark:bg-slate-700 cursor-pointer transition-colors ${isPast ? 'opacity-70' : ''}`}
+                className={`flex items-start p-3 -mx-3 rounded-lg hover:bg-slate-200 dark:bg-slate-700 cursor-pointer transition-colors ${isPast && event.type !== 'birthday' ? 'opacity-70' : ''}`}
                 onClick={() => {
                     onEventClick(event);
                     onClose();

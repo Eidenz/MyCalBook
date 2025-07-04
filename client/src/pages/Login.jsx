@@ -99,7 +99,7 @@ const Login = () => {
                                 />
                             </div>
                             {error && <div className="text-red-400 text-sm p-3 bg-red-100 dark:bg-red-900/50 rounded-md">{error}</div>}
-                            <button type="submit" disabled={isSubmitting} className="w-full py-2 font-semibold text-slate-900 dark:text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-md hover:opacity-90 transition disabled:opacity-50">
+                            <button type="submit" disabled={isSubmitting} className="w-full py-2 font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-md hover:opacity-90 transition disabled:opacity-50">
                                 {isSubmitting ? 'Verifying...' : 'Verify & Log In'}
                             </button>
                         </form>
@@ -120,7 +120,7 @@ const Login = () => {
                                 <input type="password" name="password" required onChange={handleChange} className="w-full px-3 py-2 mt-1 text-slate-900 dark:text-white bg-slate-200 dark:bg-slate-700 border-2 border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:border-indigo-500" />
                             </div>
                             {error && <div className="text-red-400 text-sm p-3 bg-red-100 dark:bg-red-900/50 rounded-md">{error}</div>}
-                            <button type="submit" disabled={isSubmitting} className="w-full py-2 font-semibold text-slate-900 dark:text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-md hover:opacity-90 transition disabled:opacity-50">
+                            <button type="submit" disabled={isSubmitting} className="w-full py-2 font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-md hover:opacity-90 transition disabled:opacity-50">
                                 {isSubmitting ? 'Logging in...' : 'Log In'}
                             </button>
                         </form>

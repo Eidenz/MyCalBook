@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCalendar } from '../hooks/useCalendar';
 import { format, isSameMonth, isToday, isSameDay, parseISO } from 'date-fns';
-import { Plus, Trash2, Edit, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Edit, Clock, Calendar, ChevronLeft, ChevronRight, Loader } from 'lucide-react';
 import InputModal from '../components/common/InputModal';
 import OverrideModal from '../components/availability/OverrideModal';
 
@@ -18,6 +18,7 @@ const Availability = () => {
     // UI/Loading State
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isOverridesLoading, setIsOverridesLoading] = useState(false);
     const [error, setError] = useState('');
 
     // Modal State
@@ -43,48 +44,62 @@ const Availability = () => {
         return `${utcDate.getHours().toString().padStart(2, '0')}:${utcDate.getMinutes().toString().padStart(2, '0')}`;
     };
 
-    // Data Fetching
-    const fetchSchedules = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const response = await fetch('/api/availability/schedules', { headers: { 'x-auth-token': token } });
-            if (!response.ok) throw new Error('Failed to fetch schedules.');
-            const data = await response.json();
-            setSchedules(data);
-            if (data.length > 0 && !selectedScheduleId) {
-                setSelectedScheduleId(data[0].id);
-            }
-        } catch (err) { setError(err.message); } 
-        finally { setIsLoading(false); }
-    }, [token, selectedScheduleId]);
-
-    const fetchRulesAndOverrides = useCallback(async () => {
+    // --- Data Fetching ---
+    useEffect(() => {
+        const fetchSchedules = async () => {
+            setIsLoading(true);
+            try {
+                const response = await fetch('/api/availability/schedules', { headers: { 'x-auth-token': token } });
+                if (!response.ok) throw new Error('Failed to fetch schedules.');
+                const data = await response.json();
+                setSchedules(data);
+                if (data.length > 0 && !selectedScheduleId) {
+                    setSelectedScheduleId(data[0].id);
+                }
+            } catch (err) { setError(err.message); } 
+            finally { setIsLoading(false); }
+        };
+        fetchSchedules();
+    }, [token]);
+    
+    const fetchOverrides = useCallback(async () => {
         if (!selectedScheduleId) {
-            setRules([]);
             setOverrides([]);
             return;
         }
-        setIsLoading(true);
+        setIsOverridesLoading(true);
         try {
-            const [rulesRes, overridesRes] = await Promise.all([
-                fetch(`/api/availability/rules/${selectedScheduleId}`, { headers: { 'x-auth-token': token } }),
-                fetch(`/api/availability/overrides/${selectedScheduleId}?month=${format(calendar.currentDate, 'yyyy-MM')}`, { headers: { 'x-auth-token': token } })
-            ]);
-            if (!rulesRes.ok) throw new Error('Failed to fetch rules.');
+            const overridesRes = await fetch(`/api/availability/overrides/${selectedScheduleId}?month=${format(calendar.currentDate, 'yyyy-MM')}`, { headers: { 'x-auth-token': token } });
             if (!overridesRes.ok) throw new Error('Failed to fetch overrides.');
-            
-            const rulesData = await rulesRes.json();
             const overridesData = await overridesRes.json();
-            
-            setRules(rulesData.map(rule => ({ ...rule, start_time: toLocalTime(rule.start_time), end_time: toLocalTime(rule.end_time) })));
             setOverrides(overridesData);
-
         } catch (err) { setError(err.message); } 
-        finally { setIsLoading(false); }
-    }, [selectedScheduleId, token, calendar.currentDate]);
+        finally { setIsOverridesLoading(false); }
+    }, [selectedScheduleId, calendar.currentDate, token]);
+    
+    useEffect(() => {
+        if (!selectedScheduleId) {
+            setRules([]);
+            return;
+        }
+        const fetchRules = async () => {
+            try {
+                const rulesRes = await fetch(`/api/availability/rules/${selectedScheduleId}`, { headers: { 'x-auth-token': token } });
+                if (!rulesRes.ok) throw new Error('Failed to fetch rules.');
+                const rulesData = await rulesRes.json();
+                setRules(rulesData.map(rule => ({ ...rule, start_time: toLocalTime(rule.start_time), end_time: toLocalTime(rule.end_time) })));
+            } catch (err) {
+                setError(err.message);
+            }
+        };
 
-    useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
-    useEffect(() => { fetchRulesAndOverrides(); }, [fetchRulesAndOverrides]);
+        fetchRules();
+        fetchOverrides();
+    }, [selectedScheduleId, token, fetchOverrides]);
+
+    useEffect(() => {
+        fetchOverrides();
+    }, [fetchOverrides]);
 
     const overridesMap = useMemo(() => {
         const map = new Map();
@@ -92,7 +107,7 @@ const Availability = () => {
         return map;
     }, [overrides]);
     
-    // Handlers
+    // --- Handlers ---
     const handleOpenScheduleModal = (schedule = null) => {
         setEditingSchedule(schedule);
         setIsScheduleModalOpen(true);
@@ -158,7 +173,6 @@ const Availability = () => {
     };
 
     const handleSaveOverride = async (overrideData) => {
-        // THE FIX: Convert local times from the modal to UTC before sending to the backend.
         const payload = {
             ...overrideData,
             start_time: overrideData.is_unavailable ? null : toUTCTime(overrideData.start_time),
@@ -172,7 +186,7 @@ const Availability = () => {
         });
         const result = await res.json();
         if (!res.ok) throw new Error(result.error || 'Failed to save override');
-        fetchRulesAndOverrides(); // Refetch
+        fetchOverrides();
     };
 
     const handleDeleteOverride = async (date) => {
@@ -184,7 +198,7 @@ const Availability = () => {
             const result = await res.json();
             throw new Error(result.error || 'Failed to delete override');
         }
-        fetchRulesAndOverrides(); // Refetch
+        fetchOverrides();
     };
 
     const selectedSchedule = schedules.find(s => s.id === selectedScheduleId);
@@ -349,7 +363,12 @@ const Availability = () => {
 
             {/* Date Overrides Calendar */}
             {selectedSchedule && !isLoading && (
-                <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-6">
+                <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 relative">
+                     {isOverridesLoading && (
+                        <div className="absolute inset-0 bg-slate-100/50 dark:bg-slate-800/50 flex items-center justify-center z-10 rounded-lg">
+                            <Loader className="animate-spin text-indigo-500" size={32} />
+                        </div>
+                    )}
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                         <div>
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Date Overrides</h2>

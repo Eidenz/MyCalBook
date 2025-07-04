@@ -4,8 +4,22 @@ const db = require('../db/knex.cjs');
 const authMiddleware = require('../middleware/auth.cjs');
 const emailService = require('../services/emailService.cjs');
 const { RRule, RRuleSet, rrulestr } = require('rrule');
+const multer = require('multer');
+const ical = require('node-ical');
+const { startOfDay, endOfDay } = require('date-fns');
 
 router.use(authMiddleware);
+
+// --- Configure Multer for ICS file uploads ---
+const icsStorage = multer.memoryStorage();
+const icsFileFilter = (req, file, cb) => {
+    if (file.mimetype === 'text/calendar' || file.originalname.endsWith('.ics')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Invalid file type. Only .ics files are allowed.'), false);
+    }
+};
+const uploadIcs = multer({ storage: icsStorage, fileFilter: icsFileFilter, limits: { fileSize: 1024 * 1024 * 5 } }); // 5MB limit
 
 // --- Recurrence Helper ---
 const expandRecurringEvents = async (userId, startDate, endDate) => {
@@ -123,6 +137,63 @@ const triggerBookingCancellation = async (bookingId, cancelledBy = 'owner') => {
     return booking; // Return the booking details for verification if needed
 };
 
+// POST /api/events/import-ics
+router.post('/import-ics', uploadIcs.single('icsfile'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No .ics file provided.' });
+    }
+
+    try {
+        const events = ical.parse(req.file.buffer.toString());
+        const eventsToInsert = [];
+        const userId = req.user.id;
+
+        for (const key in events) {
+            if (events.hasOwnProperty(key)) {
+                const event = events[key];
+                // Process only VEVENT types with a non-empty summary
+                if (event.type === 'VEVENT' && event.summary && event.summary.trim() !== '' && event.start && event.end) {
+                    // Skip recurring events for now to keep the import simple
+                    if (event.rrule) {
+                        continue;
+                    }
+
+                    const isAllDay = event.start.datetype === 'date';
+                    // For all-day events from iCal, the end date is exclusive.
+                    // We adjust it to be the end of the previous day for our database schema.
+                    const endDate = new Date(event.end);
+                    if (isAllDay) {
+                        endDate.setDate(endDate.getDate() - 1);
+                    }
+
+                    eventsToInsert.push({
+                        user_id: userId,
+                        title: event.summary,
+                        description: event.description || null,
+                        start_time: startOfDay(new Date(event.start)).toISOString(),
+                        end_time: endOfDay(endDate).toISOString(),
+                        type: 'personal',
+                        is_all_day: isAllDay
+                    });
+                }
+            }
+        }
+
+        if (eventsToInsert.length > 0) {
+            await db.transaction(async trx => {
+                await trx('manual_events').insert(eventsToInsert);
+            });
+        }
+
+        res.json({ message: `Successfully imported ${eventsToInsert.length} events.` });
+
+    } catch (error) {
+        console.error('ICS Import Error:', error);
+        res.status(500).json({ error: 'Failed to parse or import the .ics file. It may be malformed.' });
+    }
+});
+
+
 // GET /api/events/manual?month=YYYY-MM
 router.get('/manual', async (req, res) => {
     const userId = req.user.id;
@@ -180,7 +251,7 @@ router.get('/manual', async (req, res) => {
 // POST /api/events/manual
 router.post('/manual', async (req, res) => {
     const userId = req.user.id; 
-    const { title, start_time, end_time, type, description, guests, recurrence, booking_id } = req.body;
+    const { title, start_time, end_time, type, description, guests, recurrence, booking_id, is_all_day } = req.body;
 
     if (!title || !start_time || !end_time || !type) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -200,10 +271,13 @@ router.post('/manual', async (req, res) => {
         }
 
         const newEventData = {
-            user_id: userId, title, start_time, end_time, type, description,
+            user_id: userId, title, type, description,
+            start_time: is_all_day ? startOfDay(new Date(start_time)).toISOString() : new Date(start_time).toISOString(),
+            end_time: is_all_day ? endOfDay(new Date(end_time)).toISOString() : new Date(end_time).toISOString(),
             guests: JSON.stringify(guests || []),
             recurrence_id: recurrenceId,
             booking_id: booking_id,
+            is_all_day: !!is_all_day
         };
         const [createdEvent] = await trx('manual_events').insert(newEventData).returning('*');
         
@@ -232,12 +306,19 @@ router.put('/manual/:id', async (req, res) => {
              await trx.rollback();
              return res.status(404).json({ error: 'Event not found.' });
         }
+        
+        // Prepare event data, normalizing times for all-day events
+        const isAllDay = eventData.is_all_day;
+        const processedEventData = {
+            ...eventData,
+            start_time: isAllDay ? startOfDay(new Date(eventData.start_time)).toISOString() : new Date(eventData.start_time).toISOString(),
+            end_time: isAllDay ? endOfDay(new Date(eventData.end_time)).toISOString() : new Date(eventData.end_time).toISOString(),
+        };
 
         let updatedEvent;
 
         if (updateScope === 'all' && parentEvent.recurrence_id) {
-            // Update the parent event and its rule
-            const { recurrence, ...restOfEventData } = eventData;
+            const { recurrence, ...restOfEventData } = processedEventData;
             await trx('manual_events').where({ id: parentEvent.id }).update({
                 ...restOfEventData,
                 guests: JSON.stringify(eventData.guests || []),
@@ -249,10 +330,7 @@ router.put('/manual/:id', async (req, res) => {
             updatedEvent = await trx('manual_events').where({ id: parentEvent.id }).first();
 
         } else if (updateScope === 'single' && parentEvent.recurrence_id) {
-            // Create a new exception
-            // THE FIX: Destructure `recurrence` out so it's not included in the insert.
-            const { recurrence, ...restOfEventData } = eventData;
-
+            const { recurrence, ...restOfEventData } = processedEventData;
             const exceptionData = {
                 parent_event_id: parentEvent.id,
                 user_id: userId,
@@ -264,9 +342,7 @@ router.put('/manual/:id', async (req, res) => {
             [updatedEvent] = await trx('manual_events').insert(exceptionData).returning('*');
         
         } else {
-            // Standard non-recurring event update
-            // THE FIX: Destructure `recurrence` out so it's not included in the update.
-            const { recurrence, ...restOfEventData } = eventData;
+            const { recurrence, ...restOfEventData } = processedEventData;
             await trx('manual_events').where({ id: parentEventId }).update({
                 ...restOfEventData,
                 guests: JSON.stringify(eventData.guests || []),
@@ -342,8 +418,12 @@ router.delete('/bookings/:id', async (req, res) => {
         if (cancelledBooking.user_id !== userId) {
             return res.status(403).json({ error: 'You do not have permission to delete this booking.' });
         }
+        res.json({ message: 'Booking cancelled.' });
     } catch (error) {
         console.error('Error deleting booking:', error);
+        if (error.message === 'Booking not found.') {
+             return res.status(404).json({ error: 'Booking not found or already cancelled.' });
+        }
         res.status(500).json({ error: 'Internal server error' });
     }
 });

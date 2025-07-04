@@ -20,7 +20,7 @@ const AllDayEvent = ({ event, onClick, isMobile }) => {
             }`}
         >
             <div className="flex items-center gap-1.5">
-                {event.type === 'birthday' && <Cake size={isMobile ? 12 : 14} className="opacity-90 flex-shrink-0" />}
+                {(event.type === 'birthday') && <Cake size={isMobile ? 12 : 14} className="opacity-90 flex-shrink-0" />}
                 {event.recurrence_id && <Repeat size={isMobile ? 12 : 14} className="opacity-90 flex-shrink-0" />}
                 <p className="font-semibold text-xs md:text-sm truncate flex-1">{event.title}</p>
                 {guests.length > 0 && (
@@ -60,7 +60,6 @@ const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, is
         personal: 'bg-amber-500/80 border-amber-400',
         booked: 'bg-green-500/80 border-green-400',
         blocked: 'bg-red-500/80 border-red-400',
-        birthday: 'bg-pink-500/80 border-pink-400',
     };
     
     const guests = event.guests ? JSON.parse(event.guests) : [];
@@ -77,8 +76,8 @@ const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, is
             onClick={() => onClick(event)}
             style={{ top: `${top}%`, height: `${height}%` }}
             className={`absolute left-0 right-0 mx-0.5 md:mx-1 p-1 md:p-2 text-slate-900 dark:text-white border-l-4 cursor-pointer overflow-hidden backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
-                isPast && event.type !== 'birthday' ? 'bg-slate-300 dark:bg-slate-600/80 border-slate-400 dark:border-slate-500 opacity-70' : typeStyles[event.type]
-            } ${isCurrent && event.type !== 'birthday' ? 'ring-2 ring-sky-400 z-10' : ''} ${roundingClasses}`}
+                isPast ? 'bg-slate-300 dark:bg-slate-600/80 border-slate-400 dark:border-slate-500 opacity-70' : typeStyles[event.type]
+            } ${isCurrent ? 'ring-2 ring-sky-400 z-10' : ''} ${roundingClasses}`}
         >
             <div className="flex flex-col h-full">
                 <div className="flex items-start gap-1">
@@ -142,8 +141,7 @@ const TimeGridView = ({ days, events, onEventClick }) => {
                     
                     const eventWithFlags = { ...event, isStart, isEnd, isSingleDay };
                     
-                    // Separate birthday events as all-day events
-                    if (event.type === 'birthday') {
+                    if (event.is_all_day || event.type === 'birthday') {
                         allDayDayMap.get(dayStr).push(eventWithFlags);
                     } else {
                         timedDayMap.get(dayStr).push(eventWithFlags);
@@ -159,12 +157,10 @@ const TimeGridView = ({ days, events, onEventClick }) => {
     const gridTemplateColumns = `repeat(${days.length}, minmax(0, 1fr))`;
     const currentTimePosition = ((now.getHours() * 60 + now.getMinutes()) / (24 * 60)) * 100;
 
-    // Check if there are any all-day events to show
     const hasAllDayEvents = Array.from(allDayEventsByDay.values()).some(events => events.length > 0);
 
     return (
         <div className="flex-1 flex flex-col overflow-y-scroll">
-            {/* Header with day names */}
             <div className="flex sticky top-0 bg-slate-100 dark:bg-slate-800 z-10 border-b border-slate-300 dark:border-slate-700">
                 <div className="w-14 shrink-0 border-r border-slate-300 dark:border-slate-700 flex items-end justify-end pb-2 pr-2">
                     <span className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">GMT</span>
@@ -179,7 +175,6 @@ const TimeGridView = ({ days, events, onEventClick }) => {
                 </div>
             </div>
             
-            {/* All-day events section */}
             {hasAllDayEvents && (
                 <div className="flex bg-slate-100/50 dark:bg-slate-100 dark:bg-slate-800/50 border-b border-slate-300 dark:border-slate-700">
                     <div className="w-14 shrink-0 border-r border-slate-300 dark:border-slate-700 flex items-start justify-end pt-2 pr-2">
@@ -189,16 +184,10 @@ const TimeGridView = ({ days, events, onEventClick }) => {
                         {days.map(day => {
                             const dayStr = format(day, 'yyyy-MM-dd');
                             const dayAllDayEvents = allDayEventsByDay.get(dayStr) || [];
-                            
                             return (
                                 <div key={`allday-${day.toString()}`} className="border-r border-slate-300 dark:border-slate-700/50 last:border-r-0 min-w-0 px-1">
                                     {dayAllDayEvents.map(event => (
-                                        <AllDayEvent 
-                                            key={`allday-${event.id}-${dayStr}`} 
-                                            event={event} 
-                                            onClick={onEventClick}
-                                            isMobile={isMobile}
-                                        />
+                                        <AllDayEvent key={`allday-${event.id}-${dayStr}`} event={event} onClick={onEventClick} isMobile={isMobile}/>
                                     ))}
                                 </div>
                             );
@@ -207,7 +196,6 @@ const TimeGridView = ({ days, events, onEventClick }) => {
                 </div>
             )}
             
-            {/* Time grid section */}
             <div className="flex-1 flex">
                 <div className="flex-1 flex">
                     <div className="w-14 shrink-0 text-right pr-2 border-r border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/20">
@@ -219,9 +207,7 @@ const TimeGridView = ({ days, events, onEventClick }) => {
                                 <div key={day.toString()} className="relative border-r border-slate-300 dark:border-slate-700 last:border-r-0 min-w-0">
                                     {hours.map(hour => <div key={hour} className="h-12 md:h-16 border-b border-slate-300 dark:border-slate-700/50"></div>)}
                                     {isToday(day) && (
-                                        <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: `${currentTimePosition}%` }}>
-                                            <div className="relative h-px bg-red-400"><div className="absolute -left-1.5 -top-[5px] w-3 h-3 bg-red-400 rounded-full ring-2 ring-white dark:ring-slate-800"></div></div>
-                                        </div>
+                                        <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: `${currentTimePosition}%` }}><div className="relative h-px bg-red-400"><div className="absolute -left-1.5 -top-[5px] w-3 h-3 bg-red-400 rounded-full ring-2 ring-white dark:ring-slate-800"></div></div></div>
                                     )}
                                     {(timedEventsByDay.get(format(day, 'yyyy-MM-dd')) || []).map(event => (
                                         <TimeGridEvent key={`${event.id}-${dayIndex}`} event={event} onClick={onEventClick} dayIndex={dayIndex} totalDays={days.length} isStart={event.isStart} isEnd={event.isEnd} isSingleDay={event.isSingleDay} isMobile={isMobile} now={now} />
