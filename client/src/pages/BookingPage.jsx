@@ -157,7 +157,7 @@ const BookingPage = () => {
         return <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4"><div className="text-center"><div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400 mb-4"></div><p className="text-slate-600 dark:text-slate-300">Loading booking page...</p></div></div>;
     }
     if (error) {
-        return <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4"><div className="text-center text-red-400 p-8"><p className="text-xl mb-4">⚠️ {error}</p><Link to="/" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-600 dark:text-indigo-300 underline">Go back to home</Link></div></div>;
+        return <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4"><div className="text-center text-red-400 p-8"><p className="text-xl mb-4">⚠️ {error}</p><Link to="/" className="text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:text-indigo-300 underline">Go back to home</Link></div></div>;
     }
 
     if (isBookingConfirmed && confirmedBooking) {
@@ -170,16 +170,16 @@ const BookingPage = () => {
                         <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 mt-2 px-4">{confirmedBooking.booker_email ? 'A calendar invitation and confirmation has been sent to your email.' : 'Your event is scheduled.'}</p>
                         <div className="mt-4 text-xs text-slate-400 dark:text-slate-500 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 rounded-lg p-2 max-w-xs mx-auto">
                             <p>Keep this link to manage your booking:</p>
-                            <Link to={`/cancel/${confirmedBooking.cancellation_token}`} className="text-indigo-600 dark:text-indigo-400 hover:underline break-all">{`${window.location.origin}/cancel/${confirmedBooking.cancellation_token}`}</Link>
+                            <Link to={`/cancel/${confirmedBooking.cancellation_token}`} className="text-indigo-500 dark:text-indigo-400 hover:underline break-all">{`${window.location.origin}/cancel/${confirmedBooking.cancellation_token}`}</Link>
                         </div>
                     </div>
 
                     <div className="my-6 space-y-4 p-4 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-300 dark:border-slate-700">
                         <p className="text-lg font-semibold text-slate-900 dark:text-white">{confirmedBooking.title}</p>
                         <div className="text-slate-600 dark:text-slate-300 space-y-2">
-                           <div className="flex items-center gap-3"><CalendarIcon size={16} className="text-indigo-600 dark:text-indigo-400"/><span>{format(new Date(confirmedBooking.start_time), 'EEEE, MMMM d, yyyy')}</span></div>
-                           <div className="flex items-center gap-3"><Clock size={16} className="text-indigo-600 dark:text-indigo-400"/><span>{format(new Date(confirmedBooking.start_time), 'HH:mm')} - {format(new Date(confirmedBooking.end_time), 'HH:mm')}</span></div>
-                           <div className="flex items-center gap-3"><MapPin size={16} className="text-indigo-600 dark:text-indigo-400"/><span>{confirmedBooking.location}</span></div>
+                           <div className="flex items-center gap-3"><CalendarIcon size={16} className="text-indigo-500 dark:text-indigo-400"/><span>{format(new Date(confirmedBooking.start_time), 'EEEE, MMMM d, yyyy')}</span></div>
+                           <div className="flex items-center gap-3"><Clock size={16} className="text-indigo-500 dark:text-indigo-400"/><span>{format(new Date(confirmedBooking.start_time), 'HH:mm')} - {format(new Date(confirmedBooking.end_time), 'HH:mm')}</span></div>
+                           <div className="flex items-center gap-3"><MapPin size={16} className="text-indigo-500 dark:text-indigo-400"/><span>{confirmedBooking.location}</span></div>
                         </div>
                     </div>
 
@@ -188,7 +188,7 @@ const BookingPage = () => {
                             <button 
                                 onClick={handleAddToInternalCalendar} 
                                 disabled={isAddingToInternal || isAddedToInternal} 
-                                className="w-full flex items-center justify-center gap-3 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-slate-900 dark:text-white hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="w-full flex items-center justify-center gap-3 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 {isAddingToInternal ? <><div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>Adding...</> : isAddedToInternal ? <><CheckCircle size={20} />Added to your calendar!</> : <><PlusCircle size={20} />Add to MyCalBook Calendar</>}
                             </button>
@@ -215,7 +215,7 @@ const BookingPage = () => {
                 <div className="w-full max-w-7xl mx-auto mb-4">
                     <div className="bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-lg p-2 px-4 text-sm text-center text-slate-600 dark:text-slate-300 flex items-center justify-center gap-2">
                         <UserCheck size={16} className="text-slate-400 dark:text-slate-500 dark:text-slate-400" />
-                        <Link to="/login" className="text-indigo-600 dark:text-indigo-400 hover:underline">Log in</Link> to save booking to your own calendar.
+                        <Link to="/login" className="text-indigo-500 dark:text-indigo-400 hover:underline">Log in</Link> to save booking to your own calendar.
                     </div>
                 </div>
             )}
@@ -231,14 +231,14 @@ const BookingPage = () => {
                         </Link>
                     </div>
 
-                    {selectedTime && (<button onClick={handleClearTimeSelection} className="flex lg:hidden items-center gap-2 text-indigo-600 dark:text-indigo-400 mb-4 -ml-1 hover:text-indigo-600 dark:text-indigo-300 transition-colors duration-200"><ArrowLeft size={16} /> Back</button>)}
+                    {selectedTime && (<button onClick={handleClearTimeSelection} className="flex lg:hidden items-center gap-2 text-indigo-500 dark:text-indigo-400 mb-4 -ml-1 hover:text-indigo-600 dark:text-indigo-300 transition-colors duration-200"><ArrowLeft size={16} /> Back</button>)}
                     
                     <div className="flex-grow min-h-0 overflow-y-auto pr-2 -mr-2">
                         <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400">{eventType?.ownerUsername}</p>
                         <h1 className="text-3xl font-bold text-slate-900 dark:text-white my-2">{eventType?.title}</h1>
                         <div className="space-y-2 text-slate-600 dark:text-slate-300 mt-4">
-                            <div className="flex items-center gap-3"><Clock size={16} className="text-indigo-600 dark:text-indigo-400"/><span>{selectedDuration || eventType?.default_duration} minutes</span></div>
-                            <div className="flex items-center gap-3"><MapPin size={16} className="text-indigo-600 dark:text-indigo-400"/><span>{eventType?.location}</span></div>
+                            <div className="flex items-center gap-3"><Clock size={16} className="text-indigo-500 dark:text-indigo-400"/><span>{selectedDuration || eventType?.default_duration} minutes</span></div>
+                            <div className="flex items-center gap-3"><MapPin size={16} className="text-indigo-500 dark:text-indigo-400"/><span>{eventType?.location}</span></div>
                         </div>
                         <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 mt-6 text-sm">{eventType?.description}</p>
                         
@@ -268,10 +268,10 @@ const BookingPage = () => {
                             <div className="w-full max-w-sm text-center">
                                 <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Confirm your booking</h2>
                                 <div className="my-6 p-4 rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center gap-3 transform transition-all duration-200 hover:border-indigo-500">
-                                    <CalendarIcon className="text-indigo-600 dark:text-indigo-400" size={20} />
-                                    <span className="text-lg font-semibold text-slate-200">{format(new Date(selectedTime), 'HH:mm')}</span>
+                                    <CalendarIcon className="text-indigo-500 dark:text-indigo-400" size={20} />
+                                    <span className="text-lg font-semibold text-slate-900 dark:text-white">{format(new Date(selectedTime), 'HH:mm')}</span>
                                     <span className="text-lg text-slate-400 dark:text-slate-500 dark:text-slate-400">on</span>
-                                    <span className="text-lg font-semibold text-slate-200">{format(selectedDate, 'EEEE, MMMM d')}</span>
+                                    <span className="text-lg font-semibold text-slate-900 dark:text-white">{format(selectedDate, 'EEEE, MMMM d')}</span>
                                 </div>
                                 <BookingForm 
                                     eventType={eventType} 

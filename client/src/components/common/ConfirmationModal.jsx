@@ -14,8 +14,8 @@ const ConfirmationModal = ({
     if (!isOpen) return null;
 
     const confirmButtonClass = isDestructive
-        ? "bg-red-600 hover:bg-red-700 active:bg-red-800"
-        : "bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800";
+        ? "bg-red-600 hover:bg-red-700 active:bg-red-800 text-white"
+        : "bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-800";
 
     return (
         <div 

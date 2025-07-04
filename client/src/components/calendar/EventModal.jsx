@@ -356,7 +356,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                             </button>
                             <div className="flex justify-end gap-3">
                                 {bookingManagementLink ? (
-                                    <a href={bookingManagementLink} target="_self" rel="noopener noreferrer" className="px-6 py-2.5 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 text-center transition-colors">
+                                    <a href={bookingManagementLink} target="_self" rel="noopener noreferrer" className="px-6 py-2.5 bg-indigo-500 rounded-lg font-semibold hover:bg-indigo-600 text-center transition-colors text-white">
                                         Manage Booking
                                     </a>
                                 ) : (
@@ -364,7 +364,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                                         type="button" 
                                         onClick={handleDeleteClick} 
                                         disabled={isSubmitting} 
-                                        className="px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="px-6 py-2.5 bg-red-600 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white"
                                     >
                                         {isSubmitting ? 'Cancelling...' : 'Cancel Booking'}
                                     </button>
@@ -422,7 +422,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                                 <option value="WEEKLY">Weekly</option>
                             </select>
                             {formData.recurrence.frequency === 'WEEKLY' && (
-                                <div className="flex justify-between gap-1">{weekDays.map(day => <button type="button" key={day.value} onClick={() => handleDayToggle(day.value)} className={`w-9 h-9 rounded-full text-xs font-bold transition-colors ${formData.recurrence.by_day.includes(day.value) ? 'bg-indigo-600 text-slate-900 dark:text-white' : 'bg-slate-300 dark:bg-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-400 dark:hover:bg-slate-500'}`}>{day.name}</button>)}</div>
+                                <div className="flex justify-between gap-1">{weekDays.map(day => <button type="button" key={day.value} onClick={() => handleDayToggle(day.value)} className={`w-9 h-9 rounded-full text-xs font-bold transition-colors ${formData.recurrence.by_day.includes(day.value) ? 'bg-indigo-500 text-white' : 'bg-slate-300 dark:bg-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-400 dark:hover:bg-slate-500'}`}>{day.name}</button>)}</div>
                             )}
                             {formData.recurrence.frequency && (
                                 <div className="flex items-center gap-2">
@@ -437,7 +437,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                             <div className="flex gap-3 w-full sm:w-auto order-2 sm:order-1">
                                 {isEditMode && (
                                     <>
-                                        <button type="button" onClick={handleDeleteClick} disabled={isSubmitting} className="flex-1 px-6 py-2.5 bg-red-800 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50">
+                                        <button type="button" onClick={handleDeleteClick} disabled={isSubmitting} className="flex-1 px-6 py-2.5 bg-red-600 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 text-white">
                                             Delete
                                         </button>
                                         <button type="button" onClick={handleDownloadIcs} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors">
@@ -451,7 +451,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                                 <button type="button" onClick={onClose} className="flex-1 sm:flex-none px-6 py-2.5 bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors">
                                     Cancel
                                 </button>
-                                <button type="submit" disabled={isSubmitting} className="flex-1 sm:flex-none px-6 py-2.5 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                <button type="submit" disabled={isSubmitting} className="flex-1 sm:flex-none px-6 py-2.5 bg-indigo-500 rounded-lg font-semibold hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white">
                                     {isSubmitting ? (
                                         <div className="flex items-center justify-center gap-2">
                                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

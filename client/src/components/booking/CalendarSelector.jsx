@@ -39,7 +39,7 @@ const CalendarSelector = ({ hook, onDateSelect, selectedDate, availableDays }) =
                         ${!isCurrent ? 'text-slate-600 cursor-not-allowed' : ''}
                         
                         ${isSelected 
-                            ? 'bg-indigo-600 text-slate-900 dark:text-white font-bold cursor-pointer' 
+                            ? 'bg-indigo-500 text-white font-bold cursor-pointer' 
                             : isBookable 
                                 ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/40 cursor-pointer' 
                                 : isCurrent ? 'text-slate-400 dark:text-slate-500 dark:text-slate-400' : 'text-slate-600'

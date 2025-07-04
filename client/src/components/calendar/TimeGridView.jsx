@@ -173,7 +173,7 @@ const TimeGridView = ({ days, events, onEventClick }) => {
                     {days.map(day => (
                         <div key={day.toString()} className="text-center py-2 md:py-3 border-r border-slate-300 dark:border-slate-700 last:border-r-0 min-w-0 px-1">
                             <span className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 block">{format(day, 'EEE')}</span>
-                            <p className={`text-lg md:text-xl font-bold truncate ${isToday(day) ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-900 dark:text-white'}`}>{format(day, 'd')}</p>
+                            <p className={`text-lg md:text-xl font-bold truncate ${isToday(day) ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-900 dark:text-white'}`}>{format(day, 'd')}</p>
                         </div>
                     ))}
                 </div>

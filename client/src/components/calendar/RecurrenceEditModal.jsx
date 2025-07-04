@@ -15,7 +15,7 @@ const RecurrenceEditModal = ({ isOpen, onClose, onConfirm, verb = 'edit' }) => {
             >
                 <div className="flex items-start gap-4">
                     <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/50">
-                        <Repeat className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                        <Repeat className="h-6 w-6 text-indigo-500 dark:text-indigo-400" />
                     </div>
                     <div className="text-left flex-1">
                         <h3 className="text-lg leading-6 font-bold text-slate-900 dark:text-white">

@@ -78,7 +78,7 @@ const TimeSlotPicker = ({
                             style={{ animationDelay: `${index * 50}ms` }}
                             className={`p-2 text-center rounded-lg border-2 transition-all duration-200 text-sm font-medium transform hover:scale-105 animate-fade-in-up
                                 ${selectedDuration === duration 
-                                    ? 'bg-indigo-600 border-indigo-600 text-slate-900 dark:text-white shadow-lg shadow-indigo-500/25'
+                                    ? 'bg-indigo-500 border-indigo-500 text-white shadow-lg shadow-indigo-500/25'
                                     : 'border-slate-300 dark:border-slate-600 hover:border-indigo-500 hover:bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50'
                                 }
                             `}
@@ -127,7 +127,7 @@ const TimeSlotPicker = ({
                                         }}
                                         className={`slot-button p-2.5 w-full text-center rounded-lg border-2 transition-all duration-200 font-semibold transform hover:scale-105 hover:-translate-y-0.5
                                             ${selectedTime === slot 
-                                                ? 'bg-indigo-600 border-indigo-600 text-slate-900 dark:text-white shadow-lg shadow-indigo-500/25'
+                                                ? 'bg-indigo-500 border-indigo-500 text-white shadow-lg shadow-indigo-500/25'
                                                 : 'border-slate-300 dark:border-slate-600 hover:border-indigo-500 hover:bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 hover:shadow-md'
                                             }
                                             ${showSlots ? 'animate-slide-in-up' : ''}

@@ -103,7 +103,7 @@ const Login = () => {
                                 {isSubmitting ? 'Verifying...' : 'Verify & Log In'}
                             </button>
                         </form>
-                         <button onClick={() => { setIsRecoveryMode(!isRecoveryMode); setError(''); }} className="text-sm text-center text-indigo-600 dark:text-indigo-400 hover:underline w-full mt-2">
+                         <button onClick={() => { setIsRecoveryMode(!isRecoveryMode); setError(''); }} className="text-sm text-center text-indigo-500 dark:text-indigo-400 hover:underline w-full mt-2">
                             {isRecoveryMode ? 'Use an authentication code' : 'Use a recovery code'}
                         </button>
                     </>
@@ -125,7 +125,7 @@ const Login = () => {
                             </button>
                         </form>
                         <p className="text-sm text-center text-slate-400 dark:text-slate-500 dark:text-slate-400">
-                            Don't have an account? <Link to="/register" className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">Register here</Link>
+                            Don't have an account? <Link to="/register" className="font-medium text-indigo-500 dark:text-indigo-400 hover:underline">Register here</Link>
                         </p>
                     </>
                 )}

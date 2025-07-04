@@ -14,7 +14,7 @@ const CalendarCell = ({ day, month, eventsForDay, onEventClick }) => {
 
     const dateClasses = `
         font-semibold mb-2
-        ${today ? 'bg-indigo-600 text-slate-900 dark:text-white rounded-full w-7 h-7 flex items-center justify-center' : ''}
+        ${today ? 'bg-indigo-500 text-white rounded-full w-7 h-7 flex items-center justify-center' : ''}
         ${!isCurrentMonth ? 'text-slate-700' : ''}
     `;
 

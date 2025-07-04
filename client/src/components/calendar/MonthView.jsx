@@ -117,7 +117,7 @@ const MonthView = ({ days, month, events = [], onEventClick, onShowMoreClick }) 
                 
                 const dateClasses = `
                     font-semibold mb-1 md:mb-2 self-start text-sm md:text-base
-                    ${today ? 'bg-indigo-600 text-slate-900 dark:text-white rounded-full w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-xs md:text-sm' : ''} 
+                    ${today ? 'bg-indigo-500 text-white rounded-full w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-xs md:text-sm' : ''} 
                     ${!isCurrentMonth ? 'text-slate-700' : ''}
                 `;
 

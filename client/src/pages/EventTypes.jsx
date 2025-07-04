@@ -82,17 +82,17 @@ const EventTypes = () => {
                     <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Booking Setup</h1>
                     <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 mt-1">Create and manage your bookable events.</p>
                 </div>
-                <button onClick={openModalForNew} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-slate-900 dark:text-white hover:opacity-90 transition">
+                <button onClick={openModalForNew} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition">
                     <Plus size={20}/> New Booking Type
                 </button>
             </div>
 
             {user && (
                 <div className="mb-6 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-4 flex items-center gap-4">
-                    <Globe className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" size={20}/>
+                    <Globe className="text-indigo-500 dark:text-indigo-400 flex-shrink-0" size={20}/>
                     <div>
                         <span className="text-slate-600 dark:text-slate-300">Your public booking page is live at:</span>
-                        <a href={`/u/${user.username}`} target="_blank" rel="noopener noreferrer" className="block font-mono text-indigo-600 dark:text-indigo-400 hover:underline break-all">
+                        <a href={`/u/${user.username}`} target="_blank" rel="noopener noreferrer" className="block font-mono text-indigo-500 dark:text-indigo-400 hover:underline break-all">
                             {window.location.origin}/u/{user.username}
                         </a>
                     </div>
@@ -116,7 +116,7 @@ const EventTypes = () => {
                             <div className="flex items-center gap-2"><MapPin size={16}/><span>{et.location}</span></div>
                         </div>
                         <div className="mt-4 pt-4 border-t border-slate-300 dark:border-slate-700 flex justify-between items-center">
-                            <a href={`/book/${et.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">View booking page</a>
+                            <a href={`/book/${et.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-500 dark:text-indigo-400 hover:underline">View booking page</a>
                             <div>
                                 <button onClick={() => openModalForEdit(et)} className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white">Edit</button>
                                 <button onClick={() => setDeletingEventType(et)} className="text-sm text-red-500/70 hover:text-red-500 ml-2">Delete</button>

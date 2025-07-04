@@ -129,7 +129,7 @@ const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
                 {error && <div className="text-red-400 text-sm">{error}</div>}
                 <div className="flex justify-end gap-3 pt-2">
                     <button type="button" onClick={resetFlow} className="px-4 py-2 bg-slate-300 dark:bg-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-400 dark:hover:bg-slate-500">Cancel</button>
-                    <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-red-800 rounded-lg text-sm font-semibold hover:bg-red-700">
+                    <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-red-600 rounded-lg text-sm font-semibold text-white hover:bg-red-700">
                         {isSubmitting ? 'Disabling...' : 'Confirm & Disable'}
                     </button>
                 </div>
@@ -148,7 +148,7 @@ const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
                 <p className="font-mono bg-slate-100 dark:bg-slate-800 p-2 rounded text-center tracking-widest text-sm overflow-x-auto">{secret}</p>
                 <div className="flex justify-end gap-3 pt-2">
                     <button type="button" onClick={resetFlow} className="px-4 py-2 bg-slate-300 dark:bg-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-400 dark:hover:bg-slate-500">Cancel</button>
-                    <button onClick={() => setSetupStage('recovery')} className="px-4 py-2 bg-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-700">Next</button>
+                    <button onClick={() => setSetupStage('recovery')} className="px-4 py-2 bg-indigo-500 rounded-lg text-sm font-semibold text-white hover:bg-indigo-600">Next</button>
                 </div>
             </div>
         );
@@ -172,7 +172,7 @@ const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
                 </div>
                  <div className="flex justify-end gap-3 pt-2">
                     <button type="button" onClick={() => setSetupStage('generated')} className="px-4 py-2 bg-slate-300 dark:bg-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-400 dark:hover:bg-slate-500">Back</button>
-                    <button onClick={() => setSetupStage('verify')} className="px-4 py-2 bg-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-700">Next</button>
+                    <button onClick={() => setSetupStage('verify')} className="px-4 py-2 bg-indigo-500 rounded-lg text-sm font-semibold text-white hover:bg-indigo-600">Next</button>
                 </div>
             </div>
         );
@@ -188,7 +188,7 @@ const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
                     {error && <div className="text-red-400 text-sm pt-2">{error}</div>}
                     <div className="flex justify-end gap-3 pt-2">
                         <button type="button" onClick={() => setSetupStage('recovery')} className="px-4 py-2.5 bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500">Back</button>
-                        <button type="submit" disabled={isSubmitting} className="px-4 py-2.5 bg-green-600 rounded-lg font-semibold hover:bg-green-700">
+                        <button type="submit" disabled={isSubmitting} className="px-4 py-2.5 bg-green-600 rounded-lg font-semibold text-white hover:bg-green-700">
                             {isSubmitting ? 'Verifying...' : 'Verify & Enable'}
                         </button>
                     </div>
@@ -206,7 +206,7 @@ const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
                     <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">Add an extra layer of security.</p>
                 </div>
             </div>
-            <button onClick={handleGenerate} disabled={isSubmitting} className="px-4 py-2 bg-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-700">
+            <button onClick={handleGenerate} disabled={isSubmitting} className="px-4 py-2 bg-indigo-500 rounded-lg text-sm font-semibold text-white hover:bg-indigo-600">
                 {isSubmitting ? 'Generating...' : 'Enable'}
             </button>
         </div>
@@ -340,7 +340,7 @@ const Settings = () => {
                         <p className="text-slate-600 dark:text-slate-300">Notify me about new bookings</p>
                         <label className="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" checked={settings.email_notifications} onChange={handleToggleChange} className="sr-only peer" />
-                            <div className="w-11 h-6 bg-slate-300 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            <div className="w-11 h-6 bg-slate-300 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
                         </label>
                     </div>
                 </div>
@@ -352,7 +352,7 @@ const Settings = () => {
                         <input type="password" name="newPassword" value={passwordData.newPassword} onChange={handlePasswordChange} placeholder="New Password" required className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600"/>
                         <input type="password" name="confirmPassword" value={passwordData.confirmPassword} onChange={handlePasswordChange} placeholder="Confirm New Password" required className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600"/>
                         <div className="flex justify-end">
-                            <button type="submit" className="px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-slate-900 dark:text-white hover:opacity-90 transition">
+                            <button type="submit" className="px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition">
                                 Update Password
                             </button>
                         </div>
@@ -363,7 +363,7 @@ const Settings = () => {
                      <h2 className="text-xl font-semibold mb-2 text-red-700 dark:text-red-300">Delete Account</h2>
                      <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 mb-4 text-sm">Once you delete your account, all of your data will be permanently removed. This action cannot be undone.</p>
                      <div className="flex justify-end">
-                        <button onClick={() => setIsDeleteModalOpen(true)} className="px-6 py-2.5 bg-red-800 rounded-lg font-semibold text-slate-900 dark:text-white hover:bg-red-700 transition">
+                        <button onClick={() => setIsDeleteModalOpen(true)} className="px-6 py-2.5 bg-red-600 rounded-lg font-semibold text-white hover:bg-red-700 transition">
                             Delete My Account
                         </button>
                     </div>

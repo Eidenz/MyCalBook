@@ -107,7 +107,7 @@ const BookingForm = ({ eventType, selectedTime, selectedDate, duration, onConfir
                 <button 
                     type="submit" 
                     disabled={isSubmitting} 
-                    className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-slate-900 dark:text-white hover:opacity-90 transition disabled:opacity-50"
+                    className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition disabled:opacity-50"
                 >
                     {isSubmitting ? 'Confirming...' : 'Confirm'}
                 </button>

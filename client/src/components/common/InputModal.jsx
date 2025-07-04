@@ -96,7 +96,7 @@ const InputModal = ({
                         <button 
                             type="submit" 
                             disabled={isSubmitting} 
-                            className="w-full sm:w-auto px-6 py-3 md:py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold hover:opacity-90 disabled:opacity-50 transition-all active:scale-95 text-slate-900 dark:text-white disabled:cursor-not-allowed"
+                            className="w-full sm:w-auto px-6 py-3 md:py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold hover:opacity-90 disabled:opacity-50 transition-all active:scale-95 text-white disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? (
                                 <span className="flex items-center justify-center gap-2">

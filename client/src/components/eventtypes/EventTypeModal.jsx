@@ -186,7 +186,7 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
                     ) : (
                         <div 
                             onClick={() => fileInputRef.current.click()}
-                            className="w-full h-48 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-600 dark:text-indigo-400 cursor-pointer transition-colors"
+                            className="w-full h-48 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 dark:text-indigo-400 cursor-pointer transition-colors"
                         >
                             {isUploading ? (
                                 <>
@@ -210,7 +210,7 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" name="is_public" checked={formData.is_public} onChange={handleChange} className="sr-only peer" />
-                            <div className="w-11 h-6 bg-slate-300 dark:bg-slate-600 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            <div className="w-11 h-6 bg-slate-300 dark:bg-slate-600 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
                         </label>
                     </div>
 
@@ -222,7 +222,7 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
                         <label className="block text-sm font-semibold mb-2 text-slate-600 dark:text-slate-300">Durations (minutes)</label>
                         <div className="p-2 bg-slate-200 dark:bg-slate-700 border-2 border-slate-300 dark:border-slate-600 rounded-md flex flex-wrap items-center gap-2">
                             {formData.durations.map((duration) => (
-                                <div key={duration} onClick={() => setDefaultDuration(duration)} className={`flex items-center gap-2 px-2.5 py-1 rounded-full cursor-pointer ${ String(formData.default_duration) === String(duration) ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600' }`}>
+                                <div key={duration} onClick={() => setDefaultDuration(duration)} className={`flex items-center gap-2 px-2.5 py-1 rounded-full cursor-pointer ${ String(formData.default_duration) === String(duration) ? 'bg-indigo-500 text-white' : 'bg-slate-300 dark:bg-slate-600' }`}>
                                     <span>{duration} min</span>
                                     <button type="button" onClick={(e) => { e.stopPropagation(); removeDuration(duration); }} className="rounded-full hover:bg-black/20"><X size={14} /></button>
                                 </div>
@@ -244,7 +244,7 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
 
                     <div className="pt-4 flex justify-end gap-3">
                         <button type="button" onClick={onClose} className="px-6 py-2.5 bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500">Cancel</button>
-                        <button type="submit" disabled={isSubmitting || isUploading} className="px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold hover:opacity-90 disabled:opacity-50">
+                        <button type="submit" disabled={isSubmitting || isUploading} className="px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold hover:opacity-90 disabled:opacity-50 text-white">
                             {isSubmitting ? 'Saving...' : 'Save Changes'}
                         </button>
                     </div>

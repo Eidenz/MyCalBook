@@ -53,7 +53,7 @@ const CancellationPage = () => {
                     <CheckCircle className="mx-auto h-16 w-16 text-green-400 mb-4" />
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Booking Cancelled</h1>
                     <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 mt-2">Your booking has been successfully cancelled. A confirmation has been sent if an email was provided.</p>
-                    <Link to="/" className="mt-6 inline-block text-indigo-600 dark:text-indigo-400 hover:underline">Return to Home</Link>
+                    <Link to="/" className="mt-6 inline-block text-indigo-500 dark:text-indigo-400 hover:underline">Return to Home</Link>
                 </div>
             );
         }

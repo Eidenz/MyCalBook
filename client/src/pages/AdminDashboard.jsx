@@ -79,7 +79,7 @@ const AdminDashboard = () => {
                                     <td className="p-3 whitespace-nowrap">
                                         <div className="flex items-center gap-3">
                                             {user.is_admin ? (
-                                                <ShieldCheck className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" size={18} title="Admin" />
+                                                <ShieldCheck className="text-indigo-500 dark:text-indigo-400 flex-shrink-0" size={18} title="Admin" />
                                             ) : (
                                                 <User className="text-slate-400 dark:text-slate-500 flex-shrink-0" size={18} />
                                             )}
