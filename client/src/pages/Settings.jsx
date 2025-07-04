@@ -55,7 +55,7 @@ const CalendarImport = ({ token }) => {
     return (
         <div>
             <h2 className="text-xl font-semibold mb-2">Import Calendar</h2>
-            <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 mb-4 text-sm">Import non-recurring events from an external calendar using an .ics file.</p>
+            <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 mb-4 text-sm">Import events from an external calendar using an .ics file.</p>
             <div className="bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 p-4 rounded-lg">
                 <div className="flex flex-col sm:flex-row gap-4 items-center">
                     <input type="file" id="ics-upload" accept=".ics,text/calendar" onChange={handleFileChange} className="hidden" />
