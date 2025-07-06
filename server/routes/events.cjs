@@ -526,17 +526,27 @@ router.put('/manual/:id', async (req, res) => {
             title: eventData.title,
             type: eventData.type,
             description: eventData.description,
-            guests: eventData.guests || [], // This will be stringified later
+            guests: eventData.guests || [],
             is_all_day: !!isAllDay,
             start_time: isAllDay ? startOfDay(new Date(eventData.start_time)).toISOString() : new Date(eventData.start_time).toISOString(),
             end_time: isAllDay ? endOfDay(new Date(eventData.end_time)).toISOString() : new Date(eventData.end_time).toISOString(),
-            recurrence: eventData.recurrence, // Keep this for recurrence logic below
+            recurrence: eventData.recurrence,
         };
 
         let updatedEvent;
 
         if (updateScope === 'all' && parentEvent.recurrence_id) {
             const { recurrence, ...restOfEventData } = processedEventData;
+            
+            // Detach all existing exceptions by turning them into standalone events.
+            await trx('manual_events')
+                .where({ parent_event_id: parentEvent.id })
+                .update({
+                    parent_event_id: null,
+                    original_start_time: null,
+                    recurrence_id: null
+                });
+            
             await trx('manual_events').where({ id: parentEvent.id }).update({
                 ...restOfEventData,
                 guests: JSON.stringify(restOfEventData.guests || []),
@@ -563,7 +573,7 @@ router.put('/manual/:id', async (req, res) => {
             const { recurrence, ...restOfEventData } = processedEventData;
             await trx('manual_events').where({ id: parentEventId }).update({
                 ...restOfEventData,
-                guests: JSON.stringify(restOfEventData.guests || []),
+                guests: JSON.stringify(eventData.guests || []),
                 updated_at: new Date(),
             });
             updatedEvent = await trx('manual_events').where({ id: parentEventId }).first();
