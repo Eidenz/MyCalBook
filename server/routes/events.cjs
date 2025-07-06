@@ -521,12 +521,16 @@ router.put('/manual/:id', async (req, res) => {
              return res.status(404).json({ error: 'Event not found.' });
         }
         
-        // Prepare event data, normalizing times for all-day events
         const isAllDay = eventData.is_all_day;
         const processedEventData = {
-            ...eventData,
+            title: eventData.title,
+            type: eventData.type,
+            description: eventData.description,
+            guests: eventData.guests || [], // This will be stringified later
+            is_all_day: !!isAllDay,
             start_time: isAllDay ? startOfDay(new Date(eventData.start_time)).toISOString() : new Date(eventData.start_time).toISOString(),
             end_time: isAllDay ? endOfDay(new Date(eventData.end_time)).toISOString() : new Date(eventData.end_time).toISOString(),
+            recurrence: eventData.recurrence, // Keep this for recurrence logic below
         };
 
         let updatedEvent;
@@ -535,7 +539,7 @@ router.put('/manual/:id', async (req, res) => {
             const { recurrence, ...restOfEventData } = processedEventData;
             await trx('manual_events').where({ id: parentEvent.id }).update({
                 ...restOfEventData,
-                guests: JSON.stringify(eventData.guests || []),
+                guests: JSON.stringify(restOfEventData.guests || []),
                 updated_at: new Date(),
             });
             if (recurrence) {
@@ -559,7 +563,7 @@ router.put('/manual/:id', async (req, res) => {
             const { recurrence, ...restOfEventData } = processedEventData;
             await trx('manual_events').where({ id: parentEventId }).update({
                 ...restOfEventData,
-                guests: JSON.stringify(eventData.guests || []),
+                guests: JSON.stringify(restOfEventData.guests || []),
                 updated_at: new Date(),
             });
             updatedEvent = await trx('manual_events').where({ id: parentEventId }).first();
