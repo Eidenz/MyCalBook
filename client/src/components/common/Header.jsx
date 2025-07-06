@@ -51,7 +51,7 @@ const Header = () => {
             {/* Desktop Header */}
             <div className="hidden md:flex justify-between items-center p-4">
                 <div className="flex items-center gap-6">
-                    <Link to="/" className="text-xl font-bold text-slate-900 dark:text-white">📅 MyCalendar</Link>
+                    <Link to="/" className="text-xl font-bold text-slate-900 dark:text-white">📅 MyCalBook</Link>
                     <nav className="flex items-center gap-2">
                         <NavLink to="/" className={navLinkClasses} end>Calendar</NavLink>
                         <NavLink to="/availability" className={navLinkClasses}>Availability</NavLink>
@@ -83,7 +83,7 @@ const Header = () => {
             <div className="md:hidden">
                 <div className="flex justify-between items-center p-4">
                     <Link to="/" className="text-lg font-bold text-slate-900 dark:text-white" onClick={closeMobileMenu}>
-                        📅 MyCalendar
+                        📅 MyCalBook
                     </Link>
                     <div className="flex items-center gap-3">
                             <ThemeToggle />
