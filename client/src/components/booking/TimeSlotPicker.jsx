@@ -1,6 +1,21 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { format, getMinutes, isToday } from 'date-fns';
 
+const formatDuration = (minutes) => {
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+  
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  
+  if (remainingMinutes === 0) {
+    return `${hours}h`;
+  }
+  
+  return `${hours}h${remainingMinutes}`;
+};
+
 const TimeSlotPicker = ({ 
     durations, 
     selectedDuration, 
@@ -83,7 +98,7 @@ const TimeSlotPicker = ({
                                 }
                             `}
                         >
-                            {duration} min
+                            {formatDuration(duration)}
                         </button>
                     ))}
                 </div>

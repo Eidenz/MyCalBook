@@ -10,6 +10,21 @@ import TimeSlotPicker from '../components/booking/TimeSlotPicker';
 import BookingForm from '../components/booking/BookingForm';
 import AddToCalendar from '../components/booking/AddToCalendar';
 
+const formatDuration = (minutes) => {
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+  
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  
+  if (remainingMinutes === 0) {
+    return `${hours}h`;
+  }
+  
+  return `${hours}h${remainingMinutes}`;
+};
+
 const BookingPage = () => {
     const { slug } = useParams();
     const { user, isAuthenticated, token } = useAuth();
@@ -237,7 +252,7 @@ const BookingPage = () => {
                         <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400">{eventType?.ownerUsername}</p>
                         <h1 className="text-3xl font-bold text-slate-900 dark:text-white my-2">{eventType?.title}</h1>
                         <div className="space-y-2 text-slate-600 dark:text-slate-300 mt-4">
-                            <div className="flex items-center gap-3"><Clock size={16} className="text-indigo-500 dark:text-indigo-400"/><span>{selectedDuration || eventType?.default_duration} minutes</span></div>
+                            <div className="flex items-center gap-3"><Clock size={16} className="text-indigo-500 dark:text-indigo-400"/><span>{formatDuration(selectedDuration || eventType?.default_duration)}</span></div>
                             <div className="flex items-center gap-3"><MapPin size={16} className="text-indigo-500 dark:text-indigo-400"/><span>{eventType?.location}</span></div>
                         </div>
                         <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 mt-6 text-sm">{eventType?.description}</p>
