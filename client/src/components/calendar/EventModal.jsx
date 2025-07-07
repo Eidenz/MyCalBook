@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Mail, Users, FileText, Repeat, Download } from 'lucide-react';
+import { X, User, Mail, Users, FileText, Repeat, Download, Link as LinkIcon, Edit, Clock } from 'lucide-react';
 import ConfirmationModal from '../common/ConfirmationModal';
 import { format, formatISO, parseISO } from 'date-fns';
 import RecurrenceEditModal from './RecurrenceEditModal';
@@ -15,6 +15,9 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
     const isEditMode = Boolean(selectedEvent && selectedEvent.id);
     const isBookedEvent = isEditMode && selectedEvent.type === 'booked';
     const isRecurring = Boolean(selectedEvent?.recurrence_id);
+
+    // View management state for the modal
+    const [view, setView] = useState('details'); // 'details' or 'form'
 
     // Modal states
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
@@ -52,6 +55,8 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
             setFormData(getInitialState());
             setError('');
             setGuestInput('');
+            // When opening, always start in details view if it's an existing event
+            setView(isEditMode ? 'details' : 'form');
         }
     }, [isOpen, selectedEvent]);
 
@@ -60,12 +65,10 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
         setFormData(p => ({ 
             ...p, 
             is_all_day: isChecked,
-            // If switching to all-day, make it a single day event by default
             endDate: isChecked ? p.date : p.endDate
         }));
     };
 
-    // Parse description for a booking management link
     const { bookingManagementLink, cleanDescription } = React.useMemo(() => {
         if (isBookedEvent && selectedEvent?.description) {
             const linkRegex = /(https?:\/\/[^\s]+)/;
@@ -77,7 +80,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                 };
             }
         }
-        return { bookingManagementLink: null, cleanDescription: selectedEvent?.description };
+        return { bookingManagementLink: null, cleanDescription: selectedEvent?.description || '' };
     }, [isBookedEvent, selectedEvent]);
 
     const handleGuestKeyDown = (e) => {
@@ -107,7 +110,6 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
         setError('');
         setIsSubmitting(true);
     
-        // Combine date and time correctly for the payload
         const startDateTimeStr = `${formData.date}T${formData.startTime}`;
         const endDateTimeStr = `${formData.endDate}T${formData.endTime}`;
 
@@ -141,7 +143,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
             });
     
             if (!response.ok) throw new Error((await response.json()).error);
-            onClose();
+            onClose(); // This will trigger a refresh in the parent
         } catch (err) {
             setError(err.message);
         } finally {
@@ -165,7 +167,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
               : `/api/events/manual/${selectedEvent.id}`;
             
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
             
             const response = await fetch(url, { 
                 method: 'DELETE', 
@@ -177,7 +179,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
             clearTimeout(timeoutId);
     
             if (!response.ok) {
-                let errorMessage = 'Failed to delete event';
+                let errorMessage = `Failed to ${isBookedEvent ? 'cancel' : 'delete'} event`;
                 try {
                     const errorData = await response.json();
                     errorMessage = errorData.error || errorMessage;
@@ -188,12 +190,9 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
         } catch (err) {
             console.error('Delete error:', err);
             if (err.name === 'AbortError') {
-                setError('Request timed out. The booking may still have been cancelled.');
+                setError('Request timed out. The action may have still succeeded.');
             } else {
                 setError(err.message);
-            }
-            if (isBookedEvent) {
-                setTimeout(onClose, 2000);
             }
         } finally {
             setIsSubmitting(false);
@@ -229,16 +228,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
 
     const handleDeleteConfirm = () => {
         setIsConfirmDeleteOpen(false);
-        if (isBookedEvent) {
-            onClose(); 
-            performDeleteInBackground('all');
-        } else {
-            performDelete('all');
-        }
-    };
-
-    const performDeleteInBackground = async (scope) => {
-        // This function is unchanged
+        performDelete('all');
     };
 
     const formatUtcDateTime = (date) => {
@@ -269,18 +259,104 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
         URL.revokeObjectURL(url);
     };
 
+    const renderDetailsView = () => (
+        <div className="space-y-4">
+            <div className="p-3 bg-slate-200 dark:bg-slate-700 rounded-lg">
+                <p className="font-semibold text-lg">{selectedEvent.title}</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500">
+                    {selectedEvent.is_all_day
+                        ? `All day on ${format(new Date(selectedEvent.start_time), "EEEE, MMMM d, yyyy")}`
+                        : `${format(new Date(selectedEvent.start_time), "EEEE, MMMM d, yyyy")} from ${format(new Date(selectedEvent.start_time), "HH:mm")} to ${format(new Date(selectedEvent.end_time), "HH:mm")}`
+                    }
+                </p>
+            </div>
+
+            <div className="space-y-3">
+                {isBookedEvent ? (
+                    <>
+                        <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                            <User size={16} className="text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
+                            <span>Booked by: <strong className="text-slate-900 dark:text-white">{selectedEvent.booker_name}</strong></span>
+                        </div>
+                        {selectedEvent.booker_email && (
+                            <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                                <Mail size={16} className="text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
+                                <span>{selectedEvent.booker_email}</span>
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                         <div className={`w-3 h-3 rounded-full mr-1 ${
+                            {personal: 'bg-amber-500', blocked: 'bg-red-500', birthday: 'bg-pink-500'}[selectedEvent.type] || 'bg-slate-500'
+                         }`}></div>
+                         <span className="capitalize">{selectedEvent.type} Event</span>
+                    </div>
+                )}
+                
+                {formData.guests && formData.guests.length > 0 && (
+                    <div className="flex items-start gap-3 text-slate-600 dark:text-slate-300">
+                        <Users size={16} className="text-indigo-500 dark:text-indigo-400 flex-shrink-0 mt-1" />
+                        <div className="flex flex-col">
+                            <span>Guests:</span>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                                {formData.guests.map(g => <span key={g} className="px-2 py-0.5 bg-slate-300 dark:bg-slate-600 rounded-full text-xs font-semibold">{g}</span>)}
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {(isBookedEvent ? cleanDescription : selectedEvent.description) && (
+                    <div className="flex items-start gap-3 text-slate-600 dark:text-slate-300">
+                        <FileText size={16} className="text-indigo-500 dark:text-indigo-400 flex-shrink-0 mt-1" />
+                        <p className="whitespace-pre-wrap">{isBookedEvent ? cleanDescription : selectedEvent.description}</p>
+                    </div>
+                )}
+                {bookingManagementLink && (
+                    <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                        <LinkIcon size={16} className="text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
+                        <a href={bookingManagementLink} target="_blank" rel="noopener noreferrer" className="text-indigo-500 dark:text-indigo-400 hover:underline break-all">
+                            Manage this booking
+                        </a>
+                    </div>
+                )}
+            </div>
+            
+            <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3">
+                <div className="flex-1 flex gap-2">
+                    <button type="button" onClick={handleDeleteClick} disabled={isSubmitting} className="flex-1 px-4 py-2 text-sm bg-red-600 rounded-lg font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-50">
+                        {isBookedEvent ? 'Cancel' : 'Delete'}
+                    </button>
+                    <button type="button" onClick={handleDownloadIcs} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors">
+                        <Download size={16} /> .ics
+                    </button>
+                </div>
+                <div className="flex-1 flex justify-end gap-2">
+                    {!isBookedEvent && (
+                        <button type="button" onClick={() => setView('form')} className="px-4 py-2 text-sm bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors">
+                            <Edit size={16}/>
+                        </button>
+                    )}
+                    <button type="button" onClick={onClose} className="px-6 py-2 bg-indigo-500 rounded-lg font-semibold text-white hover:bg-indigo-600 transition-colors">OK</button>
+                </div>
+            </div>
+        </div>
+    );
+
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
             <div className="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl shadow-2xl w-full max-w-lg p-6 mx-4 transform transition-all overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">{isBookedEvent ? 'Booking Details' : (isEditMode ? 'Edit Event' : 'Add New Event')}</h2>
+                    <h2 className="text-xl font-bold">
+                      {view === 'form' 
+                        ? (isEditMode ? 'Edit Event' : 'Add New Event') 
+                        : 'Event Details'
+                      }
+                    </h2>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-200 dark:bg-slate-700 transition-colors"><X size={24} /></button>
                 </div>
-                {isBookedEvent ? (
-                    <div className="space-y-4"> {/* Booking details view remains same */} </div>
-                ) : (
+                {view === 'details' ? renderDetailsView() : (
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" placeholder="Event Title *"/>
                         <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors">
@@ -315,8 +391,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                             </div>
                         </div>
                         
-                        {/* Guest Input, Description, Recurrence, and Buttons are unchanged... */}
-                         <div className="w-full bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600 focus-within:border-indigo-500 transition-colors flex flex-wrap items-center gap-2">
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600 focus-within:border-indigo-500 transition-colors flex flex-wrap items-center gap-2">
                             {formData.guests.map(g => (
                                 <div key={g} className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-300 dark:bg-slate-600 text-sm">
                                     <span>{g}</span>
@@ -325,7 +400,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                                     </button>
                                 </div>
                             ))}
-                            <input type="text" value={guestInput} onChange={(e) => setGuestInput(e.target.value)} onKeyDown={handleGuestKeyDown} placeholder="Add guests..." className="bg-transparent outline-none p-1 text-sm flex-grow min-w-[100px] text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400" />
+                            <input type="text" value={guestInput} onChange={(e) => setGuestInput(e.target.value)} onKeyDown={handleGuestKeyDown} placeholder="Add guests..." className="bg-transparent outline-none p-1 text-sm flex-grow min-w-[100px] text-slate-900 dark:text-white placeholder-slate-500"/>
                         </div>
                         <textarea name="description" value={formData.description} onChange={handleChange} rows="2" className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" placeholder="Notes..."/>
                         <div className="space-y-3 p-3 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 rounded-lg">
@@ -347,24 +422,16 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                         </div>
                         {error && <div className="text-red-400 text-sm bg-red-100 dark:bg-red-900/50 p-3 rounded-lg border border-red-500/30">{error}</div>}
                         <div className="mt-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                             <div className="flex gap-3 w-full sm:w-auto order-2 sm:order-1">
-                                {isEditMode && (
-                                    <>
-                                        <button type="button" onClick={handleDeleteClick} disabled={isSubmitting} className="flex-1 px-6 py-2.5 bg-red-600 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 text-white">Delete</button>
-                                        <button type="button" onClick={handleDownloadIcs} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors"><Download size={16} /> .ics</button>
-                                    </>
-                                )}
-                            </div>
-                            <div className="flex gap-3 order-1 sm:order-2">
-                                <button type="button" onClick={onClose} className="flex-1 sm:flex-none px-6 py-2.5 bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors">Cancel</button>
-                                <button type="submit" disabled={isSubmitting} className="flex-1 sm:flex-none px-6 py-2.5 bg-indigo-500 rounded-lg font-semibold hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white">{isSubmitting ? 'Saving...' : 'Save'}</button>
-                            </div>
+                            <button type="button" onClick={() => setView('details')} className="px-6 py-2.5 bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit" disabled={isSubmitting} className="px-6 py-2.5 bg-indigo-500 rounded-lg font-semibold hover:bg-indigo-600 transition-colors disabled:opacity-50 text-white">{isSubmitting ? 'Saving...' : 'Save'}</button>
                         </div>
                     </form>
                 )}
             </div>
 
-            <ConfirmationModal isOpen={isConfirmDeleteOpen} onClose={() => setIsConfirmDeleteOpen(false)} onConfirm={handleDeleteConfirm} title="Delete Event" message={`Are you sure you want to permanently delete "${selectedEvent?.title}"?`} />
+            <ConfirmationModal isOpen={isConfirmDeleteOpen} onClose={() => setIsConfirmDeleteOpen(false)} onConfirm={handleDeleteConfirm} title={isBookedEvent ? "Cancel Booking" : "Delete Event"} message={isBookedEvent ? `Are you sure you want to cancel the booking with "${selectedEvent?.booker_name}"? They will be notified by email.` : `Are you sure you want to permanently delete "${selectedEvent?.title}"?`} confirmText={isBookedEvent ? "Yes, Cancel Booking" : "Yes, Delete Event"} />
             <RecurrenceEditModal isOpen={isRecurrenceModalOpen} onClose={() => setIsRecurrenceModalOpen(false)} onConfirm={handleRecurrenceConfirm} verb={recurrenceAction.action}/>
         </div>
     );
