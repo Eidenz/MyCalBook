@@ -14,6 +14,7 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
         default_duration: 60,
         is_public: true,
         image_url: '',
+        buffer_time: 0,
     });
     
     const [formData, setFormData] = useState(getInitialState());
@@ -48,6 +49,7 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
                             default_duration: eventType.default_duration || durations[0] || '',
                             is_public: eventType.is_public !== undefined ? eventType.is_public : true,
                             image_url: eventType.image_url || '',
+                            buffer_time: eventType.buffer_time || 0,
                         });
                     } else {
                         const initialState = getInitialState();
@@ -178,7 +180,7 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
                         <div className="relative group">
                             <img src={formData.image_url} alt="Event Preview" className="w-full h-48 object-cover rounded-lg bg-slate-200 dark:bg-slate-700" />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-lg">
-                                <button type="button" onClick={removeImage} className="p-2 bg-red-600 rounded-full text-slate-900 dark:text-white hover:bg-red-700">
+                                <button type="button" onClick={removeImage} className="p-2 bg-red-600 rounded-full text-white hover:bg-red-700">
                                     <Trash2 size={20} />
                                 </button>
                             </div>
@@ -186,7 +188,7 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
                     ) : (
                         <div 
                             onClick={() => fileInputRef.current.click()}
-                            className="w-full h-48 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 dark:text-indigo-400 cursor-pointer transition-colors"
+                            className="w-full h-48 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:border-indigo-500 hover:text-indigo-500 cursor-pointer transition-colors"
                         >
                             {isUploading ? (
                                 <>
@@ -206,7 +208,7 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
                     <div className="flex items-center justify-between bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 p-3 rounded-lg">
                         <div>
                             <h3 className="font-semibold text-slate-900 dark:text-white">Public Booking</h3>
-                            <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">Visible on your public booking page.</p>
+                            <p className="text-sm text-slate-400 dark:text-slate-500">Visible on your public booking page.</p>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" name="is_public" checked={formData.is_public} onChange={handleChange} className="sr-only peer" />
@@ -229,7 +231,21 @@ const EventTypeModal = ({ isOpen, onClose, onSave, token, eventType }) => {
                             ))}
                             <input type="text" value={durationInput} onChange={(e) => setDurationInput(e.target.value.replace(/\D/g, ''))} onKeyDown={handleDurationKeyDown} placeholder="Add" className="bg-transparent outline-none p-1 text-sm w-16"/>
                         </div>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 mt-1.5">Click a tag to set as default. Press Enter to add.</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">Click a tag to set as default. Press Enter to add.</p>
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-semibold mb-2 text-slate-600 dark:text-slate-300">Buffer time (minutes)</label>
+                        <input
+                            type="number"
+                            name="buffer_time"
+                            value={formData.buffer_time}
+                            onChange={handleChange}
+                            min="0"
+                            placeholder="e.g., 5"
+                            className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600"
+                        />
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">Time to add after an event before the next one can be booked.</p>
                     </div>
                     
                     <div>

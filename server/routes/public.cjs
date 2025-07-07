@@ -103,6 +103,13 @@ router.get('/availability/:slug', async (req, res) => {
         dayEndForBlocks.setUTCDate(dayEndForBlocks.getUTCDate() + 2);
         const blockedSlots = await getBlockedSlots(eventType.user_id, dayStartForBlocks, dayEndForBlocks);
         
+        // Adjust blocked slots to include the buffer time.
+        const bufferMillis = (eventType.buffer_time || 0) * 60000;
+        const adjustedBlockedSlots = blockedSlots.map(slot => ({
+            start: new Date(slot.start.getTime() - bufferMillis),
+            end: new Date(slot.end.getTime() + bufferMillis)
+        }));
+
         const availableSlots = [];
         const durationsToCalc = requestedDuration ? [parseInt(requestedDuration, 10)] : JSON.parse(eventType.durations);
         const dayStart = new Date(`${date}T00:00:00.000Z`);
@@ -112,8 +119,6 @@ router.get('/availability/:slug', async (req, res) => {
             const [startH, startM] = rule.start_time.split(':').map(Number);
             const [endH, endM] = rule.end_time.split(':').map(Number);
 
-            // If the start time string is 'greater' than the end time string,
-            // it means the availability period crosses midnight UTC and starts on the previous day.
             if (rule.start_time > rule.end_time) {
                 slotStart.setUTCDate(slotStart.getUTCDate() - 1);
             }
@@ -129,7 +134,7 @@ router.get('/availability/:slug', async (req, res) => {
                 for (const duration of durationsToCalc) {
                     const slotEnd = new Date(slotStart.getTime() + duration * 60000);
                     if (slotEnd > ruleEnd) continue;
-                    if (!blockedSlots.some(b => (slotStart < b.end && slotEnd > b.start))) {
+                    if (!adjustedBlockedSlots.some(b => (slotStart < b.end && slotEnd > b.start))) {
                         availableSlots.push(slotStart.toISOString());
                     }
                 }
@@ -154,7 +159,7 @@ router.get('/availability/:slug/month', async (req, res) => {
     if (!month) return res.status(400).json({ error: 'Month parameter (YYYY-MM) is required.' });
 
     try {
-        const eventType = await db('event_types').where({ slug }).first('id', 'user_id', 'schedule_id', 'default_duration');
+        const eventType = await db('event_types').where({ slug }).first('id', 'user_id', 'schedule_id', 'default_duration', 'buffer_time');
         if (!eventType) return res.status(404).json({ error: 'Event type not found.' });
         
         const [year, monthNum] = month.split('-').map(Number);
@@ -169,7 +174,13 @@ router.get('/availability/:slug/month', async (req, res) => {
         monthEndForBlocks.setUTCDate(monthEndForBlocks.getUTCDate() + 2);
         const allBlockedSlots = await getBlockedSlots(eventType.user_id, monthStartForBlocks, monthEndForBlocks);
 
-        // Fetch all overrides for the month in one go
+        // Adjust blocked slots to include the buffer time.
+        const bufferMillis = (eventType.buffer_time || 0) * 60000;
+        const adjustedBlockedSlots = allBlockedSlots.map(slot => ({
+            start: new Date(slot.start.getTime() - bufferMillis),
+            end: new Date(slot.end.getTime() + bufferMillis)
+        }));
+
         const monthOverrides = await db('availability_overrides')
             .where({ schedule_id: eventType.schedule_id })
             .where('date', '>=', format(new Date(Date.UTC(year, monthNum - 1, 1)), 'yyyy-MM-dd'))
@@ -197,7 +208,7 @@ router.get('/availability/:slug/month', async (req, res) => {
             const dayStart = new Date(currentDate);
             const dayEnd = new Date(currentDate);
             dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
-            const blockedForDay = allBlockedSlots.filter(s => s.start < dayEnd && s.end > dayStart);
+            const blockedForDay = adjustedBlockedSlots.filter(s => s.start < dayEnd && s.end > dayStart);
 
             if (hasAvailableSlots(currentDate, rulesForDay, blockedForDay, eventType.default_duration)) {
                 availableDays.add(day);
@@ -212,6 +223,7 @@ router.get('/availability/:slug/month', async (req, res) => {
 });
 
 // GET /api/public/user/:username
+// ... (rest of the file is unchanged)
 router.get('/user/:username', async (req, res) => {
     try {
         const user = await db('users')
