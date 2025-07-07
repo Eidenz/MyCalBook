@@ -12,6 +12,22 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
     const isAllDay = event.is_all_day || event.type === 'birthday';
     const isBday = event.type === 'birthday';
 
+    // Calculate progress percentage for current events
+    const getProgressPercentage = () => {
+        if (!isCurrent || isAllDay) return 0;
+        
+        const startTime = new Date(event.start_time).getTime();
+        const endTime = new Date(event.end_time).getTime();
+        const currentTime = now.getTime();
+        
+        const totalDuration = endTime - startTime;
+        const elapsed = currentTime - startTime;
+        
+        return Math.min(Math.max((elapsed / totalDuration) * 100, 0), 100);
+    };
+
+    const progressPercentage = getProgressPercentage();
+
     const typeStyles = {
         personal: 'bg-amber-500 hover:bg-amber-400',
         booked: 'bg-green-500 hover:bg-green-400',
@@ -19,14 +35,35 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
         birthday: 'bg-pink-500 hover:bg-pink-400',
     };
 
+    // Color mappings for progress bars
+    const progressColors = {
+        personal: { full: '#f59e0b', partial: '#f59e0b99' },
+        booked: { full: '#10b981', partial: '#10b98199' },
+        blocked: { full: '#ef4444', partial: '#ef444499' },
+        birthday: { full: '#ec4899', partial: '#ec489999' },
+        default: { full: '#3b82f6', partial: '#3b82f699' }
+    };
+
+    const colors = progressColors[event.type] || progressColors.default;
+    
+    const progressStyle = isCurrent && !isAllDay ? {
+        background: `linear-gradient(to right, 
+            ${colors.full} 0%, 
+            ${colors.full} ${progressPercentage}%, 
+            ${colors.partial} ${progressPercentage}%, 
+            ${colors.partial} 100%)`
+    } : {};
+
     const pillClass = `
         text-slate-900 dark:text-white text-xs cursor-pointer 
         flex items-center gap-1.5
-        truncate transition-colors duration-200
+        truncate transition-all duration-300
+        relative overflow-hidden
         ${isPast && !isAllDay 
             ? 'bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500 opacity-70' 
-            : typeStyles[event.type] || 'bg-blue-500 hover:bg-blue-400'}
-        ${isCurrent && !isAllDay ? 'ring-2 ring-sky-400' : ''}
+            : isCurrent && !isAllDay 
+                ? 'hover:brightness-110 border-2 border-sky-400'
+                : typeStyles[event.type] || 'bg-blue-500 hover:bg-blue-400'}
         ${isMobile ? 'px-1 py-0.5 mb-0.5 rounded' : 'p-1 mb-1 rounded-md'}
     `;
 
@@ -35,25 +72,37 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
     if (isMobile) {
         if (isBday) {
             return (
-            <div className={pillClass} onClick={() => onClick(event)}>
-                <Cake size={10} className="flex-shrink-0"/>
-                <span className="font-semibold text-xs truncate flex items-center gap-1">
-                {event.title}
-                </span>
-            </div>
+                <div 
+                    className={pillClass} 
+                    onClick={() => onClick(event)}
+                    style={progressStyle}
+                >
+                    <Cake size={10} className="flex-shrink-0"/>
+                    <span className="font-semibold text-xs truncate flex items-center gap-1">
+                        {event.title}
+                    </span>
+                </div>
             );
         }
         return (
-            <div className={pillClass} onClick={() => onClick(event)}>
-            <span className="font-semibold text-xs truncate flex items-center gap-1">
-                {isAllDay ? 'Full' : `${format(new Date(event.start_time), 'HH:mm')}`}
-            </span>
+            <div 
+                className={pillClass} 
+                onClick={() => onClick(event)}
+                style={progressStyle}
+            >
+                <span className="font-semibold text-xs truncate flex items-center gap-1">
+                    {isAllDay ? 'Full' : `${format(new Date(event.start_time), 'HH:mm')}`}
+                </span>
             </div>
         );
     }
 
     return (
-        <div className={pillClass} onClick={() => onClick(event)}>
+        <div 
+            className={pillClass} 
+            onClick={() => onClick(event)}
+            style={progressStyle}
+        >
             {isStart ? (
                 <>
                     {isBday && <Cake size={12} className="flex-shrink-0"/>}
