@@ -23,6 +23,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [isRecurrenceModalOpen, setIsRecurrenceModalOpen] = useState(false);
     const [recurrenceAction, setRecurrenceAction] = useState({ action: null, scope: null });
+    const [hasManualEndDate, setHasManualEndDate] = useState(false);
 
     const getInitialState = () => {
         const eventDate = new Date(selectedEvent?.start_time || Date.now());
@@ -55,6 +56,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
             setFormData(getInitialState());
             setError('');
             setGuestInput('');
+            setHasManualEndDate(false);
             // When opening, always start in details view if it's an existing event
             setView(isEditMode ? 'details' : 'form');
         }
@@ -67,6 +69,11 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
             is_all_day: isChecked,
             endDate: isChecked ? p.date : p.endDate
         }));
+        
+        // Reset manual tracking when toggling all-day since we're auto-syncing
+        if (isChecked) {
+            setHasManualEndDate(false);
+        }
     };
 
     const { bookingManagementLink, cleanDescription } = React.useMemo(() => {
@@ -95,7 +102,25 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
     };
 
     const removeGuest = (g) => setFormData(p => ({ ...p, guests: p.guests.filter(guest => guest !== g) }));
-    const handleChange = (e) => setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        
+        setFormData(p => {
+            const newData = { ...p, [name]: value };
+            
+            // Auto-sync end date when start date changes, but only if user hasn't manually set a different end date
+            if (name === 'date' && !hasManualEndDate) {
+                newData.endDate = value;
+            }
+            
+            return newData;
+        });
+        
+        // Track if user manually sets a different end date
+        if (name === 'endDate') {
+            setHasManualEndDate(true);
+        }
+    };
     const handleRecurrenceChange = (e) => {
         const { name, value } = e.target;
         setFormData(p => ({ ...p, recurrence: { ...p.recurrence, [name]: value }}));
