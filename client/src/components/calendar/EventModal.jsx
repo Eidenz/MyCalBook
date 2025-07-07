@@ -447,7 +447,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                         </div>
                         {error && <div className="text-red-400 text-sm bg-red-100 dark:bg-red-900/50 p-3 rounded-lg border border-red-500/30">{error}</div>}
                         <div className="mt-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                            <button type="button" onClick={() => setView('details')} className="px-6 py-2.5 bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors">
+                            <button type="button" onClick={() => isEditMode ? setView('details') : onClose()} className="px-6 py-2.5 bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors">
                                 Cancel
                             </button>
                             <button type="submit" disabled={isSubmitting} className="px-6 py-2.5 bg-indigo-500 rounded-lg font-semibold hover:bg-indigo-600 transition-colors disabled:opacity-50 text-white">{isSubmitting ? 'Saving...' : 'Save'}</button>
