@@ -1,3 +1,5 @@
+// src/components/calendar/EventModal.jsx
+
 import React, { useState, useEffect } from 'react';
 import { X, User, Mail, Users, FileText, Repeat, Download, Link as LinkIcon, Edit, Clock } from 'lucide-react';
 import ConfirmationModal from '../common/ConfirmationModal';
@@ -135,13 +137,16 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
         setError('');
         setIsSubmitting(true);
     
-        const startDateTimeStr = `${formData.date}T${formData.startTime}`;
-        const endDateTimeStr = `${formData.endDate}T${formData.endTime}`;
-
+        // Create Date objects from the local time parts in the form.
+        // The browser's `new Date()` will correctly interpret these as local time.
+        const startDateTime = new Date(`${formData.date}T${formData.startTime}`);
+        const endDateTime = new Date(`${formData.endDate}T${formData.endTime}`);
+    
         const payload = {
             ...formData,
-            start_time: startDateTimeStr,
-            end_time: endDateTimeStr,
+            // Convert to a standardized UTC ISO string before sending.
+            start_time: startDateTime.toISOString(),
+            end_time: endDateTime.toISOString(),
             recurrence: formData.recurrence.frequency ? {
                 frequency: formData.recurrence.frequency.toUpperCase(),
                 interval: formData.recurrence.interval,
