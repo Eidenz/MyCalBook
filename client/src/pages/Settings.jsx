@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ConfirmationModal from '../components/common/ConfirmationModal';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import { Shield, ShieldOff, Copy, Download, KeyRound, Check, UploadCloud, Loader } from 'lucide-react';
 
 // Sub-component for ICS import
@@ -390,7 +391,11 @@ const Settings = () => {
         setTimeout(() => setSuccess(''), 3000);
     };
 
-    if (isLoading) return <div className="p-8">Loading settings...</div>;
+    if (isLoading) return (
+        <div className="p-8">
+            <LoadingSpinner size={32} text="Loading settings..." className="py-16" />
+        </div>
+    );
 
     return (
         <div className="p-8 max-w-2xl mx-auto">

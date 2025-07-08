@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Plus, Clock, MapPin, Globe, Eye, EyeOff } from 'lucide-react';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 import EventTypeForm from '../components/eventtypes/EventTypeForm';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const EventTypes = () => {
     const { token, user } = useAuth();
@@ -69,7 +70,11 @@ const EventTypes = () => {
         }
     };
     
-    if (isLoading) return <div className="p-8">Loading...</div>;
+    if (isLoading) return (
+        <div className="p-8">
+            <LoadingSpinner size={32} text="Loading event types..." className="py-16" />
+        </div>
+    );
 
     return (
         <div className="p-8 max-w-5xl mx-auto">

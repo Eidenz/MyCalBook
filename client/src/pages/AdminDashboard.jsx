@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 import { Trash2, ShieldCheck, User, AlertTriangle, Shield } from 'lucide-react';
 import ConfirmationModal from '../components/common/ConfirmationModal';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const AdminDashboard = () => {
     const { token } = useAuth();
@@ -46,7 +47,11 @@ const AdminDashboard = () => {
         }
     };
 
-    if (isLoading) return <div className="p-8">Loading user data...</div>;
+    if (isLoading) return (
+        <div className="p-8">
+            <LoadingSpinner size={32} text="Loading user data..." className="py-16" />
+        </div>
+    );
 
     return (
         <div className="p-4 md:p-8 max-w-4xl mx-auto">
