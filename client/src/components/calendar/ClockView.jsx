@@ -1,9 +1,10 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import { format, getHours, getMinutes, differenceInMinutes } from 'date-fns';
+import { format, getHours, getMinutes, differenceInMinutes, isToday } from 'date-fns';
 
 const ClockView = ({ day, events = [], onEventClick }) => {
     // Detect dark mode
     const [isDarkMode, setIsDarkMode] = useState(false);
+    const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
         const checkDarkMode = () => {
@@ -20,6 +21,15 @@ const ClockView = ({ day, events = [], onEventClick }) => {
         });
 
         return () => observer.disconnect();
+    }, []);
+
+    // Update current time every minute
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 60000); // Update every minute
+
+        return () => clearInterval(timer);
     }, []);
 
     const clockData = useMemo(() => {
@@ -216,6 +226,53 @@ const ClockView = ({ day, events = [], onEventClick }) => {
                         );
                     })}
 
+                    {/* Current time indicator - only show if viewing today */}
+                    {isToday(day) && (() => {
+                        const currentHour = getHours(currentTime);
+                        const currentMinute = getMinutes(currentTime);
+                        const currentAngle = timeToAngle(currentHour, currentMinute);
+                        const currentRad = (currentAngle * Math.PI) / 180;
+
+                        // Line from center to edge
+                        const lineStart = 30; // Start from inside the center
+                        const lineEnd = eventRadius + 20; // Extend past events
+
+                        const x1 = center + lineStart * Math.cos(currentRad);
+                        const y1 = center + lineStart * Math.sin(currentRad);
+                        const x2 = center + lineEnd * Math.cos(currentRad);
+                        const y2 = center + lineEnd * Math.sin(currentRad);
+
+                        return (
+                            <g>
+                                {/* Current time line */}
+                                <line
+                                    x1={x1}
+                                    y1={y1}
+                                    x2={x2}
+                                    y2={y2}
+                                    stroke="#ef4444"
+                                    strokeWidth="2"
+                                    className="transition-all duration-1000"
+                                />
+                                {/* Dot at the end */}
+                                <circle
+                                    cx={x2}
+                                    cy={y2}
+                                    r="4"
+                                    fill="#ef4444"
+                                    className="transition-all duration-1000"
+                                />
+                                {/* Center dot */}
+                                <circle
+                                    cx={center}
+                                    cy={center}
+                                    r="6"
+                                    fill="#ef4444"
+                                />
+                            </g>
+                        );
+                    })()}
+
                     {/* Center content */}
                     <g>
                         <text
@@ -245,7 +302,7 @@ const ClockView = ({ day, events = [], onEventClick }) => {
 
                         {/* Event type breakdown */}
                         {Object.entries(eventsByType).map(([type, data], idx) => {
-                            const yOffset = center + 10 + (idx * 25);
+                            const yOffset = center + 30 + (idx * 25);
                             return (
                                 <g key={type}>
                                     <text
