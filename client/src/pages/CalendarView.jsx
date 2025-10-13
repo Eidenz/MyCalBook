@@ -5,6 +5,7 @@ import { useCalendar } from '../hooks/useCalendar';
 import { format, startOfMonth } from 'date-fns';
 import MonthView from '../components/calendar/MonthView';
 import TimeGridView from '../components/calendar/TimeGridView';
+import ClockView from '../components/calendar/ClockView';
 import EventModal from '../components/calendar/EventModal';
 import DayViewModal from '../components/calendar/DayViewModal';
 
@@ -115,12 +116,12 @@ const CalendarView = () => {
     const handlePrev = () => {
         if (view === 'month') prevMonth();
         else if (view === 'week') prevWeek();
-        else prevDay();
+        else prevDay(); // clock view uses same navigation as day view
     };
     const handleNext = () => {
         if (view === 'month') nextMonth();
         else if (view === 'week') nextWeek();
-        else nextDay();
+        else nextDay(); // clock view uses same navigation as day view
     };
 
     const getTitle = () => {
@@ -139,7 +140,7 @@ const CalendarView = () => {
 
     const ViewSwitcher = () => (
         <div className="flex items-center bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 p-1 rounded-lg">
-            {['month', 'week', 'day'].map(v => (
+            {['month', 'week', 'day', 'clock'].map(v => (
                 <button
                     key={v}
                     onClick={() => setView(v)}
@@ -196,12 +197,15 @@ const CalendarView = () => {
                     <div className="flex-1 flex items-center justify-center text-slate-400 dark:text-slate-500 dark:text-slate-400"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div></div>
                 ) : (
                     <>
-                        <div className="grid grid-cols-7 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 border-b border-slate-300 dark:border-slate-700">
-                            {weekDays.map(day => <div key={day} className="p-1 md:p-3 text-center font-semibold text-xs md:text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">{day}</div>)}
-                        </div>
+                        {view !== 'clock' && (
+                            <div className="grid grid-cols-7 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 border-b border-slate-300 dark:border-slate-700">
+                                {weekDays.map(day => <div key={day} className="p-1 md:p-3 text-center font-semibold text-xs md:text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">{day}</div>)}
+                            </div>
+                        )}
                         {view === 'month' && <MonthView days={daysForMonthView} month={startOfMonth(currentDate)} events={events} onEventClick={handleOpenModal} onShowMoreClick={handleOpenDayView}/>}
                         {view === 'week' && <TimeGridView days={daysForWeekView} events={events} onEventClick={handleOpenModal} />}
                         {view === 'day' && <TimeGridView days={[dayForDayView]} events={events} onEventClick={handleOpenModal} />}
+                        {view === 'clock' && <ClockView day={dayForDayView} events={events} onEventClick={handleOpenModal} />}
                     </>
                 )}
             </main>
