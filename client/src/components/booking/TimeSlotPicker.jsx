@@ -136,12 +136,12 @@ const TimeSlotPicker = ({
                                     <button
                                         key={`${slot}-${index}`}
                                         onClick={() => onSelectTime(slot)}
-                                        style={{ 
-                                            animationDelay: `${index * 50}ms`,
-                                            transitionDelay: `${index * 25}ms`
+                                        style={{
+                                            animationDelay: `${Math.min(index * 15, 200)}ms`,
+                                            transitionDelay: `${Math.min(index * 8, 100)}ms`
                                         }}
                                         className={`slot-button p-2.5 w-full text-center rounded-lg border-2 transition-all duration-200 font-semibold transform hover:scale-105 hover:-translate-y-0.5
-                                            ${selectedTime === slot 
+                                            ${selectedTime === slot
                                                 ? 'bg-indigo-500 border-indigo-500 text-white shadow-lg shadow-indigo-500/25'
                                                 : 'border-slate-300 dark:border-slate-600 hover:border-indigo-500 hover:bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 hover:shadow-md'
                                             }
