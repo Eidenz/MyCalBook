@@ -192,20 +192,22 @@ const CalendarView = () => {
                 </div>
             </header>
 
-            <main className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-lg shadow-lg overflow-hidden flex flex-col">
+            <main className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-lg shadow-lg overflow-hidden flex flex-col min-h-0">
                 {isLoading ? (
                     <div className="flex-1 flex items-center justify-center text-slate-400 dark:text-slate-500 dark:text-slate-400"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div></div>
                 ) : (
                     <>
                         {view !== 'clock' && (
-                            <div className="grid grid-cols-7 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 border-b border-slate-300 dark:border-slate-700">
+                            <div className="grid grid-cols-7 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 border-b border-slate-300 dark:border-slate-700 flex-shrink-0">
                                 {weekDays.map(day => <div key={day} className="p-1 md:p-3 text-center font-semibold text-xs md:text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">{day}</div>)}
                             </div>
                         )}
-                        {view === 'month' && <MonthView days={daysForMonthView} month={startOfMonth(currentDate)} events={events} onEventClick={handleOpenModal} onShowMoreClick={handleOpenDayView}/>}
-                        {view === 'week' && <TimeGridView days={daysForWeekView} events={events} onEventClick={handleOpenModal} />}
-                        {view === 'day' && <TimeGridView days={[dayForDayView]} events={events} onEventClick={handleOpenModal} />}
-                        {view === 'clock' && <ClockView day={dayForDayView} events={events} onEventClick={handleOpenModal} />}
+                        <div className="flex-1 overflow-auto min-h-0">
+                            {view === 'month' && <MonthView days={daysForMonthView} month={startOfMonth(currentDate)} events={events} onEventClick={handleOpenModal} onShowMoreClick={handleOpenDayView}/>}
+                            {view === 'week' && <TimeGridView days={daysForWeekView} events={events} onEventClick={handleOpenModal} />}
+                            {view === 'day' && <TimeGridView days={[dayForDayView]} events={events} onEventClick={handleOpenModal} />}
+                            {view === 'clock' && <ClockView day={dayForDayView} events={events} onEventClick={handleOpenModal} />}
+                        </div>
                     </>
                 )}
             </main>

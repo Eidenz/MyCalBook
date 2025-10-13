@@ -166,7 +166,7 @@ const MonthView = ({ days, month, events = [], onEventClick, onShowMoreClick }) 
     const maxEventsVisible = isMobile ? MAX_EVENTS_VISIBLE_MOBILE : MAX_EVENTS_VISIBLE;
 
     return (
-        <div className="grid grid-cols-7 flex-1">
+        <div className="grid grid-cols-7 h-full">
             {days.map((day) => {
                 const dayKey = day.toDateString();
                 const dayEvents = eventsByDay.get(dayKey) || [];
