@@ -2,8 +2,8 @@ import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, isSameMonth, isToday, isSameDay, isBefore, startOfToday } from 'date-fns';
 
-const CalendarSelector = ({ hook, onDateSelect, selectedDate, availableDays }) => {
-    const { days, currentMonth, nextMonth, prevMonth } = hook;
+const CalendarSelector = ({ hook, onDateSelect, onMonthChange, selectedDate, availableDays }) => {
+    const { days, currentMonth } = hook;
     const monthName = format(currentMonth, 'MMMM yyyy');
 
     const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -13,10 +13,10 @@ const CalendarSelector = ({ hook, onDateSelect, selectedDate, availableDays }) =
             <div className="flex justify-between items-center mb-4">
                 <h2 className="font-semibold text-lg text-slate-900 dark:text-white">{monthName}</h2>
                 <div className="flex items-center gap-2">
-                    <button onClick={prevMonth} className="p-2 rounded-md hover:bg-slate-200 dark:bg-slate-700 transition-colors">
+                    <button onClick={() => onMonthChange('prev')} className="p-2 rounded-md hover:bg-slate-200 dark:bg-slate-700 transition-colors">
                         <ChevronLeft size={20} />
                     </button>
-                    <button onClick={nextMonth} className="p-2 rounded-md hover:bg-slate-200 dark:bg-slate-700 transition-colors">
+                    <button onClick={() => onMonthChange('next')} className="p-2 rounded-md hover:bg-slate-200 dark:bg-slate-700 transition-colors">
                         <ChevronRight size={20} />
                     </button>
                 </div>
@@ -31,8 +31,13 @@ const CalendarSelector = ({ hook, onDateSelect, selectedDate, availableDays }) =
                     const today = isToday(day);
                     const isPastDay = isBefore(day, startOfToday());
 
+                    // Check if the day is in availableDays array (comparing full dates)
+                    const isAvailable = availableDays.some(availableDay => {
+                        return isSameDay(new Date(availableDay), day);
+                    });
+
                     // A day is bookable if it's in the current month, available, and not in the past.
-                    const isBookable = isCurrent && availableDays.includes(day.getDate()) && !isPastDay;
+                    const isBookable = isCurrent && isAvailable && !isPastDay;
 
                     const dayClasses = `
                         w-12 h-12 flex items-center justify-center rounded-full transition-all text-base relative

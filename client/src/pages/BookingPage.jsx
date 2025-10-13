@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { format, startOfToday, isSameMonth, startOfMonth } from 'date-fns';
+import { format, startOfToday, isSameMonth, startOfMonth, addMonths, subMonths } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { useCalendar } from '../hooks/useCalendar';
 import { Clock, MapPin, Calendar as CalendarIcon, ArrowLeft, Globe, CheckCircle, PlusCircle, UserCheck, ChevronLeft } from 'lucide-react';
@@ -75,7 +75,14 @@ const BookingPage = () => {
             const monthlyResponse = await fetch(`/api/public/availability/${slug}/month?month=${monthKey}`);
             if (!monthlyResponse.ok) throw new Error('Could not load monthly availability.');
             const monthlyData = await monthlyResponse.json();
-            setMonthlyAvailability(prev => [...prev, ...(monthlyData.availableDays || [])]);
+
+            // Convert day numbers to full date objects for this specific month
+            const [year, month] = monthKey.split('-').map(Number);
+            const datesForMonth = (monthlyData.availableDays || []).map(dayNum => {
+                return new Date(Date.UTC(year, month - 1, dayNum));
+            });
+
+            setMonthlyAvailability(prev => [...prev, ...datesForMonth]);
             setLoadedMonths(prev => new Set([...prev, monthKey]));
         } catch (err) { console.error('Error fetching month data:', err); }
     }, [slug, loadedMonths]);
@@ -107,6 +114,23 @@ const BookingPage = () => {
     useEffect(() => { setUserTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone); }, []);
 
     // --- Handlers ---
+    const handleMonthChange = async (direction) => {
+        // Calculate the new date before updating the calendar
+        const newDate = direction === 'next'
+            ? addMonths(calendar.currentDate, 1)
+            : subMonths(calendar.currentDate, 1);
+
+        // Update the calendar
+        if (direction === 'next') {
+            calendar.nextMonth();
+        } else {
+            calendar.prevMonth();
+        }
+
+        // Fetch availability for the new month
+        await fetchMonthAvailability(newDate);
+    };
+
     const handleDateSelect = async (day) => {
         const currentMonthKey = format(startOfMonth(selectedDate), 'yyyy-MM');
         const newMonthKey = format(startOfMonth(day), 'yyyy-MM');
@@ -302,7 +326,7 @@ const BookingPage = () => {
                     </div>
                 ) : (
                     <div className="flex flex-col lg:flex-row lg:flex-1 min-h-0">
-                        <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-300 dark:border-slate-700 lg:w-1/2 flex flex-col justify-center"><CalendarSelector hook={calendar} onDateSelect={handleDateSelect} selectedDate={selectedDate} availableDays={monthlyAvailability} /><div className="mt-4 text-center"><div className="inline-flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-full"><Globe size={14}/><span>Timezone: {userTimezone.replace(/_/g, ' ')}</span></div></div></div>
+                        <div className="p-8 border-b lg:border-r lg:border-b-0 border-slate-300 dark:border-slate-700 lg:w-1/2 flex flex-col justify-center"><CalendarSelector hook={calendar} onDateSelect={handleDateSelect} onMonthChange={handleMonthChange} selectedDate={selectedDate} availableDays={monthlyAvailability} /><div className="mt-4 text-center"><div className="inline-flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-full"><Globe size={14}/><span>Timezone: {userTimezone.replace(/_/g, ' ')}</span></div></div></div>
                         <div className="p-8 flex flex-col lg:w-1/2"><h2 className="font-semibold text-slate-900 dark:text-white mb-4 text-lg flex-shrink-0">{format(selectedDate, 'EEEE, MMMM d')}</h2><TimeSlotPicker durations={eventType?.durations || []} selectedDuration={selectedDuration} onSelectDuration={setSelectedDuration} slots={dailySlots} selectedTime={selectedTime} onSelectTime={setSelectedTime} isLoading={isLoadingSlots} bookingInterval={bookingInterval} selectedDate={selectedDate} /></div>
                     </div>
                 )}
