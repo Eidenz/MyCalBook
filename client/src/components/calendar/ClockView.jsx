@@ -199,7 +199,14 @@ const ClockView = ({ day, events = [], onEventClick }) => {
                     {/* Event arcs */}
                     {dayEvents.map((event, idx) => {
                         const startTime = new Date(event.start_time);
-                        const endTime = new Date(event.end_time);
+                        let endTime = new Date(event.end_time);
+
+                        // For multi-day events, clamp the end time to 23:59 of the current day
+                        const dayEnd = new Date(day);
+                        dayEnd.setHours(23, 59, 59, 999);
+                        if (endTime > dayEnd) {
+                            endTime = dayEnd;
+                        }
 
                         const startHour = getHours(startTime);
                         const startMinute = getMinutes(startTime);
@@ -340,7 +347,15 @@ const ClockView = ({ day, events = [], onEventClick }) => {
                         <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-3">Events</h3>
                         {dayEvents.map((event, idx) => {
                             const startTime = new Date(event.start_time);
-                            const endTime = new Date(event.end_time);
+                            let endTime = new Date(event.end_time);
+
+                            // For multi-day events, clamp the end time to 23:59 of the current day
+                            const dayEnd = new Date(day);
+                            dayEnd.setHours(23, 59, 59, 999);
+                            if (endTime > dayEnd) {
+                                endTime = dayEnd;
+                            }
+
                             const color = typeColors[event.type] || '#3b82f6';
 
                             return (
