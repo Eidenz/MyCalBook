@@ -46,8 +46,18 @@ const expandRecurringEvents = async (userId, startDate, endDate) => {
 
     // 3. Expand each recurring event
     for (const parent of parentEvents) {
-        const duration = new Date(parent.end_time) - new Date(parent.start_time);
-        
+        // Get the original local time components from the parent event
+        const parentStartDate = new Date(parent.start_time);
+        const parentEndDate = new Date(parent.end_time);
+
+        // Calculate the event duration in milliseconds
+        const duration = parentEndDate - parentStartDate;
+
+        // Extract the original local time components
+        const originalLocalHour = parentStartDate.getHours();
+        const originalLocalMinute = parentStartDate.getMinutes();
+        const originalLocalSecond = parentStartDate.getSeconds();
+
         const ruleOptions = {
             freq: RRule[parent.frequency],
             interval: parent.interval,
@@ -66,24 +76,38 @@ const expandRecurringEvents = async (userId, startDate, endDate) => {
             const originalStartTimeISO = occurrenceDate.toISOString();
             const exceptionKey = `${parent.id}_${originalStartTimeISO}`;
             const exception = exceptionsMap.get(exceptionKey);
-            
+
             // Check for cancelled exceptions
             if (exception && exception.is_cancelled) {
                 continue; // Skip this occurrence
             }
-            
+
             // Check for edited exceptions
             if (exception) {
                  // Use the exception's data instead
                 allOccurrences.push({ ...exception, recurrence_id: parent.recurrence_id });
             } else {
-                // Create a normal occurrence
-                const endTime = new Date(occurrenceDate.getTime() + duration);
+                // Create a normal occurrence with proper local time preservation
+                // The key is to create a date that preserves the "wall clock" time
+                // We'll use the date components from the occurrence but the time components from the original event
+
+                // Get date components from the occurrence (year, month, day)
+                const occurrenceYear = occurrenceDate.getFullYear();
+                const occurrenceMonth = occurrenceDate.getMonth();
+                const occurrenceDay = occurrenceDate.getDate();
+
+                // Create a new Date object with the occurrence date but original event time
+                const correctedStartTime = new Date(occurrenceYear, occurrenceMonth, occurrenceDay,
+                                                  originalLocalHour, originalLocalMinute, originalLocalSecond, 0);
+
+                // Calculate end time based on the corrected start time
+                const correctedEndTime = new Date(correctedStartTime.getTime() + duration);
+
                 allOccurrences.push({
                     ...parent,
                     id: `${parent.id}-${occurrenceDate.getTime()}`, // Create a unique virtual ID
-                    start_time: occurrenceDate.toISOString(),
-                    end_time: endTime.toISOString(),
+                    start_time: correctedStartTime.toISOString(),
+                    end_time: correctedEndTime.toISOString(),
                 });
             }
         }
