@@ -7,22 +7,23 @@ const MAX_EVENTS_VISIBLE_MOBILE = 2;
 
 const EventPill = ({ event, isStart, onClick, isMobile }) => {
     const now = new Date();
-    const isPast = isBefore(new Date(event.end_time), now);
-    const isCurrent = !isPast && isWithinInterval(now, { start: new Date(event.start_time), end: new Date(event.end_time) });
+    const hasEndTime = event.end_time !== null && event.end_time !== undefined;
+    const isPast = hasEndTime && isBefore(new Date(event.end_time), now);
+    const isCurrent = hasEndTime && !isPast && isWithinInterval(now, { start: new Date(event.start_time), end: new Date(event.end_time) });
     const isAllDay = event.is_all_day || event.type === 'birthday';
     const isBday = event.type === 'birthday';
 
     // Calculate progress percentage for current events
     const getProgressPercentage = () => {
-        if (!isCurrent || isAllDay) return 0;
-        
+        if (!isCurrent || isAllDay || !hasEndTime) return 0;
+
         const startTime = new Date(event.start_time).getTime();
         const endTime = new Date(event.end_time).getTime();
         const currentTime = now.getTime();
-        
+
         const totalDuration = endTime - startTime;
         const elapsed = currentTime - startTime;
-        
+
         return Math.min(Math.max((elapsed / totalDuration) * 100, 0), 100);
     };
 
@@ -69,6 +70,28 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
 
     const guests = event.guests ? JSON.parse(event.guests) : [];
 
+    // Special rendering for events with no end time
+    if (!hasEndTime && !isAllDay) {
+        const typeColors = {
+            personal: 'bg-amber-500',
+            booked: 'bg-green-500',
+            blocked: 'bg-red-500',
+            birthday: 'bg-pink-500',
+        };
+        const dotColor = typeColors[event.type] || 'bg-blue-500';
+
+        return (
+            <div
+                className="flex items-center gap-1 mb-1 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => onClick(event)}
+            >
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor}`}></div>
+                <span className="text-xs font-semibold text-slate-900 dark:text-white flex-shrink-0">{format(new Date(event.start_time), 'HH:mm')}</span>
+                <span className="text-xs text-slate-900 dark:text-white truncate">{event.title}</span>
+            </div>
+        );
+    }
+
     if (isMobile) {
         if (isBday) {
             return (
@@ -107,7 +130,7 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
                 <>
                     {isBday && <Cake size={12} className="flex-shrink-0"/>}
                     {event.recurrence_id && !isAllDay && <Repeat size={12} className="flex-shrink-0"/>}
-                    {!isAllDay && (
+                    {!isAllDay && hasEndTime && (
                         <span className="font-semibold flex-shrink-0">
                             {format(new Date(event.start_time), 'HH:mm')}-{format(new Date(event.end_time), 'HH:mm')}
                         </span>
@@ -154,7 +177,8 @@ const MonthView = ({ days, month, events = [], onEventClick, onShowMoreClick }) 
 
         for (const event of sortedEvents) {
             const start = startOfDay(new Date(event.start_time));
-            const end = endOfDay(new Date(event.end_time));
+            // Events with no end time only appear on their start day
+            const end = event.end_time ? endOfDay(new Date(event.end_time)) : new Date(start);
             for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
                 const dayString = d.toDateString();
                 if (dayMap.has(dayString)) { dayMap.get(dayString).push(event); }

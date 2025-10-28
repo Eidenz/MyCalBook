@@ -3,6 +3,8 @@ import { format, startOfDay, endOfDay, getHours, getMinutes, isToday, isSameDay,
 import { Users, Repeat, Cake } from 'lucide-react';
 
 const AllDayEvent = ({ event, onClick, isMobile }) => {
+    const hasEndTime = event.end_time !== null && event.end_time !== undefined;
+
     const typeStyles = {
         personal: 'bg-amber-500/90 border-amber-400',
         booked: 'bg-green-500/90 border-green-400',
@@ -36,25 +38,49 @@ const AllDayEvent = ({ event, onClick, isMobile }) => {
 
 const TimeGridEvent = ({ event, onClick, dayIndex, totalDays, isStart, isEnd, isSingleDay, isMobile, now }) => {
     const start = new Date(event.start_time);
-    const end = new Date(event.end_time);
+    const hasEndTime = event.end_time !== null && event.end_time !== undefined;
+    const end = hasEndTime ? new Date(event.end_time) : null;
 
     const startMinutes = getHours(start) * 60 + getMinutes(start);
-    const endMinutes = getHours(end) * 60 + getMinutes(end);
-    
+    const endMinutes = hasEndTime ? (getHours(end) * 60 + getMinutes(end)) : startMinutes;
+
+    // Special rendering for events with no end time
+    if (!hasEndTime) {
+        const top = (startMinutes / (24 * 60)) * 100;
+        const typeColors = {
+            personal: 'bg-amber-500',
+            booked: 'bg-green-500',
+            blocked: 'bg-red-500',
+        };
+        const dotColor = typeColors[event.type] || 'bg-blue-500';
+
+        return (
+            <div
+                onClick={() => onClick(event)}
+                style={{ top: `${top}%` }}
+                className="absolute left-0 right-0 mx-1 flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+            >
+                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${dotColor}`}></div>
+                <span className="text-xs font-semibold text-slate-900 dark:text-white flex-shrink-0">{format(start, 'HH:mm')}</span>
+                <span className="text-xs text-slate-900 dark:text-white truncate">{event.title}</span>
+            </div>
+        );
+    }
+
     let displayStart = startMinutes;
     let displayEnd = endMinutes;
-    
+
     if (!isSingleDay) {
         if (!isStart) displayStart = 0;
         if (!isEnd) displayEnd = 24 * 60;
     }
-    
+
     const durationMinutes = Math.max(30, displayEnd - displayStart);
     const top = (displayStart / (24 * 60)) * 100;
     const height = (durationMinutes / (24 * 60)) * 100;
-    
-    const isPast = isBefore(new Date(event.end_time), now);
-    const isCurrent = !isPast && isWithinInterval(now, { start: new Date(event.start_time), end: new Date(event.end_time) });
+
+    const isPast = isBefore(end, now);
+    const isCurrent = !isPast && isWithinInterval(now, { start, end });
     
     const typeStyles = {
         personal: 'bg-amber-500/80 border-amber-400',
@@ -129,8 +155,9 @@ const TimeGridView = ({ days, events, onEventClick }) => {
         
         events.forEach(event => {
             const eventStart = startOfDay(new Date(event.start_time));
-            const eventEnd = startOfDay(new Date(event.end_time));
-            
+            // Events with no end time only appear on their start day
+            const eventEnd = event.end_time ? startOfDay(new Date(event.end_time)) : new Date(eventStart);
+
             let currentDay = eventStart;
             while (currentDay <= eventEnd) {
                 const dayStr = format(currentDay, 'yyyy-MM-dd');
@@ -138,9 +165,9 @@ const TimeGridView = ({ days, events, onEventClick }) => {
                     const isStart = isSameDay(currentDay, eventStart);
                     const isEnd = isSameDay(currentDay, eventEnd);
                     const isSingleDay = isSameDay(eventStart, eventEnd);
-                    
+
                     const eventWithFlags = { ...event, isStart, isEnd, isSingleDay };
-                    
+
                     if (event.is_all_day || event.type === 'birthday') {
                         allDayDayMap.get(dayStr).push(eventWithFlags);
                     } else {

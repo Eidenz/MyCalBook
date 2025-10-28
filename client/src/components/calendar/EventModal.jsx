@@ -32,14 +32,16 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
         const defaultStartDate = format(eventDate, 'yyyy-MM-dd');
         const defaultStartTime = format(eventDate, 'HH:mm');
         const defaultEndTime = format(new Date(eventDate.getTime() + 60 * 60 * 1000), 'HH:mm');
-        
+        const hasEndTime = selectedEvent?.end_time !== null && selectedEvent?.end_time !== undefined;
+
         return {
             title: selectedEvent?.title || '', type: selectedEvent?.type || 'personal',
             description: selectedEvent?.description || '',
             is_all_day: selectedEvent?.is_all_day || false,
+            no_end_time: !hasEndTime && !selectedEvent?.is_all_day,
             date: defaultStartDate, startTime: defaultStartTime,
-            endDate: selectedEvent?.end_time ? format(new Date(selectedEvent.end_time), 'yyyy-MM-dd') : defaultStartDate,
-            endTime: selectedEvent?.end_time ? format(new Date(selectedEvent.end_time), 'HH:mm') : defaultEndTime,
+            endDate: hasEndTime ? format(new Date(selectedEvent.end_time), 'yyyy-MM-dd') : defaultStartDate,
+            endTime: hasEndTime ? format(new Date(selectedEvent.end_time), 'HH:mm') : defaultEndTime,
             guests: (selectedEvent?.guests && JSON.parse(selectedEvent.guests)) || [],
             recurrence: {
                 frequency: '', interval: 1,
@@ -66,16 +68,25 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
 
     const handleAllDayToggle = (e) => {
         const isChecked = e.target.checked;
-        setFormData(p => ({ 
-            ...p, 
+        setFormData(p => ({
+            ...p,
             is_all_day: isChecked,
+            no_end_time: false, // Reset no_end_time when toggling all-day
             endDate: isChecked ? p.date : p.endDate
         }));
-        
+
         // Reset manual tracking when toggling all-day since we're auto-syncing
         if (isChecked) {
             setHasManualEndDate(false);
         }
+    };
+
+    const handleNoEndTimeToggle = (e) => {
+        const isChecked = e.target.checked;
+        setFormData(p => ({
+            ...p,
+            no_end_time: isChecked
+        }));
     };
 
     const { bookingManagementLink, cleanDescription } = React.useMemo(() => {
@@ -136,17 +147,17 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
     const performSave = async (scope) => {
         setError('');
         setIsSubmitting(true);
-    
+
         // Create Date objects from the local time parts in the form.
         // The browser's `new Date()` will correctly interpret these as local time.
         const startDateTime = new Date(`${formData.date}T${formData.startTime}`);
-        const endDateTime = new Date(`${formData.endDate}T${formData.endTime}`);
-    
+        const endDateTime = formData.no_end_time ? null : new Date(`${formData.endDate}T${formData.endTime}`);
+
         const payload = {
             ...formData,
             // Convert to a standardized UTC ISO string before sending.
             start_time: startDateTime.toISOString(),
-            end_time: endDateTime.toISOString(),
+            end_time: endDateTime ? endDateTime.toISOString() : null,
             recurrence: formData.recurrence.frequency ? {
                 frequency: formData.recurrence.frequency.toUpperCase(),
                 interval: formData.recurrence.interval,
@@ -296,7 +307,9 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                 <p className="text-sm text-slate-400 dark:text-slate-500">
                     {selectedEvent.is_all_day
                         ? `All day on ${format(new Date(selectedEvent.start_time), "EEEE, MMMM d, yyyy")}`
-                        : `${format(new Date(selectedEvent.start_time), "EEEE, MMMM d, yyyy")} from ${format(new Date(selectedEvent.start_time), "HH:mm")} to ${format(new Date(selectedEvent.end_time), "HH:mm")}`
+                        : selectedEvent.end_time
+                            ? `${format(new Date(selectedEvent.start_time), "EEEE, MMMM d, yyyy")} from ${format(new Date(selectedEvent.start_time), "HH:mm")} to ${format(new Date(selectedEvent.end_time), "HH:mm")}`
+                            : `${format(new Date(selectedEvent.start_time), "EEEE, MMMM d, yyyy")} at ${format(new Date(selectedEvent.start_time), "HH:mm")}`
                     }
                 </p>
             </div>
@@ -376,49 +389,61 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-            <div className="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl shadow-2xl w-full max-w-lg p-6 mx-4 transform transition-all overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">
+            <div className="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl shadow-2xl w-full max-w-lg p-5 mx-4 transform transition-all overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-bold">
                       {view === 'form' 
                         ? (isEditMode ? 'Edit Event' : 'Add New Event') 
                         : 'Event Details'
                       }
                     </h2>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-200 dark:bg-slate-700 transition-colors"><X size={24} /></button>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-200 dark:bg-slate-700 transition-colors"><X size={20} /></button>
                 </div>
                 {view === 'details' ? renderDetailsView() : (
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" placeholder="Event Title *"/>
-                        <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors">
+                    <form onSubmit={handleSubmit} className="space-y-3">
+                        <input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" placeholder="Event Title *"/>
+                        <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors">
                             <option value="personal">Personal Event</option>
                             <option value="blocked">Blocked Time</option>
                             <option value="birthday">Birthday</option>
                         </select>
                         
-                        <div className="flex items-center gap-4 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg">
-                            <label htmlFor="all-day-toggle" className="font-semibold text-slate-600 dark:text-slate-300">All-day</label>
-                            <div className="flex-grow"></div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="all-day-toggle" checked={formData.is_all_day} onChange={handleAllDayToggle} className="sr-only peer" />
-                                <div className="w-11 h-6 bg-slate-300 dark:bg-slate-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
-                            </label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="flex items-center justify-between bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg">
+                                <label htmlFor="all-day-toggle" className="text-sm font-medium text-slate-600 dark:text-slate-300">All-day</label>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="all-day-toggle" checked={formData.is_all_day} onChange={handleAllDayToggle} className="sr-only peer" />
+                                    <div className="w-9 h-5 bg-slate-300 dark:bg-slate-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500"></div>
+                                </label>
+                            </div>
+                            {!formData.is_all_day && (
+                                <div className="flex items-center justify-between bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg">
+                                    <label htmlFor="no-end-time-toggle" className="text-sm font-medium text-slate-600 dark:text-slate-300">No end</label>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="no-end-time-toggle" checked={formData.no_end_time} onChange={handleNoEndTimeToggle} className="sr-only peer" />
+                                        <div className="w-9 h-5 bg-slate-300 dark:bg-slate-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500"></div>
+                                    </label>
+                                </div>
+                            )}
                         </div>
                         
-                        <div className="space-y-4">
-                            <div className="space-y-2">
+                        <div className="space-y-2">
+                            <div className="space-y-1">
                                 <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Start</label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <input type="date" name="date" value={formData.date} onChange={handleChange} required className="bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600"/>
-                                    {!formData.is_all_day && <input type="time" name="startTime" value={formData.startTime} onChange={handleChange} required className="bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600"/>}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <input type="date" name="date" value={formData.date} onChange={handleChange} required className="bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600"/>
+                                    {!formData.is_all_day && <input type="time" name="startTime" value={formData.startTime} onChange={handleChange} required className="bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600"/>}
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-600 dark:text-slate-300">End</label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required className="bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600"/>
-                                    {!formData.is_all_day && <input type="time" name="endTime" value={formData.endTime} onChange={handleChange} required className="bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600"/>}
+                            {!formData.no_end_time && (
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-600 dark:text-slate-300">End</label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required className="bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600"/>
+                                        {!formData.is_all_day && <input type="time" name="endTime" value={formData.endTime} onChange={handleChange} required className="bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600"/>}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                         
                         <div className="w-full bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600 focus-within:border-indigo-500 transition-colors flex flex-wrap items-center gap-2">
@@ -432,10 +457,10 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                             ))}
                             <input type="text" value={guestInput} onChange={(e) => setGuestInput(e.target.value)} onKeyDown={handleGuestKeyDown} placeholder="Add guests..." className="bg-transparent outline-none p-1 text-sm flex-grow min-w-[100px] text-slate-900 dark:text-white placeholder-slate-500"/>
                         </div>
-                        <textarea name="description" value={formData.description} onChange={handleChange} rows="2" className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" placeholder="Notes..."/>
-                        <div className="space-y-3 p-3 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 rounded-lg">
-                            <div className="flex items-center gap-2"><Repeat size={16}/><label className="font-semibold">Repeat</label></div>
-                            <select name="frequency" value={formData.recurrence.frequency} onChange={handleRecurrenceChange} className="w-full bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors">
+                        <textarea name="description" value={formData.description} onChange={handleChange} rows="1" className="w-full bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors resize-y" placeholder="Notes..."/>
+                        <div className="space-y-2 p-2 bg-white/50 dark:bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                            <div className="flex items-center gap-2"><Repeat size={14}/><label className="text-sm font-medium">Repeat</label></div>
+                            <select name="frequency" value={formData.recurrence.frequency} onChange={handleRecurrenceChange} className="w-full bg-slate-200 dark:bg-slate-700 p-2 rounded-md border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors text-sm">
                                 <option value="">Does not repeat</option>
                                 <option value="YEARLY">Yearly</option>
                                 <option value="MONTHLY">Monthly</option>
@@ -450,12 +475,12 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                                 </div>
                             )}
                         </div>
-                        {error && <div className="text-red-400 text-sm bg-red-100 dark:bg-red-900/50 p-3 rounded-lg border border-red-500/30">{error}</div>}
-                        <div className="mt-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                            <button type="button" onClick={() => isEditMode ? setView('details') : onClose()} className="px-6 py-2.5 bg-slate-300 dark:bg-slate-600 rounded-lg font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors">
+                        {error && <div className="text-red-400 text-sm bg-red-100 dark:bg-red-900/50 p-2 rounded-lg border border-red-500/30">{error}</div>}
+                        <div className="mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                            <button type="button" onClick={() => isEditMode ? setView('details') : onClose()} className="px-4 py-2 bg-slate-300 dark:bg-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors">
                                 Cancel
                             </button>
-                            <button type="submit" disabled={isSubmitting} className="px-6 py-2.5 bg-indigo-500 rounded-lg font-semibold hover:bg-indigo-600 transition-colors disabled:opacity-50 text-white">{isSubmitting ? 'Saving...' : 'Save'}</button>
+                            <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-indigo-500 rounded-lg text-sm font-semibold hover:bg-indigo-600 transition-colors disabled:opacity-50 text-white">{isSubmitting ? 'Saving...' : 'Save'}</button>
                         </div>
                     </form>
                 )}

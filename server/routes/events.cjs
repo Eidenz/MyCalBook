@@ -48,10 +48,10 @@ const expandRecurringEvents = async (userId, startDate, endDate) => {
     for (const parent of parentEvents) {
         // Get the original local time components from the parent event
         const parentStartDate = new Date(parent.start_time);
-        const parentEndDate = new Date(parent.end_time);
+        const parentEndDate = parent.end_time ? new Date(parent.end_time) : null;
 
-        // Calculate the event duration in milliseconds
-        const duration = parentEndDate - parentStartDate;
+        // Calculate the event duration in milliseconds (null if no end time)
+        const duration = parentEndDate ? (parentEndDate - parentStartDate) : null;
 
         // Extract the original local time components
         const originalLocalHour = parentStartDate.getHours();
@@ -97,17 +97,19 @@ const expandRecurringEvents = async (userId, startDate, endDate) => {
                 const occurrenceDay = occurrenceDate.getDate();
 
                 // Create a new Date object with the occurrence date but original event time
+                // The Date constructor properly handles DST transitions automatically
+                // This preserves the "wall clock" time across DST changes, which is correct for recurring events
                 const correctedStartTime = new Date(occurrenceYear, occurrenceMonth, occurrenceDay,
                                                   originalLocalHour, originalLocalMinute, originalLocalSecond, 0);
 
-                // Calculate end time based on the corrected start time
-                const correctedEndTime = new Date(correctedStartTime.getTime() + duration);
+                // Calculate end time based on the corrected start time (null if parent has no end time)
+                const correctedEndTime = duration !== null ? new Date(correctedStartTime.getTime() + duration) : null;
 
                 allOccurrences.push({
                     ...parent,
                     id: `${parent.id}-${occurrenceDate.getTime()}`, // Create a unique virtual ID
                     start_time: correctedStartTime.toISOString(),
-                    end_time: correctedEndTime.toISOString(),
+                    end_time: correctedEndTime ? correctedEndTime.toISOString() : null,
                 });
             }
         }
@@ -306,22 +308,24 @@ router.post('/import-ics', uploadIcs.single('icsfile'), async (req, res) => {
                 if (events.hasOwnProperty(key)) {
                     const event = events[key];
                     
-                    // Process only VEVENT types with a non-empty summary
-                    if (event.type === 'VEVENT' && event.summary && event.summary.trim() !== '' && event.start && event.end) {
+                    // Process only VEVENT types with a non-empty summary and at least a start time
+                    if (event.type === 'VEVENT' && event.summary && event.summary.trim() !== '' && event.start) {
                         const isAllDay = event.start.datetype === 'date';
-                        
+
                         let startDate, endDate;
-                        
+
                         if (isAllDay) {
                             // For all-day events, use the date as-is
                             startDate = new Date(event.start);
-                            endDate = new Date(event.end);
+                            endDate = event.end ? new Date(event.end) : null;
                             // For all-day events from iCal, the end date is exclusive.
-                            endDate.setDate(endDate.getDate() - 1);
+                            if (endDate) {
+                                endDate.setDate(endDate.getDate() - 1);
+                            }
                         } else {
                             // Create base dates
                             startDate = new Date(event.start);
-                            endDate = new Date(event.end);
+                            endDate = event.end ? new Date(event.end) : null;
                             
                             // Handle timezone correction for any timezone
                             if (event.start.tz && event.start.tz !== 'UTC') {
@@ -362,7 +366,7 @@ router.post('/import-ics', uploadIcs.single('icsfile'), async (req, res) => {
                                             // Apply the correction
                                             const offsetMs = totalOffsetHours * 60 * 60 * 1000;
                                             startDate = new Date(startDate.getTime() - offsetMs);
-                                            endDate = new Date(endDate.getTime() - offsetMs);
+                                            if (endDate) endDate = new Date(endDate.getTime() - offsetMs);
                                         } else {
                                             throw new Error('Could not parse timezone offset: ' + offsetPart.value);
                                         }
@@ -375,7 +379,7 @@ router.post('/import-ics', uploadIcs.single('icsfile'), async (req, res) => {
                                     if (simpleOffset !== null) {
                                         const offsetMs = simpleOffset * 60 * 60 * 1000;
                                         startDate = new Date(startDate.getTime() - offsetMs);
-                                        endDate = new Date(endDate.getTime() - offsetMs);
+                                        if (endDate) endDate = new Date(endDate.getTime() - offsetMs);
                                     }
                                 }
                             }
@@ -403,7 +407,7 @@ router.post('/import-ics', uploadIcs.single('icsfile'), async (req, res) => {
                             title: event.summary,
                             description: event.description || null,
                             start_time: isAllDay ? startOfDay(startDate).toISOString() : startDate.toISOString(),
-                            end_time: isAllDay ? endOfDay(endDate).toISOString() : endDate.toISOString(),
+                            end_time: endDate ? (isAllDay ? endOfDay(endDate).toISOString() : endDate.toISOString()) : null,
                             type: 'personal',
                             is_all_day: isAllDay,
                             recurrence_id: recurrenceId
@@ -491,7 +495,7 @@ router.post('/manual', async (req, res) => {
     const userId = req.user.id; 
     const { title, start_time, end_time, type, description, guests, recurrence, booking_id, is_all_day } = req.body;
 
-    if (!title || !start_time || !end_time || !type) {
+    if (!title || !start_time || !type) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
     
@@ -511,7 +515,7 @@ router.post('/manual', async (req, res) => {
         const newEventData = {
             user_id: userId, title, type, description,
             start_time: is_all_day ? startOfDay(new Date(start_time)).toISOString() : new Date(start_time).toISOString(),
-            end_time: is_all_day ? endOfDay(new Date(end_time)).toISOString() : new Date(end_time).toISOString(),
+            end_time: end_time ? (is_all_day ? endOfDay(new Date(end_time)).toISOString() : new Date(end_time).toISOString()) : null,
             guests: JSON.stringify(guests || []),
             recurrence_id: recurrenceId,
             booking_id: booking_id,
@@ -553,7 +557,7 @@ router.put('/manual/:id', async (req, res) => {
             guests: eventData.guests || [],
             is_all_day: !!isAllDay,
             start_time: isAllDay ? startOfDay(new Date(eventData.start_time)).toISOString() : new Date(eventData.start_time).toISOString(),
-            end_time: isAllDay ? endOfDay(new Date(eventData.end_time)).toISOString() : new Date(eventData.end_time).toISOString(),
+            end_time: eventData.end_time ? (isAllDay ? endOfDay(new Date(eventData.end_time)).toISOString() : new Date(eventData.end_time).toISOString()) : null,
             recurrence: eventData.recurrence,
         };
 

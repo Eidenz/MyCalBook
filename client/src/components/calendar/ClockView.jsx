@@ -40,20 +40,22 @@ const ClockView = ({ day, events = [], onEventClick }) => {
             return eventDate === targetDate && !event.is_all_day && event.type !== 'birthday';
         });
 
-        // Calculate total scheduled time
+        // Calculate total scheduled time (only for events with end times)
         let totalMinutes = 0;
         dayEvents.forEach(event => {
-            const start = new Date(event.start_time);
-            const end = new Date(event.end_time);
-            totalMinutes += differenceInMinutes(end, start);
+            if (event.end_time) {
+                const start = new Date(event.start_time);
+                const end = new Date(event.end_time);
+                totalMinutes += differenceInMinutes(end, start);
+            }
         });
 
-        // Group events by type for summary
+        // Group events by type for summary (only count duration for events with end times)
         const eventsByType = dayEvents.reduce((acc, event) => {
             if (!acc[event.type]) {
                 acc[event.type] = { count: 0, duration: 0, events: [] };
             }
-            const duration = differenceInMinutes(new Date(event.end_time), new Date(event.start_time));
+            const duration = event.end_time ? differenceInMinutes(new Date(event.end_time), new Date(event.start_time)) : 0;
             acc[event.type].count++;
             acc[event.type].duration += duration;
             acc[event.type].events.push(event);
@@ -113,8 +115,8 @@ const ClockView = ({ day, events = [], onEventClick }) => {
 
     const typeLabels = {
         personal: 'PERSONAL',
-        booked: 'FOCUS',
-        blocked: 'ADMIN',
+        booked: 'BOOKING',
+        blocked: 'BLOCKED',
     };
 
     // Format hours and minutes
@@ -196,9 +198,50 @@ const ClockView = ({ day, events = [], onEventClick }) => {
                         );
                     })}
 
-                    {/* Event arcs */}
+                    {/* Event arcs and markers */}
                     {dayEvents.map((event, idx) => {
                         const startTime = new Date(event.start_time);
+                        const startHour = getHours(startTime);
+                        const startMinute = getMinutes(startTime);
+                        const startAngle = timeToAngle(startHour, startMinute);
+                        const color = typeColors[event.type] || '#3b82f6';
+
+                        // Events with no end time: render as a large dot
+                        if (!event.end_time) {
+                            const startRad = (startAngle * Math.PI) / 180;
+                            const dotRadius = eventRadius - 20; // Position between inner and outer
+                            const cx = center + dotRadius * Math.cos(startRad);
+                            const cy = center + dotRadius * Math.sin(startRad);
+
+                            return (
+                                <g key={`${event.id}-${idx}`}>
+                                    {/* Outer glow circle */}
+                                    <circle
+                                        cx={cx}
+                                        cy={cy}
+                                        r="12"
+                                        fill={color}
+                                        opacity="0.3"
+                                        className="cursor-pointer"
+                                        onClick={() => onEventClick(event)}
+                                    />
+                                    {/* Main dot */}
+                                    <circle
+                                        cx={cx}
+                                        cy={cy}
+                                        r="8"
+                                        fill={color}
+                                        className="cursor-pointer transition-all duration-200 hover:r-10"
+                                        onClick={() => onEventClick(event)}
+                                        style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))' }}
+                                    >
+                                        <title>{`${event.title}\n${format(startTime, 'HH:mm')}`}</title>
+                                    </circle>
+                                </g>
+                            );
+                        }
+
+                        // Events with end time: render as arcs
                         let endTime = new Date(event.end_time);
 
                         // For multi-day events, clamp the end time to 23:59 of the current day
@@ -208,16 +251,11 @@ const ClockView = ({ day, events = [], onEventClick }) => {
                             endTime = dayEnd;
                         }
 
-                        const startHour = getHours(startTime);
-                        const startMinute = getMinutes(startTime);
                         const endHour = getHours(endTime);
                         const endMinute = getMinutes(endTime);
-
-                        const startAngle = timeToAngle(startHour, startMinute);
                         const endAngle = timeToAngle(endHour, endMinute);
 
                         const arcPath = createArcPath(startAngle, endAngle, eventRadius, eventRadius - 40);
-                        const color = typeColors[event.type] || '#3b82f6';
 
                         return (
                             <path
@@ -347,13 +385,15 @@ const ClockView = ({ day, events = [], onEventClick }) => {
                         <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-3">Events</h3>
                         {dayEvents.map((event, idx) => {
                             const startTime = new Date(event.start_time);
-                            let endTime = new Date(event.end_time);
+                            let endTime = event.end_time ? new Date(event.end_time) : null;
 
                             // For multi-day events, clamp the end time to 23:59 of the current day
-                            const dayEnd = new Date(day);
-                            dayEnd.setHours(23, 59, 59, 999);
-                            if (endTime > dayEnd) {
-                                endTime = dayEnd;
+                            if (endTime) {
+                                const dayEnd = new Date(day);
+                                dayEnd.setHours(23, 59, 59, 999);
+                                if (endTime > dayEnd) {
+                                    endTime = dayEnd;
+                                }
                             }
 
                             const color = typeColors[event.type] || '#3b82f6';
@@ -373,7 +413,7 @@ const ClockView = ({ day, events = [], onEventClick }) => {
                                             {event.title}
                                         </p>
                                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                                            {format(startTime, 'HH:mm')} - {format(endTime, 'HH:mm')}
+                                            {endTime ? `${format(startTime, 'HH:mm')} - ${format(endTime, 'HH:mm')}` : `${format(startTime, 'HH:mm')}`}
                                         </p>
                                     </div>
                                 </div>

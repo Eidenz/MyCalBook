@@ -11,12 +11,14 @@ const { format, startOfDay } = require('date-fns');
 const getBlockedSlots = async (userId, startDate, endDate) => {
     const manualBlocks = await db('manual_events')
         .where({ user_id: userId })
+        .whereNotNull('end_time') // Only include events with an end time
         .where('start_time', '<', endDate.toISOString())
         .where('end_time', '>', startDate.toISOString());
 
     const bookedSlots = await db('bookings')
         .join('event_types', 'bookings.event_type_id', 'event_types.id')
         .where('event_types.user_id', userId)
+        .whereNotNull('bookings.end_time') // Only include bookings with an end time
         .where('bookings.start_time', '<', endDate.toISOString())
         .where('bookings.end_time', '>', startDate.toISOString())
         .select('bookings.start_time', 'bookings.end_time');

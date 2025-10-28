@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { format, startOfToday, isSameMonth, startOfMonth, addMonths, subMonths } from 'date-fns';
+import { format, startOfToday, isSameMonth, startOfMonth, addMonths, subMonths, setHours, setMinutes, setSeconds } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { useCalendar } from '../hooks/useCalendar';
 import { Clock, MapPin, Calendar as CalendarIcon, ArrowLeft, Globe, CheckCircle, PlusCircle, UserCheck, ChevronLeft } from 'lucide-react';
@@ -143,14 +143,20 @@ const BookingPage = () => {
     const handleConfirmBooking = async (bookingDetails) => {
         try {
             // Construct the correct UTC timestamp from selectedDate and selectedTime
+            // Using date-fns functions to properly handle DST transitions
             const selectedTimeObj = new Date(selectedTime);
             const hours = selectedTimeObj.getHours();
             const minutes = selectedTimeObj.getMinutes();
-            
-            // Create a new date using the selectedDate and the time from selectedTime
-            const correctDateTime = new Date(selectedDate);
-            correctDateTime.setHours(hours, minutes, 0, 0);
-            
+
+            // Use date-fns setHours/setMinutes/setSeconds which properly handle DST
+            const correctDateTime = setSeconds(
+                setMinutes(
+                    setHours(selectedDate, hours),
+                    minutes
+                ),
+                0
+            );
+
             const response = await fetch('/api/public/bookings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
