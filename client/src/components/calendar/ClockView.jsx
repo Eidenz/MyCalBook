@@ -127,8 +127,9 @@ const ClockView = ({ day, events = [], onEventClick }) => {
     };
 
     return (
-        <div className="flex-1 flex flex-col items-center justify-start bg-slate-100 dark:bg-slate-800 p-4 overflow-auto">
-            <div className="relative max-w-2xl w-full my-auto">
+        <div className="flex-1 flex flex-col lg:flex-row items-start lg:items-center justify-center bg-slate-100 dark:bg-slate-800 p-4 lg:p-8 gap-6 lg:gap-12 overflow-auto">
+            {/* Clock container */}
+            <div className="relative w-full max-w-md lg:max-w-xl xl:max-w-2xl flex-shrink-0">
                 <svg
                     viewBox={`0 0 ${size} ${size}`}
                     className="w-full"
@@ -347,7 +348,7 @@ const ClockView = ({ day, events = [], onEventClick }) => {
 
                         {/* Event type breakdown */}
                         {Object.entries(eventsByType).map(([type, data], idx) => {
-                            const yOffset = center + 30 + (idx * 25);
+                            const yOffset = center + 30 + (idx * 35); // Increased from 25 to 35 for more spacing
                             return (
                                 <g key={type}>
                                     <text
@@ -378,11 +379,13 @@ const ClockView = ({ day, events = [], onEventClick }) => {
                         })}
                     </g>
                 </svg>
+            </div>
 
-                {/* Bottom legend/event list */}
-                {dayEvents.length > 0 && (
-                    <div className="mt-6 space-y-2 max-h-48 overflow-y-auto">
-                        <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-3">Events</h3>
+            {/* Event list - on the right for desktop, underneath for mobile */}
+            <div className="w-full lg:w-96 xl:w-[28rem] flex-shrink-0">
+                {dayEvents.length > 0 ? (
+                    <div className="space-y-2 max-h-64 lg:max-h-[600px] overflow-y-auto pr-2">
+                        <h3 className="text-sm lg:text-base font-semibold text-slate-600 dark:text-slate-300 mb-3 lg:mb-4">Events</h3>
                         {dayEvents.map((event, idx) => {
                             const startTime = new Date(event.start_time);
                             let endTime = event.end_time ? new Date(event.end_time) : null;
@@ -401,18 +404,18 @@ const ClockView = ({ day, events = [], onEventClick }) => {
                             return (
                                 <div
                                     key={`${event.id}-${idx}`}
-                                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+                                    className="flex items-center gap-3 p-2 lg:p-2.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition-colors"
                                     onClick={() => onEventClick(event)}
                                 >
                                     <div
-                                        className="w-3 h-3 rounded-full flex-shrink-0"
+                                        className="w-3 h-3 lg:w-4 lg:h-4 rounded-full flex-shrink-0"
                                         style={{ backgroundColor: color }}
                                     />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                                        <p className="text-sm lg:text-base font-medium text-slate-900 dark:text-white truncate">
                                             {event.title}
                                         </p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
                                             {endTime ? `${format(startTime, 'HH:mm')} - ${format(endTime, 'HH:mm')}` : `${format(startTime, 'HH:mm')}`}
                                         </p>
                                     </div>
@@ -420,10 +423,8 @@ const ClockView = ({ day, events = [], onEventClick }) => {
                             );
                         })}
                     </div>
-                )}
-
-                {dayEvents.length === 0 && (
-                    <div className="mt-6 text-center">
+                ) : (
+                    <div className="text-center">
                         <p className="text-slate-500 dark:text-slate-400 text-sm">
                             No events scheduled for this day
                         </p>
