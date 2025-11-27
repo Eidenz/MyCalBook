@@ -36,8 +36,8 @@ const EventTypeForm = ({ onSave, onCancel, token, eventType }) => {
                 setSchedules(fetchedSchedules);
 
                 if (isEditMode) {
-                    const durations = (typeof eventType.durations === 'string') 
-                        ? JSON.parse(eventType.durations) 
+                    const durations = (typeof eventType.durations === 'string')
+                        ? JSON.parse(eventType.durations)
                         : (eventType.durations || []);
                     setFormData({
                         title: eventType.title || '',

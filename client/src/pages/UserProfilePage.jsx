@@ -62,6 +62,9 @@ const UserProfilePage = () => {
             <div className="w-full max-w-2xl mx-auto">
                 <div className="text-center mb-8">
                     <h1 className="text-4xl font-bold text-slate-900 dark:text-white">Book a hangout with {user?.username}</h1>
+                    {user?.booking_page_subtitle && (
+                        <p className="text-slate-600 dark:text-slate-300 mt-3 text-lg">{user.booking_page_subtitle}</p>
+                    )}
                     <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 mt-2">Select one of the event types below to get started.</p>
                 </div>
                 <div className="bg-slate-100/50 dark:bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-2xl shadow-2xl p-6 space-y-4">

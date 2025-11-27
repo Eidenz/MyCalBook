@@ -280,7 +280,7 @@ const BookingPage = () => {
                     
                     <div className="flex-grow min-h-0 overflow-y-auto pr-2 -mr-2">
                         <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400">{eventType?.ownerUsername}</p>
-                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white my-2">{eventType?.title}</h1>
+                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white my-2">{eventType?.booking_title || eventType?.title}</h1>
                         <div className="space-y-2 text-slate-600 dark:text-slate-300 mt-4">
                             <div className="flex items-center gap-3"><Clock size={16} className="text-indigo-500 dark:text-indigo-400"/><span>{formatDuration(selectedDuration || eventType?.default_duration)}</span></div>
                             <div className="flex items-center gap-3"><MapPin size={16} className="text-indigo-500 dark:text-indigo-400"/><span>{eventType?.location}</span></div>

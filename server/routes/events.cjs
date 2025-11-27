@@ -456,7 +456,8 @@ router.get('/manual', async (req, res) => {
             .whereNull('recurrence_id') // Not a recurring parent
             .whereNull('parent_event_id') // Not an exception
             .where('start_time', '>=', startDate.toISOString())
-            .where('start_time', '<', endDate.toISOString());
+            .where('start_time', '<', endDate.toISOString())
+            .select('*'); // Explicitly select all fields including booking_id
 
         // Promise to fetch confirmed bookings
         const bookingsPromise = db('bookings')
@@ -466,7 +467,7 @@ router.get('/manual', async (req, res) => {
             .where('bookings.start_time', '<', endDate.toISOString())
             .select(
                 'bookings.id', 'bookings.booker_name', 'bookings.booker_email',
-                db.raw("event_types.title || ' with ' || bookings.booker_name as title"),
+                db.raw("CASE WHEN bookings.booker_name IS NULL OR bookings.booker_name = '' THEN event_types.title || ' with Unknown' ELSE event_types.title || ' with ' || bookings.booker_name END as title"),
                 'bookings.start_time', 'bookings.end_time', 'bookings.notes as description',
                 'bookings.guests', db.raw("'booked' as type")
             );

@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
     try {
         const user = await db('users')
             .where({ id: req.user.id })
-            .first('email', 'username', 'email_notifications', 'is_two_factor_enabled');
+            .first('email', 'username', 'email_notifications', 'is_two_factor_enabled', 'booking_page_subtitle');
         if (!user) {
             return res.status(404).json({ error: 'User not found.' });
         }
@@ -40,10 +40,13 @@ router.get('/', async (req, res) => {
 
 // --- PUT /api/settings ---
 router.put('/', async (req, res) => {
-    const { email_notifications } = req.body;
+    const { email_notifications, booking_page_subtitle } = req.body;
     const updates = {};
     if (typeof email_notifications === 'boolean') {
         updates.email_notifications = email_notifications;
+    }
+    if (typeof booking_page_subtitle === 'string') {
+        updates.booking_page_subtitle = booking_page_subtitle;
     }
 
     if (Object.keys(updates).length === 0) {
@@ -54,8 +57,8 @@ router.put('/', async (req, res) => {
         const [updatedUser] = await db('users')
             .where({ id: req.user.id })
             .update(updates)
-            .returning(['email', 'username', 'email_notifications', 'is_two_factor_enabled']);
-        
+            .returning(['email', 'username', 'email_notifications', 'is_two_factor_enabled', 'booking_page_subtitle']);
+
         res.json({ message: 'Settings updated successfully.', settings: updatedUser });
     } catch (error) {
         console.error("Error updating user settings:", error);

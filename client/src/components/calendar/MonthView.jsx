@@ -152,12 +152,23 @@ const EventPill = ({ event, isStart, onClick, isMobile }) => {
 
 const MonthView = ({ days, month, events = [], onEventClick, onShowMoreClick }) => {
     const [isMobile, setIsMobile] = useState(false);
+    const [maxEventsForScreen, setMaxEventsForScreen] = useState(MAX_EVENTS_VISIBLE);
 
     useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
+        const checkScreenSize = () => {
+            // Mobile detection for UI rendering (narrow screens)
+            const isSmallWidth = window.innerWidth < 768;
+            setIsMobile(isSmallWidth);
+
+            // Separate check for how many events to show based on screen height
+            // 1080p screens (1920x1080) and below: show 2 events max
+            // 1440p screens (2560x1440) and above: show 3 events max
+            const isSmallHeight = window.innerHeight < 1100;
+            setMaxEventsForScreen(isSmallWidth || isSmallHeight ? MAX_EVENTS_VISIBLE_MOBILE : MAX_EVENTS_VISIBLE);
+        };
+        checkScreenSize();
+        window.addEventListener('resize', checkScreenSize);
+        return () => window.removeEventListener('resize', checkScreenSize);
     }, []);
 
     const eventsByDay = useMemo(() => {
@@ -187,50 +198,68 @@ const MonthView = ({ days, month, events = [], onEventClick, onShowMoreClick }) 
         return dayMap;
     }, [events, days]);
 
-    const maxEventsVisible = isMobile ? MAX_EVENTS_VISIBLE_MOBILE : MAX_EVENTS_VISIBLE;
-
     return (
         <div className="grid grid-cols-7 h-full">
             {days.map((day) => {
                 const dayKey = day.toDateString();
                 const dayEvents = eventsByDay.get(dayKey) || [];
-                const visibleEvents = dayEvents.slice(0, maxEventsVisible);
-                const hiddenCount = Math.max(0, dayEvents.length - maxEventsVisible);
                 const isCurrentMonth = isSameMonth(day, month);
                 const today = isToday(day);
-                
+
+                // For today, prioritize upcoming events (events that haven't ended yet)
+                let eventsToShow = dayEvents;
+                if (today) {
+                    const now = new Date();
+                    const upcomingEvents = dayEvents.filter(event => {
+                        if (!event.end_time) return true; // Events without end time are always shown
+                        return new Date(event.end_time) > now;
+                    });
+                    const pastEvents = dayEvents.filter(event => {
+                        if (!event.end_time) return false;
+                        return new Date(event.end_time) <= now;
+                    });
+                    // Show upcoming first, then past events
+                    eventsToShow = [...upcomingEvents, ...pastEvents];
+                }
+
+                const visibleEvents = eventsToShow.slice(0, maxEventsForScreen);
+                const hiddenCount = Math.max(0, eventsToShow.length - maxEventsForScreen);
+
                 const cellClasses = `
                     border-r border-b border-slate-300 dark:border-slate-700 p-1 md:p-2 flex flex-col transition-colors duration-300
                     ${isMobile ? 'min-h-[80px]' : 'min-h-[120px]'}
                     ${isCurrentMonth ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50' : 'bg-slate-50 dark:bg-slate-900 text-slate-600'}
                 `;
-                
+
                 const dateClasses = `
-                    font-semibold mb-1 md:mb-2 self-start text-sm md:text-base
-                    ${today ? 'bg-indigo-500 text-white rounded-full w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-xs md:text-sm' : ''} 
+                    font-semibold text-sm md:text-base
+                    ${today ? 'bg-indigo-500 text-white rounded-full w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-xs md:text-sm' : ''}
                     ${!isCurrentMonth ? 'text-slate-700' : ''}
                 `;
 
                 return (
                     <div key={dayKey} className={cellClasses}>
-                        <div className={dateClasses}>{format(day, 'd')}</div>
+                        <div className="flex items-center justify-between mb-1 md:mb-2 gap-1">
+                            <div className={dateClasses}>{format(day, 'd')}</div>
+                            {hiddenCount > 0 && (
+                                <div
+                                    className="text-xs font-bold bg-indigo-500 text-white px-1.5 py-0.5 rounded-full cursor-pointer hover:bg-indigo-600 transition-colors flex-shrink-0"
+                                    onClick={() => onShowMoreClick(day, eventsToShow)}
+                                    title={`${hiddenCount} more event${hiddenCount > 1 ? 's' : ''}`}
+                                >
+                                    +{hiddenCount}
+                                </div>
+                            )}
+                        </div>
                         <div className="flex-grow overflow-hidden">
-                            {visibleEvents.map(event => 
-                                <EventPill 
-                                    key={`${event.id}-${dayKey}`} 
-                                    event={event} 
-                                    isStart={isSameDay(day, new Date(event.start_time))} 
+                            {visibleEvents.map(event =>
+                                <EventPill
+                                    key={`${event.id}-${dayKey}`}
+                                    event={event}
+                                    isStart={isSameDay(day, new Date(event.start_time))}
                                     onClick={onEventClick}
                                     isMobile={isMobile}
                                 />
-                            )}
-                            {hiddenCount > 0 && (
-                                <div 
-                                    className={`text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 mt-1 cursor-pointer hover:underline ${isMobile ? 'text-xs' : ''}`}
-                                    onClick={() => onShowMoreClick(day, dayEvents)}
-                                >
-                                    + {hiddenCount} more
-                                </div>
                             )}
                         </div>
                     </div>

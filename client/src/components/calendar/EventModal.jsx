@@ -61,6 +61,8 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
             setError('');
             setGuestInput('');
             setHasManualEndDate(false);
+            setIsConfirmDeleteOpen(false);
+            setIsRecurrenceModalOpen(false);
             // When opening, always start in details view if it's an existing event
             setView(isEditMode ? 'details' : 'form');
         }
@@ -203,15 +205,17 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
         }
     
         try {
+            // If it's a booked event that was added to user's calendar, use the booking_id
+            // Otherwise use the event's own ID
             const url = isBookedEvent
-              ? `/api/events/bookings/${selectedEvent.id}`
+              ? `/api/events/bookings/${selectedEvent.booking_id || selectedEvent.id}`
               : `/api/events/manual/${selectedEvent.id}`;
-            
+
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
-            
-            const response = await fetch(url, { 
-                method: 'DELETE', 
+
+            const response = await fetch(url, {
+                method: 'DELETE',
                 headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
                 body: JSON.stringify(payload),
                 signal: controller.signal
@@ -260,6 +264,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
     };
 
     const handleRecurrenceConfirm = (scope) => {
+        setIsRecurrenceModalOpen(false);
         if (recurrenceAction.action === 'save') {
             performSave(scope);
         } else if (recurrenceAction.action === 'delete') {
@@ -319,7 +324,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                     <>
                         <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
                             <User size={16} className="text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
-                            <span>Booked by: <strong className="text-slate-900 dark:text-white">{selectedEvent.booker_name}</strong></span>
+                            <span>Booked by: <strong className="text-slate-900 dark:text-white">{selectedEvent.booker_name || 'You'}</strong></span>
                         </div>
                         {selectedEvent.booker_email && (
                             <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
@@ -486,7 +491,7 @@ const EventModal = ({ isOpen, onClose, selectedEvent, token, onRefresh }) => {
                 )}
             </div>
 
-            <ConfirmationModal isOpen={isConfirmDeleteOpen} onClose={() => setIsConfirmDeleteOpen(false)} onConfirm={handleDeleteConfirm} title={isBookedEvent ? "Cancel Booking" : "Delete Event"} message={isBookedEvent ? `Are you sure you want to cancel the booking with "${selectedEvent?.booker_name}"? They will be notified by email.` : `Are you sure you want to permanently delete "${selectedEvent?.title}"?`} confirmText={isBookedEvent ? "Yes, Cancel Booking" : "Yes, Delete Event"} />
+            <ConfirmationModal isOpen={isConfirmDeleteOpen} onClose={() => setIsConfirmDeleteOpen(false)} onConfirm={handleDeleteConfirm} title={isBookedEvent ? "Cancel Booking" : "Delete Event"} message={isBookedEvent ? `Are you sure you want to cancel this booking${selectedEvent?.booker_name ? ` with "${selectedEvent.booker_name}"` : ''}? ${selectedEvent?.booker_email ? 'They will be notified by email.' : ''}` : `Are you sure you want to permanently delete "${selectedEvent?.title}"?`} confirmText={isBookedEvent ? "Yes, Cancel Booking" : "Yes, Delete Event"} />
             <RecurrenceEditModal isOpen={isRecurrenceModalOpen} onClose={() => setIsRecurrenceModalOpen(false)} onConfirm={handleRecurrenceConfirm} verb={recurrenceAction.action}/>
         </div>
     );

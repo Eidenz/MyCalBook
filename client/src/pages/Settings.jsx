@@ -291,10 +291,10 @@ const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
 
 
 const Settings = () => {
-    const { token, logout } = useAuth();
-    const [settings, setSettings] = useState({ email_notifications: true, is_two_factor_enabled: false });
+    const { token, logout, user } = useAuth();
+    const [settings, setSettings] = useState({ email_notifications: true, is_two_factor_enabled: false, booking_page_subtitle: '' });
     const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    
+
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -406,13 +406,37 @@ const Settings = () => {
 
             <div className="bg-slate-100 dark:bg-slate-800 rounded-lg shadow-lg p-6 space-y-8">
                 <div>
-                    <h2 className="text-xl font-semibold mb-2">Profile</h2>
-                    <div className="flex items-center justify-between bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 p-4 rounded-lg">
-                        <p className="text-slate-600 dark:text-slate-300">Notify me about new bookings</p>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked={settings.email_notifications} onChange={handleToggleChange} className="sr-only peer" />
-                            <div className="w-11 h-6 bg-slate-300 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
-                        </label>
+                    <h2 className="text-xl font-semibold mb-4">Profile</h2>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 p-4 rounded-lg">
+                            <p className="text-slate-600 dark:text-slate-300">Notify me about new bookings</p>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" checked={settings.email_notifications} onChange={handleToggleChange} className="sr-only peer" />
+                                <div className="w-11 h-6 bg-slate-300 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+                            </label>
+                        </div>
+                        <div className="bg-slate-200/50 dark:bg-slate-200 dark:bg-slate-700/50 p-4 rounded-lg">
+                            <label className="block text-sm font-semibold mb-2 text-slate-600 dark:text-slate-300">Booking Page Subtitle</label>
+                            <input
+                                type="text"
+                                value={settings.booking_page_subtitle || ''}
+                                onChange={(e) => setSettings(prev => ({...prev, booking_page_subtitle: e.target.value}))}
+                                onBlur={async () => {
+                                    try {
+                                        const res = await fetch('/api/settings', {
+                                            method: 'PUT',
+                                            headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                                            body: JSON.stringify({ booking_page_subtitle: settings.booking_page_subtitle }),
+                                        });
+                                        if (!res.ok) throw new Error('Failed to update subtitle.');
+                                        showSuccessMessage('Booking page subtitle saved!');
+                                    } catch (err) { setError(err.message); }
+                                }}
+                                placeholder="e.g., Choose a time that works for you!"
+                                className="w-full bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600"
+                            />
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">Optional subtitle shown on your public booking page ({user ? `/u/${user.username}` : ''}).</p>
+                        </div>
                     </div>
                 </div>
                 
