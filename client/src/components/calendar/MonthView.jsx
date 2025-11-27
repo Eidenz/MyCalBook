@@ -244,7 +244,7 @@ const MonthView = ({ days, month, events = [], onEventClick, onShowMoreClick }) 
                             {hiddenCount > 0 && (
                                 <div
                                     className="text-xs font-bold bg-indigo-500 text-white px-1.5 py-0.5 rounded-full cursor-pointer hover:bg-indigo-600 transition-colors flex-shrink-0"
-                                    onClick={() => onShowMoreClick(day, eventsToShow)}
+                                    onClick={() => onShowMoreClick(day, dayEvents)}
                                     title={`${hiddenCount} more event${hiddenCount > 1 ? 's' : ''}`}
                                 >
                                     +{hiddenCount}
