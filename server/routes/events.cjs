@@ -671,10 +671,31 @@ router.delete('/bookings/:id', async (req, res) => {
     const bookingId = parseInt(req.params.id, 10);
 
     try {
-        const cancelledBooking = await triggerBookingCancellation(bookingId, 'owner');
-        if (cancelledBooking.user_id !== userId) {
+        // Check permission BEFORE deleting
+        const booking = await db('bookings')
+            .join('event_types', 'bookings.event_type_id', 'event_types.id')
+            .where('bookings.id', bookingId)
+            .first('bookings.id', 'event_types.user_id');
+
+        if (!booking) {
+            return res.status(404).json({ error: 'Booking not found or already cancelled.' });
+        }
+
+        // Check if user is the event owner OR has this booking in their calendar (is the booker)
+        const isOwner = booking.user_id === userId;
+        const isBooker = await db('manual_events')
+            .where({ user_id: userId, booking_id: bookingId })
+            .first('id');
+
+        if (!isOwner && !isBooker) {
             return res.status(403).json({ error: 'You do not have permission to delete this booking.' });
         }
+
+        // Determine who cancelled (owner or booker)
+        const cancelledBy = isOwner ? 'owner' : 'booker';
+
+        // Now safe to delete
+        await triggerBookingCancellation(bookingId, cancelledBy);
         res.json({ message: 'Booking cancelled.' });
     } catch (error) {
         console.error('Error deleting booking:', error);
