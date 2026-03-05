@@ -23,7 +23,9 @@ router.get('/', async (req, res) => {
       return res.status(400).json({ error: 'Invalid URL' });
     }
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    // Derive baseUrl from the url param's origin to ensure correct protocol
+    // behind reverse proxies (req.protocol may be 'http' even when accessed via HTTPS)
+    const baseUrl = parsedUrl.origin;
 
     // Match /book/:slug
     const bookMatch = parsedUrl.pathname.match(/^\/book\/([^/]+)$/);
