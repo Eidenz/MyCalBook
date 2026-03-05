@@ -74,11 +74,13 @@ app.get('/book/:slug', async (req, res, next) => {
         // Prepare data for meta tags
         const pageTitle = `${eventType.title} - Book with ${eventType.username}`;
         const pageDescription = (eventType.description || `Schedule a ${eventType.title} event with ${eventType.username}.`).substring(0, 160).replace(/"/g, '\"');
-        const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
-        const fullImageUrl = eventType.image_url ? `${req.protocol}://${req.get('host')}${eventType.image_url}` : null;
-        
+        const protocol = req.get('x-forwarded-proto') || req.protocol;
+        const host = req.get('host');
+        const fullUrl = `${protocol}://${host}${req.originalUrl}`;
+        const fullImageUrl = eventType.image_url ? `${protocol}://${host}${eventType.image_url}` : null;
+
         // Construct meta tags
-        const oembedUrl = `${req.protocol}://${req.get('host')}/api/oembed?url=${encodeURIComponent(fullUrl)}&format=json`;
+        const oembedUrl = `${protocol}://${host}/api/oembed?url=${encodeURIComponent(fullUrl)}&format=json`;
         let metaTags = `
             <title>${pageTitle}</title>
             <meta name="description" content="${pageDescription}">
@@ -120,10 +122,12 @@ app.get('/u/:username', async (req, res, next) => {
         // Prepare data
         const pageTitle = `Book an event with ${user.username}`;
         const pageDescription = `See all available event types and schedule a time with ${user.username}.`;
-        const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+        const protocol = req.get('x-forwarded-proto') || req.protocol;
+        const host = req.get('host');
+        const fullUrl = `${protocol}://${host}${req.originalUrl}`;
 
         // Construct meta tags
-        const oembedUrl = `${req.protocol}://${req.get('host')}/api/oembed?url=${encodeURIComponent(fullUrl)}&format=json`;
+        const oembedUrl = `${protocol}://${host}/api/oembed?url=${encodeURIComponent(fullUrl)}&format=json`;
         const metaTags = `
             <title>${pageTitle}</title>
             <meta name="description" content="${pageDescription}">
