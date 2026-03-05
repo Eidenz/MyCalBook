@@ -15,6 +15,7 @@ try {
 }
 
 
+const oembedRouter = require('./routes/oembed.cjs');
 const authRouter = require('./routes/auth.cjs');
 const eventsRouter = require('./routes/events.cjs');
 const availabilityRouter = require('./routes/availability.cjs');
@@ -49,6 +50,7 @@ app.use('/api/public', publicRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/oembed', oembedRouter);
 
 const frontendBuildPath = path.join(__dirname, '..', 'client', 'dist');
 
@@ -76,6 +78,7 @@ app.get('/book/:slug', async (req, res, next) => {
         const fullImageUrl = eventType.image_url ? `${req.protocol}://${req.get('host')}${eventType.image_url}` : null;
         
         // Construct meta tags
+        const oembedUrl = `${req.protocol}://${req.get('host')}/api/oembed?url=${encodeURIComponent(fullUrl)}&format=json`;
         let metaTags = `
             <title>${pageTitle}</title>
             <meta name="description" content="${pageDescription}">
@@ -85,8 +88,9 @@ app.get('/book/:slug', async (req, res, next) => {
             <meta property="og:type" content="website">
             <meta name="twitter:card" content="${fullImageUrl ? 'summary_large_image' : 'summary'}">
             <meta name="theme-color" content="#6366f1">
+            <link rel="alternate" type="application/json+oembed" href="${oembedUrl}" title="${pageTitle}" />
         `;
-        
+
         if (fullImageUrl) {
             metaTags += `<meta property="og:image" content="${fullImageUrl}">`;
         }
@@ -119,6 +123,7 @@ app.get('/u/:username', async (req, res, next) => {
         const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
 
         // Construct meta tags
+        const oembedUrl = `${req.protocol}://${req.get('host')}/api/oembed?url=${encodeURIComponent(fullUrl)}&format=json`;
         const metaTags = `
             <title>${pageTitle}</title>
             <meta name="description" content="${pageDescription}">
@@ -128,6 +133,7 @@ app.get('/u/:username', async (req, res, next) => {
             <meta property="og:type" content="website">
             <meta name="twitter:card" content="summary">
             <meta name="theme-color" content="#6366f1">
+            <link rel="alternate" type="application/json+oembed" href="${oembedUrl}" title="${pageTitle}" />
         `;
 
         htmlData = htmlData.replace('</head>', `${metaTags}</head>`);
