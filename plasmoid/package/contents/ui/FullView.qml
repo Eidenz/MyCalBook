@@ -2,19 +2,31 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
-import org.kde.plasma.plasmoid
 import org.kde.plasma.components as PlasmaComponents
 import "mycalbook.js" as MyCalBook
 
-// Popup view: header with title + refresh button, then the grouped list of
-// upcoming events. Empty / loading / error states each get their own slot.
+// Popup / desktop view: header with title + refresh button, then the
+// grouped list of upcoming events. Empty / loading / error states each
+// get their own slot.
 //
-// FullView is its own QML file, so the `id: root` from main.qml isn't in
-// scope. Plasma 6 exposes the parent PlasmoidItem (and any custom
-// properties on it) through the `Plasmoid` singleton — that's how we
-// access events, loading, fetchError, refresh(), etc.
+// All shared state is passed in as explicit properties. The Plasmoid
+// reference does not expose user-defined QML properties on PlasmoidItem
+// from inside a separate file, so wiring it through here is the only
+// reliable way for the parent's data to reach this view.
 Item {
     id: fullView
+
+    // --- Properties bound from main.qml -----------------------------------
+    property var events: []
+    property bool loading: false
+    property string fetchError: ""
+    property var lastUpdated: null
+    property bool isConfigured: false
+    property string serverUrl: ""
+
+    // --- Signals raised back to main.qml ----------------------------------
+    signal refreshRequested()
+    signal configureRequested()
 
     Layout.minimumWidth: Kirigami.Units.gridUnit * 18
     Layout.minimumHeight: Kirigami.Units.gridUnit * 16
@@ -22,9 +34,9 @@ Item {
     Layout.preferredHeight: Kirigami.Units.gridUnit * 26
 
     // The grouped representation is recomputed whenever events change.
-    readonly property var groups: MyCalBook.groupByDay(Plasmoid.events)
-    readonly property bool hasEvents: Plasmoid.events.length > 0
-    readonly property bool showError: Plasmoid.fetchError.length > 0 && !hasEvents
+    readonly property var groups: MyCalBook.groupByDay(fullView.events)
+    readonly property bool hasEvents: fullView.events.length > 0
+    readonly property bool showError: fullView.fetchError.length > 0 && !hasEvents
 
     ColumnLayout {
         anchors.fill: parent
@@ -47,8 +59,8 @@ Item {
                 icon.name: "view-refresh"
                 text: i18n("Refresh")
                 display: QQC2.AbstractButton.IconOnly
-                enabled: !Plasmoid.loading && Plasmoid.isConfigured
-                onClicked: Plasmoid.refresh()
+                enabled: !fullView.loading && fullView.isConfigured
+                onClicked: fullView.refreshRequested()
                 QQC2.ToolTip.text: i18n("Refresh now")
                 QQC2.ToolTip.visible: hovered
                 QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
@@ -58,7 +70,7 @@ Item {
                 icon.name: "configure"
                 text: i18n("Configure…")
                 display: QQC2.AbstractButton.IconOnly
-                onClicked: Plasmoid.internalAction("configure").trigger()
+                onClicked: fullView.configureRequested()
                 QQC2.ToolTip.text: i18n("Configure widget")
                 QQC2.ToolTip.visible: hovered
                 QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
@@ -79,7 +91,7 @@ Item {
             Kirigami.PlaceholderMessage {
                 anchors.centerIn: parent
                 width: parent.width - Kirigami.Units.gridUnit * 2
-                visible: !Plasmoid.isConfigured
+                visible: !fullView.isConfigured
                 icon.name: "configure"
                 text: i18n("Not configured")
                 explanation: i18n("Set the MyCalBook server URL and an API key in the widget settings.")
@@ -87,36 +99,36 @@ Item {
                 helpfulAction: QQC2.Action {
                     icon.name: "configure"
                     text: i18n("Open Settings")
-                    onTriggered: Plasmoid.internalAction("configure").trigger()
+                    onTriggered: fullView.configureRequested()
                 }
             }
 
             Kirigami.PlaceholderMessage {
                 anchors.centerIn: parent
                 width: parent.width - Kirigami.Units.gridUnit * 2
-                visible: fullView.showError && Plasmoid.isConfigured
+                visible: fullView.showError && fullView.isConfigured
                 icon.name: "dialog-error"
                 text: i18n("Couldn't load events")
-                explanation: Plasmoid.fetchError
+                explanation: fullView.fetchError
 
                 helpfulAction: QQC2.Action {
                     icon.name: "view-refresh"
                     text: i18n("Try Again")
-                    onTriggered: Plasmoid.refresh()
+                    onTriggered: fullView.refreshRequested()
                 }
             }
 
             Kirigami.PlaceholderMessage {
                 anchors.centerIn: parent
                 width: parent.width - Kirigami.Units.gridUnit * 2
-                visible: Plasmoid.isConfigured && !fullView.hasEvents && !Plasmoid.loading && !fullView.showError
-                icon.name: "view-calendar-upcoming"
+                visible: fullView.isConfigured && !fullView.hasEvents && !fullView.loading && !fullView.showError
+                icon.source: Qt.resolvedUrl("../icons/calendar.svg")
                 text: i18n("No upcoming events")
             }
 
             PlasmaComponents.BusyIndicator {
                 anchors.centerIn: parent
-                visible: Plasmoid.loading && !fullView.hasEvents && !fullView.showError
+                visible: fullView.loading && !fullView.hasEvents && !fullView.showError && fullView.isConfigured
                 running: visible
             }
 
@@ -172,6 +184,14 @@ Item {
 
                                 HoverHandler {
                                     id: hoverHandler
+                                    cursorShape: Qt.PointingHandCursor
+                                }
+
+                                // Open the configured MyCalBook instance in
+                                // the default browser when an event is clicked.
+                                TapHandler {
+                                    enabled: fullView.serverUrl.length > 0
+                                    onTapped: Qt.openUrlExternally(fullView.serverUrl)
                                 }
 
                                 RowLayout {
@@ -222,9 +242,9 @@ Item {
 
         // Footer with last-updated timestamp.
         PlasmaComponents.Label {
-            visible: fullView.hasEvents && Plasmoid.lastUpdated !== null
-            text: Plasmoid.lastUpdated !== null
-                ? i18n("Updated %1", Qt.formatTime(Plasmoid.lastUpdated, Qt.DefaultLocaleShortDate))
+            visible: fullView.hasEvents && fullView.lastUpdated !== null
+            text: fullView.lastUpdated !== null
+                ? i18n("Updated %1", Qt.formatTime(fullView.lastUpdated, Qt.DefaultLocaleShortDate))
                 : ""
             opacity: 0.5
             font: Kirigami.Theme.smallFont

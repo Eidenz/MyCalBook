@@ -9,7 +9,7 @@
         ],
         "Category": "Date and Time",
         "Description": "Shows upcoming events from a self-hosted MyCalBook instance.",
-        "Icon": "view-calendar-upcoming",
+        "Icon": "view-calendar",
         "Id": "org.eidenz.mycalbook",
         "License": "MIT",
         "Name": "MyCalBook Upcoming Events",
