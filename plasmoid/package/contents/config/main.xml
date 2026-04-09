@@ -30,5 +30,19 @@
             <label>Show all-day events</label>
             <default>true</default>
         </entry>
+        <entry name="backgroundOpacity" type="Int">
+            <label>Widget background opacity, 0-100. 100 keeps the standard Plasma frame; lower values remove the frame and paint a translucent background.</label>
+            <default>100</default>
+            <min>0</min>
+            <max>100</max>
+        </entry>
+        <entry name="useCustomTextColor" type="Bool">
+            <label>Override the active Plasma colour scheme for the widget's text colour.</label>
+            <default>false</default>
+        </entry>
+        <entry name="customTextColor" type="String">
+            <label>Hex colour to use for text when useCustomTextColor is enabled.</label>
+            <default>#ffffff</default>
+        </entry>
     </group>
 </kcfg>

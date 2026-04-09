@@ -23,6 +23,16 @@ Item {
     property var lastUpdated: null
     property bool isConfigured: false
     property string serverUrl: ""
+    property int backgroundOpacity: 100
+    property bool useCustomTextColor: false
+    property string customTextColor: "#ffffff"
+
+    // Single source of truth for the text colour everywhere in the view.
+    // Falls back to the active Plasma theme colour when the override is
+    // off, so users who don't touch the setting get the standard look.
+    readonly property color effectiveTextColor: useCustomTextColor
+        ? customTextColor
+        : Kirigami.Theme.textColor
 
     // --- Signals raised back to main.qml ----------------------------------
     signal refreshRequested()
@@ -38,6 +48,21 @@ Item {
     readonly property bool hasEvents: fullView.events.length > 0
     readonly property bool showError: fullView.fetchError.length > 0 && !hasEvents
 
+    // Custom translucent background. Plasma's standard frame is disabled
+    // in main.qml so this is the only background painted behind the
+    // content. Opacity is applied ONLY to this Rectangle — the
+    // ColumnLayout sibling below stays at full opacity, so text and
+    // event cards remain fully visible at any slider value, including 0.
+    // Declared first so it renders behind the content (no z hack needed).
+    Rectangle {
+        anchors.fill: parent
+        color: Kirigami.Theme.backgroundColor
+        opacity: fullView.backgroundOpacity / 100
+        radius: Kirigami.Units.smallSpacing
+        border.color: Qt.alpha(Kirigami.Theme.textColor, 0.1)
+        border.width: 1
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Kirigami.Units.smallSpacing
@@ -51,6 +76,7 @@ Item {
             Kirigami.Heading {
                 text: i18n("Upcoming")
                 level: 2
+                color: fullView.effectiveTextColor
                 Layout.fillWidth: true
                 elide: Text.ElideRight
             }
@@ -157,12 +183,14 @@ Item {
                             Kirigami.Heading {
                                 text: modelData.label
                                 level: 4
+                                color: fullView.effectiveTextColor
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
 
                             PlasmaComponents.Label {
                                 text: i18np("%1 event", "%1 events", modelData.events.length)
+                                color: fullView.effectiveTextColor
                                 opacity: 0.6
                                 font: Kirigami.Theme.smallFont
                             }
@@ -218,6 +246,7 @@ Item {
 
                                         PlasmaComponents.Label {
                                             text: modelData.title
+                                            color: fullView.effectiveTextColor
                                             font.bold: true
                                             elide: Text.ElideRight
                                             Layout.fillWidth: true
@@ -226,6 +255,7 @@ Item {
 
                                         PlasmaComponents.Label {
                                             text: MyCalBook.formatTimeRange(modelData)
+                                            color: fullView.effectiveTextColor
                                             opacity: 0.7
                                             font: Kirigami.Theme.smallFont
                                             Layout.fillWidth: true
@@ -246,6 +276,7 @@ Item {
             text: fullView.lastUpdated !== null
                 ? i18n("Updated %1", Qt.formatTime(fullView.lastUpdated, Qt.DefaultLocaleShortDate))
                 : ""
+            color: fullView.effectiveTextColor
             opacity: 0.5
             font: Kirigami.Theme.smallFont
             Layout.alignment: Qt.AlignRight

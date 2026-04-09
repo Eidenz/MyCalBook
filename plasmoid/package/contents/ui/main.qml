@@ -18,6 +18,9 @@ PlasmoidItem {
     readonly property int maxEvents: Plasmoid.configuration.maxEvents
     readonly property int refreshIntervalMinutes: Plasmoid.configuration.refreshIntervalMinutes
     readonly property bool showAllDayEvents: Plasmoid.configuration.showAllDayEvents
+    readonly property int backgroundOpacity: Plasmoid.configuration.backgroundOpacity
+    readonly property bool useCustomTextColor: Plasmoid.configuration.useCustomTextColor
+    readonly property string customTextColor: Plasmoid.configuration.customTextColor
     readonly property bool isConfigured: serverUrl.length > 0 && apiKey.length > 0
 
     // On the desktop (Planar form factor) we show the full events list
@@ -44,6 +47,18 @@ PlasmoidItem {
         }
     }
     onEventsChanged: syncStatus()
+
+    // We always disable Plasma's standard frame and let FullView paint
+    // its own background Rectangle. That way the opacity slider only
+    // affects the background — text and event cards stay at full
+    // opacity regardless of the slider position.
+    function syncBackgroundHints() {
+        try {
+            Plasmoid.backgroundHints = PlasmaCore.Types.NoBackground
+        } catch (e) {
+            // Non-fatal — falls back to whatever the default is.
+        }
+    }
 
     toolTipMainText: i18n("MyCalBook")
     toolTipSubText: {
@@ -78,6 +93,7 @@ PlasmoidItem {
     // Refresh on first show and whenever any relevant config changes.
     Component.onCompleted: {
         syncStatus()
+        syncBackgroundHints()
         refresh()
     }
     onServerUrlChanged: refresh()
@@ -110,6 +126,9 @@ PlasmoidItem {
         lastUpdated: root.lastUpdated
         isConfigured: root.isConfigured
         serverUrl: root.serverUrl
+        backgroundOpacity: root.backgroundOpacity
+        useCustomTextColor: root.useCustomTextColor
+        customTextColor: root.customTextColor
         onRefreshRequested: root.refresh()
         onConfigureRequested: Plasmoid.internalAction("configure").trigger()
     }
