@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+                          http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+    <kcfgfile name=""/>
+
+    <group name="General">
+        <entry name="serverUrl" type="String">
+            <label>MyCalBook server base URL</label>
+            <default>http://localhost:5001</default>
+        </entry>
+        <entry name="apiKey" type="String">
+            <label>Persistent API key generated in MyCalBook settings</label>
+            <default></default>
+        </entry>
+        <entry name="maxEvents" type="Int">
+            <label>Maximum number of upcoming events to show</label>
+            <default>15</default>
+            <min>1</min>
+            <max>100</max>
+        </entry>
+        <entry name="refreshIntervalMinutes" type="Int">
+            <label>How often to refresh the event list, in minutes</label>
+            <default>5</default>
+            <min>1</min>
+            <max>1440</max>
+        </entry>
+        <entry name="showAllDayEvents" type="Bool">
+            <label>Show all-day events</label>
+            <default>true</default>
+        </entry>
+    </group>
+</kcfg>

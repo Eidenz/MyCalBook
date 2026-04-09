@@ -1,0 +1,20 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "",
+                "Name": "Eidenz"
+            }
+        ],
+        "Category": "Date and Time",
+        "Description": "Shows upcoming events from a self-hosted MyCalBook instance.",
+        "Icon": "view-calendar-upcoming",
+        "Id": "org.eidenz.mycalbook",
+        "License": "MIT",
+        "Name": "MyCalBook Upcoming Events",
+        "Version": "0.1.0",
+        "Website": "https://github.com/Eidenz/MyCalBook"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

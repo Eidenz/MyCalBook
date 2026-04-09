@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { Shield, ShieldOff, Copy, Download, KeyRound, Check, UploadCloud, Loader } from 'lucide-react';
+import { Shield, ShieldOff, Copy, Download, KeyRound, Check, UploadCloud, Loader, Plus, Trash2, AlertTriangle } from 'lucide-react';
 
 // Sub-component for ICS import
 const CalendarImport = ({ token }) => {
@@ -290,6 +290,194 @@ const TwoFactorAuthSetup = ({ token, isEnabled, onUpdate }) => {
 };
 
 
+// Manage persistent API keys for third-party integrations (desktop widgets,
+// scripts, etc). Plaintext keys are only ever shown once at creation time.
+const ApiKeyManager = ({ token }) => {
+    const [keys, setKeys] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [newKeyName, setNewKeyName] = useState('');
+    const [isCreating, setIsCreating] = useState(false);
+    const [justCreated, setJustCreated] = useState(null); // { id, name, key }
+    const [hasCopied, setHasCopied] = useState(false);
+    const [pendingDeleteId, setPendingDeleteId] = useState(null);
+
+    const fetchKeys = async () => {
+        setIsLoading(true);
+        try {
+            const res = await fetch('/api/settings/api-keys', {
+                headers: { 'x-auth-token': token },
+            });
+            if (!res.ok) throw new Error('Failed to load API keys.');
+            const data = await res.json();
+            setKeys(data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchKeys();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [token]);
+
+    const handleCreate = async (e) => {
+        e.preventDefault();
+        if (!newKeyName.trim()) return;
+        setIsCreating(true);
+        setError('');
+        try {
+            const res = await fetch('/api/settings/api-keys', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                body: JSON.stringify({ name: newKeyName.trim() }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to create API key.');
+            setJustCreated(data);
+            setNewKeyName('');
+            await fetchKeys();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        setError('');
+        try {
+            const res = await fetch(`/api/settings/api-keys/${id}`, {
+                method: 'DELETE',
+                headers: { 'x-auth-token': token },
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to revoke API key.');
+            }
+            setPendingDeleteId(null);
+            await fetchKeys();
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
+    const handleCopyKey = () => {
+        if (!justCreated?.key) return;
+        navigator.clipboard.writeText(justCreated.key);
+        setHasCopied(true);
+        setTimeout(() => setHasCopied(false), 2000);
+    };
+
+    const formatDate = (iso) => {
+        if (!iso) return 'Never';
+        return new Date(iso).toLocaleString();
+    };
+
+    return (
+        <div>
+            <h2 className="text-xl font-semibold mb-2">API Keys</h2>
+            <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 mb-4 text-sm">
+                Persistent tokens for third-party integrations like the KDE desktop widget. Send them in the <span className="font-mono text-xs bg-slate-200 dark:bg-slate-700 px-1 rounded">x-api-key</span> header (or as <span className="font-mono text-xs bg-slate-200 dark:bg-slate-700 px-1 rounded">Authorization: Bearer …</span>). Unlike the web session token, API keys never expire until you revoke them.
+            </p>
+
+            {error && (
+                <div className="bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 p-3 rounded-md mb-3 text-sm">{error}</div>
+            )}
+
+            {justCreated && (
+                <div className="space-y-3 bg-white/50 dark:bg-slate-900/50 p-4 rounded-lg border border-amber-500/40 mb-4">
+                    <div className="flex items-center gap-2">
+                        <AlertTriangle className="text-amber-400" size={20} />
+                        <h3 className="font-semibold text-amber-700 dark:text-amber-300">Copy this key now</h3>
+                    </div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        This is the only time the full key for <span className="font-semibold">{justCreated.name}</span> will be shown. Store it somewhere safe.
+                    </p>
+                    <div className="font-mono bg-slate-100 dark:bg-slate-800 p-3 rounded text-xs break-all text-slate-700 dark:text-slate-200">
+                        {justCreated.key}
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <button onClick={handleCopyKey} className="flex items-center gap-2 px-4 py-2 bg-slate-300 dark:bg-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-400 dark:hover:bg-slate-500">
+                            {hasCopied ? <><Check size={16} /> Copied!</> : <><Copy size={16} /> Copy</>}
+                        </button>
+                        <button onClick={() => setJustCreated(null)} className="px-4 py-2 bg-indigo-500 rounded-lg text-sm font-semibold text-white hover:bg-indigo-600">
+                            Done
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-2 mb-4">
+                <input
+                    type="text"
+                    value={newKeyName}
+                    onChange={(e) => setNewKeyName(e.target.value)}
+                    placeholder="Key name (e.g., KDE Desktop Widget)"
+                    maxLength={100}
+                    className="flex-1 bg-slate-200 dark:bg-slate-700 p-2.5 rounded-md border-2 border-slate-300 dark:border-slate-600"
+                />
+                <button
+                    type="submit"
+                    disabled={isCreating || !newKeyName.trim()}
+                    className="px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                    {isCreating ? <><Loader size={16} className="animate-spin" /> Creating...</> : <><Plus size={16} /> Create Key</>}
+                </button>
+            </form>
+
+            <div className="space-y-2">
+                {isLoading ? (
+                    <p className="text-sm text-slate-400 dark:text-slate-500">Loading keys...</p>
+                ) : keys.length === 0 ? (
+                    <p className="text-sm text-slate-400 dark:text-slate-500 italic">No API keys yet.</p>
+                ) : (
+                    keys.map((k) => (
+                        <div key={k.id} className="bg-slate-200/50 dark:bg-slate-700/50 p-3 rounded-lg">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-semibold text-slate-900 dark:text-white truncate">{k.name}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate">{k.prefix}…</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                        Created {formatDate(k.created_at)} · Last used {formatDate(k.last_used_at)}
+                                    </p>
+                                </div>
+                                {pendingDeleteId === k.id ? (
+                                    <div className="flex gap-2 shrink-0">
+                                        <button
+                                            onClick={() => handleDelete(k.id)}
+                                            className="px-3 py-1.5 bg-red-600 rounded-lg text-xs font-semibold text-white hover:bg-red-700"
+                                        >
+                                            Confirm
+                                        </button>
+                                        <button
+                                            onClick={() => setPendingDeleteId(null)}
+                                            className="px-3 py-1.5 bg-slate-300 dark:bg-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-400 dark:hover:bg-slate-500"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => setPendingDeleteId(k.id)}
+                                        className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg shrink-0"
+                                        aria-label="Revoke API key"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+};
+
+
 const Settings = () => {
     const { token, logout, user } = useAuth();
     const [settings, setSettings] = useState({ email_notifications: true, is_two_factor_enabled: false, booking_page_subtitle: '' });
@@ -441,6 +629,8 @@ const Settings = () => {
                 </div>
                 
                 <CalendarImport token={token} />
+
+                <ApiKeyManager token={token} />
 
                 <div>
                     <h2 className="text-xl font-semibold mb-4">Change Password</h2>

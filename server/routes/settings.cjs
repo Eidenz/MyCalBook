@@ -4,8 +4,13 @@ const db = require('../db/knex.cjs');
 const bcrypt = require('bcryptjs');
 const { authenticator } = require('otplib');
 const qrcode = require('qrcode');
-const { randomBytes } = require('crypto');
+const { randomBytes, createHash } = require('crypto');
 const authMiddleware = require('../middleware/auth.cjs');
+
+// Hash API keys with SHA-256 so the middleware can do an indexed equality
+// lookup on every request. The plaintext key is only ever returned to the
+// user once, at creation time.
+const hashApiKey = (key) => createHash('sha256').update(key).digest('hex');
 
 // Helper to generate recovery codes
 const generateRecoveryCodes = () => {
@@ -221,6 +226,80 @@ router.post('/2fa/disable', async (req, res) => {
         res.json({ message: '2FA has been disabled.' });
     } catch (error) {
         console.error('2FA Disable Error:', error);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+});
+
+// --- GET /api/settings/api-keys ---
+// List all API keys for the current user. Plaintext keys are NEVER returned;
+// only the prefix and metadata are exposed.
+router.get('/api-keys', async (req, res) => {
+    try {
+        const keys = await db('api_keys')
+            .where({ user_id: req.user.id })
+            .orderBy('created_at', 'desc')
+            .select('id', 'name', 'prefix', 'last_used_at', 'created_at');
+        res.json(keys);
+    } catch (error) {
+        console.error('Error listing API keys:', error);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+});
+
+// --- POST /api/settings/api-keys ---
+// Generate a new API key. The plaintext value is returned exactly once.
+router.post('/api-keys', async (req, res) => {
+    const { name } = req.body;
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ error: 'A name for the API key is required.' });
+    }
+    if (name.length > 100) {
+        return res.status(400).json({ error: 'Name must be 100 characters or less.' });
+    }
+
+    try {
+        // Generate 32 random bytes -> 64 hex chars, prefixed with `mcb_`
+        // so the middleware can quickly recognise the key shape.
+        const rawKey = `mcb_${randomBytes(32).toString('hex')}`;
+        const prefix = rawKey.slice(0, 12); // e.g. "mcb_a1b2c3d4"
+        const hashed_key = hashApiKey(rawKey);
+
+        const [created] = await db('api_keys').insert({
+            user_id: req.user.id,
+            name: name.trim(),
+            prefix,
+            hashed_key,
+        }).returning(['id', 'name', 'prefix', 'created_at']);
+
+        res.status(201).json({
+            ...created,
+            // The full key is returned ONCE here. The client must store it.
+            key: rawKey,
+        });
+    } catch (error) {
+        console.error('Error creating API key:', error);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+});
+
+// --- DELETE /api/settings/api-keys/:id ---
+router.delete('/api-keys/:id', async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+        return res.status(400).json({ error: 'Invalid API key id.' });
+    }
+
+    try {
+        const deleted = await db('api_keys')
+            .where({ id, user_id: req.user.id })
+            .del();
+
+        if (deleted === 0) {
+            return res.status(404).json({ error: 'API key not found.' });
+        }
+        res.json({ message: 'API key revoked.' });
+    } catch (error) {
+        console.error('Error deleting API key:', error);
         res.status(500).json({ error: 'Internal server error.' });
     }
 });
