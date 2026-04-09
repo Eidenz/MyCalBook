@@ -160,13 +160,35 @@ Item {
 
             // Scrollable grouped list, only shown when we actually have data.
             QQC2.ScrollView {
+                id: eventsScrollView
                 anchors.fill: parent
                 visible: fullView.hasEvents
                 clip: true
                 contentWidth: availableWidth
 
+                // Auto-hide the default vertical scrollbar by tweaking
+                // its opacity via the attached-property dot syntax —
+                // this MODIFIES the ScrollBar that ScrollView creates
+                // automatically rather than replacing it, so ScrollView's
+                // built-in right-side positioning is preserved. The
+                // hover handler that drives this lives INSIDE the
+                // ListView (ScrollView only accepts a single content
+                // item, so putting a HoverHandler directly under the
+                // ScrollView would eat the ListView slot).
+                QQC2.ScrollBar.vertical.policy: QQC2.ScrollBar.AsNeeded
+                QQC2.ScrollBar.vertical.opacity: (
+                    eventsScrollView.QQC2.ScrollBar.vertical.hovered
+                    || eventsScrollView.QQC2.ScrollBar.vertical.pressed
+                    || eventsScrollView.QQC2.ScrollBar.vertical.active
+                    || dayListHoverHandler.hovered
+                ) ? 1 : 0
+
                 ListView {
                     id: dayList
+
+                    HoverHandler {
+                        id: dayListHoverHandler
+                    }
                     spacing: Kirigami.Units.smallSpacing
                     model: fullView.groups
 
@@ -228,12 +250,15 @@ Item {
                                     anchors.margins: Kirigami.Units.smallSpacing
                                     spacing: Kirigami.Units.smallSpacing
 
-                                    // Coloured stripe to differentiate types.
+                                    // Coloured stripe to differentiate types. Recurring
+                                    // events take priority and use orange to match the
+                                    // repeat-icon shown next to the title.
                                     Rectangle {
                                         Layout.preferredWidth: Kirigami.Units.smallSpacing * 0.75
                                         Layout.fillHeight: true
                                         radius: width / 2
                                         color: {
+                                            if (modelData.isRecurring) return "#f59e0b"
                                             if (modelData.type === "booked") return "#10b981"
                                             if (modelData.type === "blocked") return "#ef4444"
                                             return Kirigami.Theme.highlightColor
@@ -244,13 +269,33 @@ Item {
                                         Layout.fillWidth: true
                                         spacing: 0
 
-                                        PlasmaComponents.Label {
-                                            text: modelData.title
-                                            color: fullView.effectiveTextColor
-                                            font.bold: true
-                                            elide: Text.ElideRight
+                                        RowLayout {
                                             Layout.fillWidth: true
-                                            maximumLineCount: 1
+                                            spacing: Kirigami.Units.smallSpacing
+
+                                            PlasmaComponents.Label {
+                                                text: modelData.title
+                                                color: fullView.effectiveTextColor
+                                                font.bold: true
+                                                elide: Text.ElideRight
+                                                Layout.fillWidth: true
+                                                maximumLineCount: 1
+                                            }
+
+                                            // Repeat icon for recurring occurrences.
+                                            // Bundled SVG (orange) — matches the stripe
+                                            // colour and the Lucide Repeat icon used by
+                                            // the web client.
+                                            Image {
+                                                visible: modelData.isRecurring
+                                                source: Qt.resolvedUrl("../icons/repeat.svg")
+                                                Layout.preferredWidth: Kirigami.Units.iconSizes.small
+                                                Layout.preferredHeight: Kirigami.Units.iconSizes.small
+                                                sourceSize.width: Kirigami.Units.iconSizes.small * 2
+                                                sourceSize.height: Kirigami.Units.iconSizes.small * 2
+                                                fillMode: Image.PreserveAspectFit
+                                                smooth: true
+                                            }
                                         }
 
                                         PlasmaComponents.Label {

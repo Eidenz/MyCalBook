@@ -56,7 +56,7 @@ function fetchMonth(serverUrl, apiKey, month, callback) {
 
 // Fetch the current month and the next month, then merge, dedupe, filter
 // to upcoming, and sort. Calls callback(err, eventsArray).
-function fetchUpcoming(serverUrl, apiKey, maxEvents, includeAllDay, callback) {
+function fetchUpcoming(serverUrl, apiKey, maxEvents, includeAllDay, includeRecurring, callback) {
     if (!serverUrl || !apiKey) {
         callback("Server URL and API key are required.", []);
         return;
@@ -82,14 +82,14 @@ function fetchUpcoming(serverUrl, apiKey, maxEvents, includeAllDay, callback) {
                     callback(firstError, []);
                     return;
                 }
-                callback(null, processEvents(collected, now, maxEvents, includeAllDay));
+                callback(null, processEvents(collected, now, maxEvents, includeAllDay, includeRecurring));
             }
         });
     });
 }
 
 // Filter, dedupe, sort, and slice the merged event list.
-function processEvents(events, now, maxEvents, includeAllDay) {
+function processEvents(events, now, maxEvents, includeAllDay, includeRecurring) {
     var seen = {};
     var result = [];
 
@@ -97,6 +97,11 @@ function processEvents(events, now, maxEvents, includeAllDay) {
         var ev = events[i];
         if (!ev || !ev.start_time) continue;
         if (!includeAllDay && ev.is_all_day) continue;
+        // Recurring events: the server tags every occurrence (and every
+        // edited exception) with a non-null recurrence_id when expanding
+        // a parent rule. One-off manual events and confirmed bookings
+        // never carry one, so this single check covers all flavours.
+        if (!includeRecurring && ev.recurrence_id != null) continue;
 
         // Dedupe by id (recurring expansion can produce overlapping ids
         // when a month boundary is crossed).
@@ -119,7 +124,11 @@ function processEvents(events, now, maxEvents, includeAllDay) {
             start: start,
             end: end,
             isAllDay: !!ev.is_all_day,
-            type: ev.type || "personal"
+            type: ev.type || "personal",
+            // Server-side, every recurring occurrence (and every edited
+            // exception) carries a non-null recurrence_id. One-off
+            // events and bookings never do.
+            isRecurring: ev.recurrence_id != null
         });
     }
 

@@ -30,6 +30,10 @@
             <label>Show all-day events</label>
             <default>true</default>
         </entry>
+        <entry name="showRecurringEvents" type="Bool">
+            <label>Show recurring events (anything that's part of a repeat schedule)</label>
+            <default>true</default>
+        </entry>
         <entry name="backgroundOpacity" type="Int">
             <label>Widget background opacity, 0-100. 100 keeps the standard Plasma frame; lower values remove the frame and paint a translucent background.</label>
             <default>100</default>

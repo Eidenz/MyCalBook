@@ -14,6 +14,7 @@ Kirigami.FormLayout {
     property alias cfg_maxEvents: maxEventsField.value
     property alias cfg_refreshIntervalMinutes: refreshField.value
     property alias cfg_showAllDayEvents: allDayCheck.checked
+    property alias cfg_showRecurringEvents: recurringCheck.checked
     property alias cfg_backgroundOpacity: bgOpacitySlider.value
     property alias cfg_useCustomTextColor: useCustomColorCheck.checked
     property alias cfg_customTextColor: customColorField.text
@@ -65,6 +66,12 @@ Kirigami.FormLayout {
         id: allDayCheck
         Kirigami.FormData.label: i18n("All-day events:")
         text: i18n("Show all-day events")
+    }
+
+    CheckBox {
+        id: recurringCheck
+        Kirigami.FormData.label: i18n("Recurring events:")
+        text: i18n("Show recurring events")
     }
 
     Item {

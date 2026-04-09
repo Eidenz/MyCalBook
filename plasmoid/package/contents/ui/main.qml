@@ -18,6 +18,7 @@ PlasmoidItem {
     readonly property int maxEvents: Plasmoid.configuration.maxEvents
     readonly property int refreshIntervalMinutes: Plasmoid.configuration.refreshIntervalMinutes
     readonly property bool showAllDayEvents: Plasmoid.configuration.showAllDayEvents
+    readonly property bool showRecurringEvents: Plasmoid.configuration.showRecurringEvents
     readonly property int backgroundOpacity: Plasmoid.configuration.backgroundOpacity
     readonly property bool useCustomTextColor: Plasmoid.configuration.useCustomTextColor
     readonly property string customTextColor: Plasmoid.configuration.customTextColor
@@ -78,7 +79,7 @@ PlasmoidItem {
         }
         loading = true
         fetchError = ""
-        MyCalBook.fetchUpcoming(serverUrl, apiKey, maxEvents, showAllDayEvents,
+        MyCalBook.fetchUpcoming(serverUrl, apiKey, maxEvents, showAllDayEvents, showRecurringEvents,
             function(err, result) {
                 loading = false
                 if (err) {
@@ -100,6 +101,7 @@ PlasmoidItem {
     onApiKeyChanged: refresh()
     onMaxEventsChanged: refresh()
     onShowAllDayEventsChanged: refresh()
+    onShowRecurringEventsChanged: refresh()
 
     Timer {
         id: refreshTimer
